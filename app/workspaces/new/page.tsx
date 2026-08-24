@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CURRENCIES, DEFAULT_CURRENCY } from "@/lib/currency";
 
 const fieldClass =
   "w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent";
@@ -16,7 +17,9 @@ export default function NewWorkspacePage() {
     name: "",
     industry: "",
     objective: "",
-    monthlyBudgetInr: "",
+    monthlyBudget: "",
+    currency: DEFAULT_CURRENCY,
+    country: "",
     websiteUrl: "",
     icpNotes: "",
     currentChannels: "",
@@ -37,7 +40,7 @@ export default function NewWorkspacePage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           ...form,
-          monthlyBudgetInr: form.monthlyBudgetInr ? Number(form.monthlyBudgetInr) : null,
+          monthlyBudget: form.monthlyBudget ? Number(form.monthlyBudget) : null,
         }),
       });
       if (!res.ok) {
@@ -53,14 +56,16 @@ export default function NewWorkspacePage() {
     }
   }
 
+  const selectedCurrency = CURRENCIES.find((c) => c.code === form.currency) ?? CURRENCIES[0];
+
   return (
     <main className="max-w-2xl mx-auto px-8 py-12">
       <div className="mb-8">
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">New Workspace</div>
         <h1 className="text-2xl font-semibold text-ink">Tell us about this client</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-lg">
-          This is the Company DNA every agent reads from. The more specific, the better the output —
-          but you can leave anything blank and fill it in later.
+          This is the Company DNA every agent reads from — any industry, any market. The more
+          specific, the better the output, but you can leave anything blank and fill it in later.
         </p>
       </div>
 
@@ -72,7 +77,7 @@ export default function NewWorkspacePage() {
             required
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
-            placeholder="e.g. Smile Care Dental Clinic"
+            placeholder="e.g. Acme Retail Co."
           />
         </div>
 
@@ -83,19 +88,46 @@ export default function NewWorkspacePage() {
               className={fieldClass}
               value={form.industry}
               onChange={(e) => update("industry", e.target.value)}
-              placeholder="e.g. Dental clinic, Bangalore"
+              placeholder="e.g. B2B SaaS, dental clinic, apparel retail"
             />
           </div>
           <div>
-            <label className={labelClass}>Monthly budget (₹)</label>
+            <label className={labelClass}>Country / region</label>
+            <input
+              className={fieldClass}
+              value={form.country}
+              onChange={(e) => update("country", e.target.value)}
+              placeholder="e.g. United States, UK, Bangalore India, DACH"
+            />
+            <p className={hintClass}>Leave blank and agents will keep guidance general.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[1fr_auto] gap-4 items-end">
+          <div>
+            <label className={labelClass}>Monthly budget</label>
             <input
               className={fieldClass}
               type="number"
               min={0}
-              value={form.monthlyBudgetInr}
-              onChange={(e) => update("monthlyBudgetInr", e.target.value)}
-              placeholder="e.g. 500000"
+              value={form.monthlyBudget}
+              onChange={(e) => update("monthlyBudget", e.target.value)}
+              placeholder={`e.g. ${selectedCurrency.code === "INR" ? "500000" : "5000"}`}
             />
+          </div>
+          <div>
+            <label className={labelClass}>Currency</label>
+            <select
+              className={fieldClass}
+              value={form.currency}
+              onChange={(e) => update("currency", e.target.value)}
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.symbol} {c.code}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -105,7 +137,7 @@ export default function NewWorkspacePage() {
             className={fieldClass}
             value={form.objective}
             onChange={(e) => update("objective", e.target.value)}
-            placeholder="e.g. 100 more appointments per month"
+            placeholder="e.g. 100 more qualified leads per month"
           />
           <p className={hintClass}>The Needs Analyzer reads this to decide which agents matter.</p>
         </div>
@@ -116,7 +148,7 @@ export default function NewWorkspacePage() {
             className={fieldClass}
             value={form.websiteUrl}
             onChange={(e) => update("websiteUrl", e.target.value)}
-            placeholder="e.g. https://smilecare.example.com (leave blank if none)"
+            placeholder="e.g. https://acme.example.com (leave blank if none)"
           />
         </div>
 
@@ -137,7 +169,7 @@ export default function NewWorkspacePage() {
             className={fieldClass}
             value={form.currentChannels}
             onChange={(e) => update("currentChannels", e.target.value)}
-            placeholder="e.g. Instagram, WhatsApp, word of mouth"
+            placeholder="e.g. Instagram, email newsletter, word of mouth"
           />
         </div>
 
@@ -147,7 +179,7 @@ export default function NewWorkspacePage() {
             className={fieldClass}
             value={form.marketingAssets}
             onChange={(e) => update("marketingAssets", e.target.value)}
-            placeholder="e.g. a few Instagram reels, a logo, no CRM"
+            placeholder="e.g. a few product photos, a logo, no CRM"
           />
         </div>
 

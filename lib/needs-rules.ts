@@ -1,5 +1,9 @@
 // Rule-based Needs Analyzer — decides which agents should be active vs idle
 // for a given client. Pure functions, no I/O, safe to call from anywhere.
+// Currency- and industry-agnostic: works the same for a Bangalore dental
+// clinic in INR or a Toronto SaaS company in CAD.
+
+import { formatMoney, paidViableThreshold } from "./currency";
 
 export type RecommendedStatus = "active" | "idle";
 
@@ -12,7 +16,9 @@ export interface NeedRecommendation {
 export interface WorkspaceDNA {
   industry?: string | null;
   objective?: string | null;
-  monthlyBudgetInr?: number | null;
+  monthlyBudget?: number | null;
+  currency?: string | null;
+  country?: string | null;
   websiteUrl?: string | null;
   icpNotes?: string | null;
   currentChannels?: string | null;
@@ -32,13 +38,16 @@ const VIDEO_WORDS = ["video", "youtube", "reels", "shorts"];
 
 export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecommendation[] {
   const website = has(dna.websiteUrl);
-  const budget = dna.monthlyBudgetInr ?? 0;
+  const budget = dna.monthlyBudget ?? 0;
+  const currency = dna.currency ?? "USD";
+  const threshold = paidViableThreshold(currency);
+  const money = (n: number) => formatMoney(n, currency);
   const organicObjective = mentions(dna.objective, ORGANIC_WORDS);
   const paidObjective = mentions(dna.objective, PAID_WORDS);
   const hasAssets = has(dna.marketingAssets);
   const hasChannels = has(dna.currentChannels);
   const icpThin = !has(dna.icpNotes) || (dna.icpNotes ?? "").trim().length < 40;
-  const paidViable = budget >= 30000 && !organicObjective;
+  const paidViable = budget >= threshold && !organicObjective;
   const paidActive = paidViable && (paidObjective || !organicObjective);
 
   const rules: Record<string, { status: RecommendedStatus; reason: string }> = {
@@ -70,7 +79,7 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       reason: "Run after the first strategy cycle, when there is baseline data to scan.",
     },
     "budget-investment": budget > 0
-      ? { status: "active", reason: `A ₹${budget.toLocaleString("en-IN")}/month budget is set — allocation guidance applies immediately.` }
+      ? { status: "active", reason: `A ${money(budget)}/month budget is set — allocation guidance applies immediately.` }
       : { status: "idle", reason: "No monthly budget recorded yet." },
     "seo-strategy": website
       ? { status: "active", reason: "A website exists — organic search can compound from month one." }
@@ -80,9 +89,9 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       : { status: "idle", reason: "Requires a live website to audit." },
     "performance-marketing": organicObjective
       ? { status: "idle", reason: "Objective is organic-led — paid media stays idle for now." }
-      : budget < 30000
-        ? { status: "idle", reason: `₹${budget.toLocaleString("en-IN")}/month is too thin to split across paid channels profitably.` }
-        : { status: "active", reason: `₹${budget.toLocaleString("en-IN")}/month can support a focused paid test — get a spend-readiness verdict first.` },
+      : budget < threshold
+        ? { status: "idle", reason: `${money(budget)}/month is too thin to split across paid channels profitably.` }
+        : { status: "active", reason: `${money(budget)}/month can support a focused paid test — get a spend-readiness verdict first.` },
     "google-ads": organicObjective
       ? { status: "idle", reason: "Objective is organic traffic — paid search stays idle." }
       : paidActive

@@ -70,7 +70,7 @@ export default async function ScorecardPage({ params }: PageProps<"/workspaces/[
                   </Link>
                 </td>
                 <td className="py-3 px-4 text-ink-faint tabular-nums">
-                  {r.createdAt.toLocaleDateString("en-IN")}
+                  {r.createdAt.toLocaleDateString("en-GB")}
                 </td>
                 <td className="py-3 px-4 text-ink-soft max-w-xs truncate">{r.predictedOutcome || "—"}</td>
                 <td className="py-3 px-4 text-ink-soft max-w-xs truncate">{r.actualOutcome || "—"}</td>

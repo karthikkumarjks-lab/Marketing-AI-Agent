@@ -118,7 +118,7 @@ function RunCard({ run }: { run: RunLite }) {
     <div className="bg-surface border border-line rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-ink-faint">
-          {new Date(run.createdAt).toLocaleString("en-IN")} · {run.model}
+          {new Date(run.createdAt).toLocaleString("en-GB")} · {run.model}
           {run.isDemo && <span className="text-warn ml-2">demo output</span>}
         </div>
         <OutcomeBadge status={run.outcomeStatus} />

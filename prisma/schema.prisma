@@ -15,7 +15,9 @@ model Workspace {
   name              String
   industry          String?
   objective         String?
-  monthlyBudgetInr  Int?
+  monthlyBudget     Int?
+  currency          String   @default("USD")
+  country           String?
   websiteUrl        String?
   icpNotes          String?
   currentChannels   String?

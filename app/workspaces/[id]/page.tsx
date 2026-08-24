@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/currency";
 
 export default async function WorkspaceOverviewPage({ params }: PageProps<"/workspaces/[id]">) {
   const { id } = await params;
@@ -15,11 +16,9 @@ export default async function WorkspaceOverviewPage({ params }: PageProps<"/work
 
   const rows: { label: string; value: string }[] = [
     { label: "Industry", value: workspace.industry || "Not specified" },
+    { label: "Country / region", value: workspace.country || "Not specified" },
     { label: "Objective", value: workspace.objective || "Not specified" },
-    {
-      label: "Monthly budget",
-      value: workspace.monthlyBudgetInr != null ? `₹${workspace.monthlyBudgetInr.toLocaleString("en-IN")}` : "Not specified",
-    },
+    { label: "Monthly budget", value: formatMoney(workspace.monthlyBudget, workspace.currency) },
     { label: "Website", value: workspace.websiteUrl || "None on record" },
     { label: "Current channels", value: workspace.currentChannels || "None provided" },
   ];
@@ -34,10 +33,7 @@ export default async function WorkspaceOverviewPage({ params }: PageProps<"/work
       <div className="grid grid-cols-3 gap-3 mb-8">
         <StatCard label="Agents active" value={`${activeCount} / ${totalAgents}`} />
         <StatCard label="Total runs" value={String(runCount)} />
-        <StatCard
-          label="Budget"
-          value={workspace.monthlyBudgetInr != null ? `₹${workspace.monthlyBudgetInr.toLocaleString("en-IN")}` : "—"}
-        />
+        <StatCard label="Budget" value={formatMoney(workspace.monthlyBudget, workspace.currency)} />
       </div>
 
       <div className="bg-surface border border-line rounded-lg divide-y divide-line mb-8">

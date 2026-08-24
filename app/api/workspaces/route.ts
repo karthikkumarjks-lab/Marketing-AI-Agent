@@ -1,21 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeNeeds } from "@/lib/needs-rules";
+import { CURRENCIES, DEFAULT_CURRENCY } from "@/lib/currency";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, industry, objective, monthlyBudgetInr, websiteUrl, icpNotes, currentChannels, marketingAssets } = body;
+  const {
+    name,
+    industry,
+    objective,
+    monthlyBudget,
+    currency,
+    country,
+    websiteUrl,
+    icpNotes,
+    currentChannels,
+    marketingAssets,
+  } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return NextResponse.json({ error: "Business name is required." }, { status: 400 });
   }
+
+  const resolvedCurrency = CURRENCIES.some((c) => c.code === currency) ? currency : DEFAULT_CURRENCY;
 
   const workspace = await prisma.workspace.create({
     data: {
       name: name.trim(),
       industry: industry || null,
       objective: objective || null,
-      monthlyBudgetInr: monthlyBudgetInr ? Number(monthlyBudgetInr) : null,
+      monthlyBudget: monthlyBudget ? Number(monthlyBudget) : null,
+      currency: resolvedCurrency,
+      country: country || null,
       websiteUrl: websiteUrl || null,
       icpNotes: icpNotes || null,
       currentChannels: currentChannels || null,
@@ -28,7 +44,9 @@ export async function POST(req: NextRequest) {
     {
       industry: workspace.industry,
       objective: workspace.objective,
-      monthlyBudgetInr: workspace.monthlyBudgetInr,
+      monthlyBudget: workspace.monthlyBudget,
+      currency: workspace.currency,
+      country: workspace.country,
       websiteUrl: workspace.websiteUrl,
       icpNotes: workspace.icpNotes,
       currentChannels: workspace.currentChannels,
