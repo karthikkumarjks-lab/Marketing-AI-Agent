@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/sidebar";
 
 export const metadata: Metadata = {
-  title: "Marketing AI Team",
+  title: "Marketing Autopilot",
   description: "A shared runtime running a growing team of specialist AI marketing agents per client.",
 };
 

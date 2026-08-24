@@ -1,8 +1,9 @@
-# Marketing AI Team
+# Marketing Autopilot
 
 A dashboard where a marketer or agency operator manages multiple clients ("Workspaces") and
-runs a team of 25 specialist AI marketing agents against each one — one shared runtime, not
-25 separate tools.
+runs a growing team of specialist AI marketing agents against each one — one shared runtime,
+not a pile of separate tools. See `docs/ARCHITECTURE_AUDIT.md` for the current architecture
+state and what's still planned.
 
 ## What's here
 

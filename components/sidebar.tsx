@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoMark from "./logo-mark";
 
 interface WorkspaceLite {
   id: string;
@@ -38,8 +39,11 @@ export default function Sidebar({
   return (
     <aside className="w-64 shrink-0 border-r border-line bg-surface flex flex-col h-screen sticky top-0">
       <div className="px-4 py-5 border-b border-line">
-        <div className="text-xs font-mono uppercase tracking-wider text-accent">Marketing AI Team</div>
-        <div className="text-[11px] text-ink-faint mt-0.5">{agentCount} agents · 1 shared runtime</div>
+        <div className="flex items-center gap-2">
+          <LogoMark size={20} />
+          <div className="text-xs font-mono uppercase tracking-wider text-accent">Marketing Autopilot</div>
+        </div>
+        <div className="text-[11px] text-ink-faint mt-0.5 ml-[26px]">{agentCount} agents · 1 shared runtime</div>
       </div>
 
       {activeWorkspaceId && (
