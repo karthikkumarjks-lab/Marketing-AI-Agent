@@ -3,18 +3,38 @@ import { prisma } from "@/lib/prisma";
 import { analyzeNeeds } from "@/lib/needs-rules";
 import { CURRENCIES } from "@/lib/currency";
 
-const EDITABLE_FIELDS = [
+const STRING_FIELDS = [
   "name",
   "industry",
   "objective",
-  "monthlyBudget",
   "currency",
   "country",
   "websiteUrl",
   "icpNotes",
   "currentChannels",
   "marketingAssets",
+  "salesCapacity",
+  "conversionTarget",
+  "retentionTarget",
+  "northStarKpi",
+  "guardrails",
+  "seasonality",
+  "existingStack",
+  "maturityStage",
 ] as const;
+
+const INT_FIELDS = [
+  "monthlyBudget",
+  "aov",
+  "ltv",
+  "grossMarginPct",
+  "salesCycleDays",
+  "cacTarget",
+  "cplTarget",
+  "revenueTarget",
+] as const;
+
+const FLOAT_FIELDS = ["roasTarget"] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,10 +45,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const data: Record<string, unknown> = {};
-  for (const field of EDITABLE_FIELDS) {
-    if (field in body) {
-      data[field] = field === "monthlyBudget" ? (body[field] ? Number(body[field]) : null) : body[field] || null;
-    }
+  for (const field of STRING_FIELDS) {
+    if (field in body) data[field] = body[field] || null;
+  }
+  for (const field of INT_FIELDS) {
+    if (field in body) data[field] = body[field] !== "" && body[field] != null ? Number(body[field]) : null;
+  }
+  for (const field of FLOAT_FIELDS) {
+    if (field in body) data[field] = body[field] !== "" && body[field] != null ? Number(body[field]) : null;
   }
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No editable fields provided." }, { status: 400 });
@@ -58,7 +82,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     recommendations.map((r) =>
       prisma.needsAnalysis.updateMany({
         where: { workspaceId: id, agentId: keyToId.get(r.agentKey)! },
-        data: { recommendedStatus: r.status, reason: r.reason },
+        data: {
+          recommendedStatus: r.status,
+          tier: r.tier,
+          reason: r.reason,
+          evidence: JSON.stringify(r.evidence),
+          reactivationTrigger: r.reactivationTrigger ?? null,
+        },
       }),
     ),
   );

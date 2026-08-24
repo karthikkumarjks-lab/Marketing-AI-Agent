@@ -7,6 +7,7 @@
 // stay general instead of defaulting to a specific country.
 
 import { formatMoney } from "./currency";
+import { getAgentDefinition } from "./agent-contract";
 
 export interface CompanyDNAInput {
   name: string;
@@ -19,6 +20,81 @@ export interface CompanyDNAInput {
   icpNotes: string | null;
   currentChannels: string | null;
   marketingAssets: string | null;
+  // Company DNA economics/targets/guardrails — all optional. Agents must
+  // state an assumption when these are blank, never silently default to
+  // CAC as "the" target metric.
+  aov: number | null;
+  ltv: number | null;
+  grossMarginPct: number | null;
+  salesCycleDays: number | null;
+  salesCapacity: string | null;
+  cacTarget: number | null;
+  cplTarget: number | null;
+  roasTarget: number | null;
+  revenueTarget: number | null;
+  conversionTarget: string | null;
+  retentionTarget: string | null;
+  northStarKpi: string | null;
+  guardrails: string | null;
+  seasonality: string | null;
+  existingStack: string | null;
+  maturityStage: string | null;
+}
+
+export interface BrandDNAInput {
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  accentColor: string | null;
+  typography: string | null;
+  visualStyle: string | null;
+  brandPersonality: string | null;
+  toneOfVoice: string | null;
+  positioning: string | null;
+  approvedClaims: string | null;
+  restrictedClaims: string | null;
+  dos: string | null;
+  donts: string | null;
+}
+
+// Agents that must read and follow Brand DNA rather than inventing their own
+// tone/visual direction each time — per the upgrade spec, brand rules live
+// once in Brand DNA, not duplicated inside every creative-facing prompt.
+export const BRAND_DNA_AGENTS = new Set([
+  "content-strategy",
+  "content-creation",
+  "content-repurposing",
+  "brand-creative-strategy",
+  "design",
+  "video-marketing",
+  "website-builder",
+  "landing-page",
+  "email-marketing",
+  "google-ads",
+  "meta-ads",
+  "linkedin-ads",
+  "tiktok-ads",
+]);
+
+export function buildBrandDNAPrompt(brand: BrandDNAInput | null): string {
+  if (!brand) {
+    return "\n\n# Brand DNA\nNot yet defined for this client. State that tone/visual choices are an editable first pass, not locked brand guidelines.";
+  }
+  const has = (v: string | null) => v?.trim() || "Not specified";
+  return `
+
+# Brand DNA
+- **Colors:** primary ${has(brand.primaryColor)}, secondary ${has(brand.secondaryColor)}, accent ${has(brand.accentColor)}
+- **Typography:** ${has(brand.typography)}
+- **Visual style:** ${has(brand.visualStyle)}
+- **Brand personality:** ${has(brand.brandPersonality)}
+- **Tone of voice:** ${has(brand.toneOfVoice)}
+- **Positioning:** ${has(brand.positioning)}
+- **Approved claims:** ${has(brand.approvedClaims)}
+- **Restricted claims:** ${has(brand.restrictedClaims)}
+- **Do's:** ${has(brand.dos)}
+- **Don'ts:** ${has(brand.donts)}
+
+Follow this Brand DNA exactly where fields are specified. Where a field says "Not specified," state that you're making a first-pass choice, not asserting locked brand guidelines.`;
 }
 
 const SYSTEM_PROMPTS: Record<string, string> = {
@@ -813,10 +889,12 @@ ${runLines}`;
 
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {
   const budget = formatMoney(dna.monthlyBudget, dna.currency) + (dna.monthlyBudget != null ? "/month" : "");
+  const money = (n: number | null) => (n != null ? formatMoney(n, dna.currency) : "Not specified");
   return `# Company DNA — ${dna.name}
 
 - **Business / industry:** ${dna.industry?.trim() || "Not specified"}
 - **Primary objective:** ${dna.objective?.trim() || "Not specified"}
+- **North Star KPI:** ${dna.northStarKpi?.trim() || "Not specified — do not assume CAC is the target; state this as an open assumption instead"}
 - **Monthly marketing budget:** ${budget}
 - **Currency:** ${dna.currency || "USD"}
 - **Country / region:** ${dna.country?.trim() || "Not specified — keep regional guidance general"}
@@ -824,8 +902,15 @@ export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {
 - **ICP notes:** ${dna.icpNotes?.trim() || "None provided"}
 - **Current channels:** ${dna.currentChannels?.trim() || "None provided"}
 - **Existing marketing assets:** ${dna.marketingAssets?.trim() || "None provided"}
+- **Existing stack/CRM:** ${dna.existingStack?.trim() || "None provided"}
+- **Maturity stage:** ${dna.maturityStage?.trim() || "Not specified"}
+- **AOV/ACV:** ${money(dna.aov)} · **LTV:** ${money(dna.ltv)} · **Gross margin:** ${dna.grossMarginPct != null ? `${dna.grossMarginPct}%` : "Not specified"}
+- **Sales cycle:** ${dna.salesCycleDays != null ? `${dna.salesCycleDays} days` : "Not specified"} · **Sales capacity:** ${dna.salesCapacity?.trim() || "Not specified"}
+- **Targets:** CAC ${money(dna.cacTarget)} · CPL ${money(dna.cplTarget)} · ROAS ${dna.roasTarget != null ? `${dna.roasTarget}x` : "Not specified"} · Revenue ${money(dna.revenueTarget)} · Conversion ${dna.conversionTarget?.trim() || "Not specified"} · Retention ${dna.retentionTarget?.trim() || "Not specified"}
+- **Guardrails:** ${dna.guardrails?.trim() || "None stated"}
+- **Seasonality:** ${dna.seasonality?.trim() || "Not specified"}
 
-Use the currency shown above for every monetary figure in your output — do not switch currencies or assume a country that wasn't stated. Produce your full output now, following your specified format exactly. Write in GitHub-flavored markdown.`;
+Use the currency shown above for every monetary figure in your output — do not switch currencies or assume a country that wasn't stated. Optimize for the stated North Star KPI, not automatically for CAC — if no North Star is stated, say so as an assumption rather than silently picking one. Produce your full output now, following your specified format exactly. Write in GitHub-flavored markdown.`;
 }
 
 export interface LLMResult {
@@ -891,12 +976,25 @@ export async function runAgentLLM(
   agentName: string,
   dna: CompanyDNAInput,
   extraContext?: string,
+  brand?: BrandDNAInput | null,
 ): Promise<LLMResult> {
-  const system = getSystemPrompt(agentKey);
+  let system = getSystemPrompt(agentKey);
   if (!system) {
     throw new Error(`Agent "${agentKey}" is not wired to execution.`);
   }
-  const user = buildCompanyDNAPrompt(dna) + (extraContext ?? "");
+
+  // Pull the Agent Contract's decision framework in as data, rather than
+  // pasting it directly into every prompt string — this is what "move
+  // reusable logic into shared services/schemas" means in practice.
+  const definition = getAgentDefinition(agentKey);
+  if (definition) {
+    system += `\n\n# Agent Contract — Decision Framework\n${definition.decisionFramework}\n\nCore responsibilities: ${definition.responsibilities.join("; ")}.`;
+  }
+
+  let user = buildCompanyDNAPrompt(dna) + (extraContext ?? "");
+  if (BRAND_DNA_AGENTS.has(agentKey)) {
+    user += buildBrandDNAPrompt(brand ?? null);
+  }
 
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   if (openrouterKey) {

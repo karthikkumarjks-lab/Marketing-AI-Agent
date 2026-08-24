@@ -8,9 +8,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "workspaceId and agentKey are required." }, { status: 400 });
   }
 
-  const [workspace, agent] = await Promise.all([
+  const [workspace, agent, brandDna] = await Promise.all([
     prisma.workspace.findUnique({ where: { id: workspaceId } }),
     prisma.agent.findUnique({ where: { key: agentKey } }),
+    prisma.brandDNA.findUnique({ where: { workspaceId } }),
   ]);
   if (!workspace) return NextResponse.json({ error: "Workspace not found." }, { status: 404 });
   if (!agent) return NextResponse.json({ error: "Agent not found." }, { status: 404 });
@@ -29,6 +30,22 @@ export async function POST(req: NextRequest) {
     icpNotes: workspace.icpNotes,
     currentChannels: workspace.currentChannels,
     marketingAssets: workspace.marketingAssets,
+    aov: workspace.aov,
+    ltv: workspace.ltv,
+    grossMarginPct: workspace.grossMarginPct,
+    salesCycleDays: workspace.salesCycleDays,
+    salesCapacity: workspace.salesCapacity,
+    cacTarget: workspace.cacTarget,
+    cplTarget: workspace.cplTarget,
+    roasTarget: workspace.roasTarget,
+    revenueTarget: workspace.revenueTarget,
+    conversionTarget: workspace.conversionTarget,
+    retentionTarget: workspace.retentionTarget,
+    northStarKpi: workspace.northStarKpi,
+    guardrails: workspace.guardrails,
+    seasonality: workspace.seasonality,
+    existingStack: workspace.existingStack,
+    maturityStage: workspace.maturityStage,
   };
 
   let extraContext: string | undefined;
@@ -60,7 +77,7 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
-    result = await runAgentLLM(agentKey, agent.name, dna, extraContext);
+    result = await runAgentLLM(agentKey, agent.name, dna, extraContext, brandDna);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Agent run failed." },

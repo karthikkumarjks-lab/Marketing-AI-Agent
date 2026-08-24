@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StatusPill from "./status-pill";
 
+const TIER_LABELS: Record<string, string> = {
+  mandatory: "Mandatory",
+  conditional: "Conditional",
+  idle: "Idle",
+};
+const TIER_STYLES: Record<string, string> = {
+  mandatory: "bg-accent-soft text-accent-ink",
+  conditional: "bg-line text-ink-soft",
+  idle: "bg-line text-ink-faint",
+};
+
 interface Props {
   workspaceId: string;
   agentId: string;
@@ -13,6 +24,8 @@ interface Props {
   recommendedStatus: "active" | "idle";
   overriddenStatus: string | null;
   reason: string;
+  tier: string;
+  reactivationTrigger: string | null;
   isWired: boolean;
 }
 
@@ -24,6 +37,8 @@ export default function NeedsRow({
   recommendedStatus,
   overriddenStatus,
   reason,
+  tier,
+  reactivationTrigger,
   isWired,
 }: Props) {
   const router = useRouter();
@@ -51,12 +66,22 @@ export default function NeedsRow({
         {!isWired && <div className="text-[11px] text-ink-faint mt-0.5">Coming online</div>}
       </td>
       <td className="py-3 px-4">
-        <StatusPill status={effective} />
-        {overriddenStatus && overriddenStatus !== recommendedStatus && (
-          <span className="text-[11px] text-warn ml-1.5">manual</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <StatusPill status={effective} />
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${TIER_STYLES[tier] ?? TIER_STYLES.idle}`}>
+            {TIER_LABELS[tier] ?? "Idle"}
+          </span>
+          {overriddenStatus && overriddenStatus !== recommendedStatus && (
+            <span className="text-[11px] text-warn">manual</span>
+          )}
+        </div>
+      </td>
+      <td className="py-3 px-4 text-sm text-ink-soft max-w-md">
+        <div>{reason}</div>
+        {effective === "idle" && reactivationTrigger && (
+          <div className="text-[11px] text-ink-faint mt-1">↳ {reactivationTrigger}</div>
         )}
       </td>
-      <td className="py-3 px-4 text-sm text-ink-soft max-w-md">{reason}</td>
       <td className="py-3 px-4 text-right">
         <div className="inline-flex gap-1">
           {effective !== "active" && (

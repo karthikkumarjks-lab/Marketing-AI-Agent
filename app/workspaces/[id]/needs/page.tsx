@@ -24,6 +24,8 @@ export default async function NeedsAnalyzerPage({ params }: PageProps<"/workspac
   }
 
   const activeCount = needs.filter((n) => (n.overriddenStatus ?? n.recommendedStatus) === "active").length;
+  const mandatoryCount = needs.filter((n) => n.tier === "mandatory").length;
+  const conditionalCount = needs.filter((n) => n.tier === "conditional").length;
 
   return (
     <main className="max-w-5xl mx-auto px-8 py-10">
@@ -31,8 +33,8 @@ export default async function NeedsAnalyzerPage({ params }: PageProps<"/workspac
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Needs Analyzer</div>
         <h1 className="text-2xl font-semibold text-ink">Which agents matter for {workspace.name}?</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl">
-          {activeCount} of {needs.length} agents are recommended active based on the Company DNA.
-          Override any call — the reasoning stays visible either way.
+          {activeCount} of {needs.length} agents are recommended active — {mandatoryCount} mandatory (always needed for this objective),{" "}
+          {conditionalCount} conditional (active because a specific fact triggered them). Override any call — the reasoning stays visible either way.
         </p>
       </div>
 
@@ -63,6 +65,8 @@ export default async function NeedsAnalyzerPage({ params }: PageProps<"/workspac
                       recommendedStatus={n.recommendedStatus as "active" | "idle"}
                       overriddenStatus={n.overriddenStatus}
                       reason={n.reason}
+                      tier={n.tier}
+                      reactivationTrigger={n.reactivationTrigger}
                       isWired={n.agent.isWired}
                     />
                   ))}

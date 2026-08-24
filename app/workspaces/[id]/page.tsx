@@ -2,10 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/currency";
+import DnaSettings from "@/components/dna-settings";
 
 export default async function WorkspaceOverviewPage({ params }: PageProps<"/workspaces/[id]">) {
   const { id } = await params;
-  const workspace = await prisma.workspace.findUnique({ where: { id } });
+  const [workspace, brandDna] = await Promise.all([
+    prisma.workspace.findUnique({ where: { id } }),
+    prisma.brandDNA.findUnique({ where: { workspaceId: id } }),
+  ]);
   if (!workspace) notFound();
 
   const [activeCount, totalAgents, runCount] = await Promise.all([
@@ -44,6 +48,42 @@ export default async function WorkspaceOverviewPage({ params }: PageProps<"/work
           </div>
         ))}
       </div>
+
+      <DnaSettings
+        workspaceId={id}
+        companyDna={{
+          aov: workspace.aov,
+          ltv: workspace.ltv,
+          grossMarginPct: workspace.grossMarginPct,
+          salesCycleDays: workspace.salesCycleDays,
+          salesCapacity: workspace.salesCapacity,
+          cacTarget: workspace.cacTarget,
+          cplTarget: workspace.cplTarget,
+          roasTarget: workspace.roasTarget,
+          revenueTarget: workspace.revenueTarget,
+          conversionTarget: workspace.conversionTarget,
+          retentionTarget: workspace.retentionTarget,
+          northStarKpi: workspace.northStarKpi,
+          guardrails: workspace.guardrails,
+          seasonality: workspace.seasonality,
+          existingStack: workspace.existingStack,
+          maturityStage: workspace.maturityStage,
+        }}
+        brandDna={{
+          primaryColor: brandDna?.primaryColor ?? null,
+          secondaryColor: brandDna?.secondaryColor ?? null,
+          accentColor: brandDna?.accentColor ?? null,
+          typography: brandDna?.typography ?? null,
+          visualStyle: brandDna?.visualStyle ?? null,
+          brandPersonality: brandDna?.brandPersonality ?? null,
+          toneOfVoice: brandDna?.toneOfVoice ?? null,
+          positioning: brandDna?.positioning ?? null,
+          approvedClaims: brandDna?.approvedClaims ?? null,
+          restrictedClaims: brandDna?.restrictedClaims ?? null,
+          dos: brandDna?.dos ?? null,
+          donts: brandDna?.donts ?? null,
+        }}
+      />
 
       <div className="flex gap-3">
         <Link

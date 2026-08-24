@@ -6,11 +6,32 @@
 import { formatMoney, paidViableThreshold } from "./currency";
 
 export type RecommendedStatus = "active" | "idle";
+export type NeedTier = "mandatory" | "conditional" | "idle";
 
 export interface NeedRecommendation {
   agentKey: string;
   status: RecommendedStatus;
+  tier: NeedTier;
   reason: string;
+  /** The specific DNA facts behind this call — currently one entry (the reason itself), formalized as a list per the Needs Analyzer upgrade rather than left as bare prose. */
+  evidence: string[];
+  /** What DNA change would flip an idle agent to active. Undefined for active agents. */
+  reactivationTrigger?: string;
+}
+
+// Agents that are always active regardless of DNA specifics — the strategic
+// core every engagement needs, as opposed to "conditional" agents that are
+// active only because a specific DNA fact triggered them.
+const MANDATORY_KEYS = new Set(["marketing-strategy", "market-research", "needs-analyzer"]);
+
+// Idle reasons already say things like "revisit once the first customers are
+// acquired" or "hold until Performance Marketing confirms spend readiness" —
+// extract that clause as a structured reactivation trigger instead of making
+// the UI re-parse prose.
+function extractReactivationTrigger(reason: string): string {
+  const match = reason.match(/(?:revisit|activate|hold until|once)\s+(.+)$/i);
+  if (match) return match[0].replace(/^./, (c) => c.toUpperCase());
+  return "Revisit when the Company DNA changes materially — new budget, website, channels, or objective.";
 }
 
 export interface WorkspaceDNA {
@@ -212,6 +233,14 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
 
   return agentKeys.map((key) => {
     const rule = rules[key] ?? { status: "idle" as RecommendedStatus, reason: "Not relevant to the current objective and stage." };
-    return { agentKey: key, status: rule.status, reason: rule.reason };
+    const tier: NeedTier = rule.status === "idle" ? "idle" : MANDATORY_KEYS.has(key) ? "mandatory" : "conditional";
+    return {
+      agentKey: key,
+      status: rule.status,
+      tier,
+      reason: rule.reason,
+      evidence: [rule.reason],
+      reactivationTrigger: rule.status === "idle" ? extractReactivationTrigger(rule.reason) : undefined,
+    };
   });
 }

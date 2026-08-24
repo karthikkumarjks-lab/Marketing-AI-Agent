@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
       workspaceId: workspace.id,
       agentId: keyToId.get(r.agentKey)!,
       recommendedStatus: r.status,
+      tier: r.tier,
       reason: r.reason,
+      evidence: JSON.stringify(r.evidence),
+      reactivationTrigger: r.reactivationTrigger ?? null,
     })),
   });
 

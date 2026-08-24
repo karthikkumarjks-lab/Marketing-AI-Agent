@@ -22,11 +22,53 @@ model Workspace {
   icpNotes          String?
   currentChannels   String?
   marketingAssets   String?
+
+  // Company DNA — economics, targets, and guardrails. All optional: agents
+  // are instructed to state an assumption when a field is blank rather than
+  // silently defaulting (e.g. never assume CAC is the target metric).
+  aov               Int?     // average order/contract value, in workspace currency
+  ltv               Int?     // customer lifetime value, in workspace currency
+  grossMarginPct    Int?     // 0-100
+  salesCycleDays    Int?
+  salesCapacity     String?  // free text, e.g. "1 owner, no dedicated sales team"
+  cacTarget         Int?
+  cplTarget         Int?
+  roasTarget        Float?
+  revenueTarget     Int?
+  conversionTarget  String?  // free text — often a % or count with a timeframe
+  retentionTarget   String?
+  northStarKpi      String?  // what the whole team is actually optimizing for
+  guardrails        String?  // free text hard limits, e.g. "never exceed CAC of X"
+  seasonality       String?
+  existingStack     String?  // CRM/tools already in use
+  maturityStage     String?  // e.g. "pre-launch", "early traction", "scaling"
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   agentRuns         AgentRun[]
   needsAnalyses     NeedsAnalysis[]
+  brandDna          BrandDNA?
+}
+
+model BrandDNA {
+  id               String   @id @default(cuid())
+  workspaceId      String   @unique
+  primaryColor     String?
+  secondaryColor   String?
+  accentColor      String?
+  typography       String?
+  visualStyle      String?
+  brandPersonality String?
+  toneOfVoice      String?
+  positioning      String?
+  approvedClaims   String?
+  restrictedClaims String?
+  dos              String?
+  donts            String?
+  updatedAt        DateTime @updatedAt
+
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model Agent {
@@ -74,7 +116,10 @@ model NeedsAnalysis {
   workspaceId         String
   agentId             String
   recommendedStatus   String // "active" | "idle"
+  tier                String   @default("idle") // "mandatory" | "conditional" | "idle"
   reason              String
+  evidence            String?  // JSON-encoded string[] — the specific DNA facts behind the call
+  reactivationTrigger String?  // what DNA change would flip this from idle to active
   overriddenStatus    String? // manual override, if any
   createdAt           DateTime @default(now())
 
