@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Workspace {
+  id                String   @id @default(cuid())
+  name              String
+  industry          String?
+  objective         String?
+  monthlyBudgetInr  Int?
+  websiteUrl        String?
+  icpNotes          String?
+  currentChannels   String?
+  marketingAssets   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  agentRuns         AgentRun[]
+  needsAnalyses     NeedsAnalysis[]
+}
+
+model Agent {
+  id              String  @id @default(cuid())
+  key             String  @unique
+  name            String
+  category        String
+  mission         String
+  inputsSpec      String // JSON-encoded string[]
+  outputsSpec     String // JSON-encoded string[]
+  triggerNotes    String?
+  isWired         Boolean @default(false)
+  sortOrder       Int     @default(0)
+
+  agentRuns       AgentRun[]
+  needsAnalyses   NeedsAnalysis[]
+}
+
+enum OutcomeStatus {
+  pending
+  matched
+  missed
+}
+
+model AgentRun {
+  id               String        @id @default(cuid())
+  workspaceId      String
+  agentId          String
+  status           String        @default("completed")
+  inputContext     String // JSON-encoded snapshot of the Company DNA used
+  outputMarkdown   String
+  predictedOutcome String?
+  actualOutcome    String?
+  outcomeStatus    OutcomeStatus @default(pending)
+  isDemo           Boolean       @default(false)
+  model            String?
+  createdAt        DateTime      @default(now())
+
+  workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agent            Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+}
+
+model NeedsAnalysis {
+  id                  String   @id @default(cuid())
+  workspaceId         String
+  agentId             String
+  recommendedStatus   String // "active" | "idle"
+  reason              String
+  overriddenStatus    String? // manual override, if any
+  createdAt           DateTime @default(now())
+
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  agent                Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, agentId])
+}

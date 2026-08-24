@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marketing AI Team
 
-## Getting Started
+A dashboard where a marketer or agency operator manages multiple clients ("Workspaces") and
+runs a team of 25 specialist AI marketing agents against each one — one shared runtime, not
+25 separate tools.
 
-First, run the development server:
+## What's here
+
+- **Workspaces** — one per client, holding their Company DNA (industry, objective, budget in ₹,
+  website, ICP notes, channels, assets).
+- **Needs Analyzer** — rule-based logic that recommends which of the 25 agents should be
+  active vs. idle for a given client, with a client-specific reason for each call. Every call
+  can be manually overridden.
+- **Agent Hub** — all 25 agents, grouped into 5 categories, visible whether or not they're
+  wired to real execution yet.
+- **6 agents fully wired** to real reasoning (Marketing Strategy, Market Research, Customer/ICP
+  Intelligence, Needs Analyzer, SEO Strategy, Performance Marketing Strategy) — the other 19
+  show their spec and a "Coming online" badge.
+- **Evaluation log** — every agent run stores a predicted outcome; you can later record the
+  actual outcome (Matched / Missed). This log is the point of the whole system, not an
+  afterthought — see `lib/agent-catalog.ts`'s `marketing-score` agent.
+
+## Running it locally
 
 ```bash
+npm install
+npm run seed   # seeds all 25 agents into the local SQLite database
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Making agents actually think
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Without an API key, every wired agent returns a clearly labeled demo/mock output so you can see
+the UI and flow work end to end. To get real reasoning:
 
-## Learn More
+1. Copy `.env.local.example` to `.env.local`.
+2. Get a key at https://openrouter.ai/keys (has free-tier models).
+3. Set `OPENROUTER_API_KEY=your-key` in `.env.local`.
+4. Restart `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` is gitignored — it never gets committed or pushed.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data storage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Uses a local SQLite file (`dev.db`, via Prisma) — zero external accounts needed to get started.
+**This file is gitignored and lives only on this machine.** The code, schema, and agent logic
+are backed up to GitHub (see below); the workspaces and run history you create locally are not,
+unless you back up `dev.db` yourself. If/when this needs to be used from more than one machine
+or by more than one person, swap the Prisma datasource to a hosted Postgres (e.g. Supabase's
+free tier) — the schema in `prisma/schema.prisma` carries over directly.
 
-## Deploy on Vercel
+## Project structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+lib/agent-catalog.ts      # the 25-agent spec: name, category, mission, inputs/outputs, wired?
+lib/agent-prompts.ts      # system prompts for the 6 wired agents + the OpenRouter call
+lib/needs-rules.ts        # rule-based Needs Analyzer logic
+lib/prisma.ts             # Prisma client (SQLite via better-sqlite3 driver adapter)
+prisma/schema.prisma      # Workspace, Agent, AgentRun, NeedsAnalysis models
+app/workspaces/           # all the UI screens
+app/api/                  # workspace creation, needs overrides, agent runs, outcome scoring
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Adding the next batch of agents
+
+Only 6 of 25 are wired. To wire another:
+
+1. Set `wired: true` on it in `lib/agent-catalog.ts`, then `npm run seed`.
+2. Add a system prompt for its key in `SYSTEM_PROMPTS` in `lib/agent-prompts.ts`.
+
+That's the whole contract — the run page, run history, and evaluation log all work
+automatically once an agent has a system prompt.

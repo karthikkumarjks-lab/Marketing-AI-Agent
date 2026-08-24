@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f5f3;
+  --surface: #ffffff;
+  --ink: #14181c;
+  --ink-soft: #545c57;
+  --ink-faint: #8a9089;
+  --accent: #1f6f5c;
+  --accent-ink: #0f3f33;
+  --accent-soft: #dceae4;
+  --warn: #a64a17;
+  --warn-soft: #f3e3d6;
+  --danger: #a6331f;
+  --danger-soft: #f4ddd7;
+  --line: #dde1dc;
+  --line-strong: #c3cac4;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+}
+
+.prose-agent h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+}
+.prose-agent h2:first-child {
+  margin-top: 0;
+}
+.prose-agent p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.prose-agent ul,
+.prose-agent ol {
+  margin-bottom: 0.75rem;
+  padding-left: 1.25rem;
+}
+.prose-agent li {
+  margin-bottom: 0.35rem;
+  color: var(--ink-soft);
+}
+.prose-agent strong {
+  color: var(--ink);
+}
+.prose-agent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+.prose-agent th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.prose-agent td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.prose-agent blockquote {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
 }
