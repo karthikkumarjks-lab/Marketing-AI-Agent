@@ -112,5 +112,65 @@ in that document is correct; this table exists mainly as the durable, code-adjac
 | 11. Automated tests / eval scenarios | ❌ Not started |
 | 12. Acceptance test (Section 44 scenario) | ❌ Not started |
 
+## North Star — the 110-capability functional catalog (added 2026-08-25)
+
+Karthikeyan supplied a much larger functional catalog (~110 named capabilities across 14
+layers: Front Office, Executive/BI, Market & Customer Intelligence, Acquisition, Paid
+Acquisition, Content & Creative, Website/CRO, CRM & Customer Data, Sales & Revenue,
+Email & Omnichannel, Lifecycle & Retention, Marketing Operations, Analytics/Attribution/
+Learning, and Freelancer/Agency Growth), with an explicit and important architectural rule
+attached to it, quoted here because it should govern every future build decision:
+
+> These 110 capabilities are a functional catalog, not 110 always-running agents. The system
+> must dynamically assemble a temporary expert team based on the client's objective, current
+> state, available tools, data, dependencies, budget and business opportunity. No capability
+> should run merely because it exists. Every activation requires a trigger, objective, reason,
+> required inputs and expected output. The agent team must continuously re-evaluate itself.
+> Once a task is completed, the relevant agent moves to Monitoring or Idle unless a new trigger
+> occurs.
+
+And separately, in Karthikeyan's own words, not the pasted spec: **"it should act as human
+brain and the top most expert in each field"** — i.e. quality of reasoning per active
+capability matters more than headcount. This is the same principle Section 42/43 of the
+earlier master instruction already established (expert operating system, not a longer
+prompt) — this new message reinforces it at a much larger catalog scale and should be read
+as confirmation, not a new requirement to relitigate.
+
+**Do not flatten this into 65 more `AGENT_CATALOG` rows.** The correct structure, matching
+what Karthikeyan asked for, is ~15-20 department "runtimes" with specialist capabilities as
+facets underneath, plus a horizontal cross-functional layer (Needs Analyzer, Orchestrator,
+Objective/KPI, Opportunity, Budget, Tracking, Omnichannel, Lifecycle, Analytics/Attribution,
+Experimentation, AI Evaluation) that connects the departments.
+
+**Coverage check — what already exists vs. what's net-new**, so the next session doesn't
+rebuild things that already have a direct counterpart:
+
+| 110-catalog layer | Direct counterpart already in `lib/agent-catalog.ts` |
+|---|---|
+| Layer 0 (Front Office) | Needs Analyzer, Orchestrator exist. Receptionist/Concierge and formal Client Onboarding do not — currently the intake *form* plays this role, not an agent. |
+| Layer 1 (Executive/BI) | Marketing Strategy, Budget & Investment exist. Objective/KPI is modeled as Company DNA fields (North Star KPI, targets), not a standalone agent. Business Intelligence, Offer/Positioning, Product/GTM, Growth Opportunity (~= Marketing Opportunity), Forecasting do not exist as agents. |
+| Layer 2 (Market/Customer Intel) | Market Research, Customer/ICP Intelligence, Competitive Intelligence exist. Journey Intelligence, Search/Intent Intelligence, Competitor SEO/Ad Intelligence (as split-out specialists) do not. |
+| Layer 3 (SEO) | SEO Strategy, Technical SEO, Local & Marketplace SEO exist. **SEO Blog Intelligence & Publishing does not — built this session, see below.** SEO Content Strategy ~= existing Content Strategy Agent. |
+| Layer 4 (Paid) | Performance Marketing Strategy, Google Ads, Meta Ads, LinkedIn Ads, TikTok Ads exist. YouTube Ads, standalone Retargeting, standalone Paid Audience Intelligence, cross-channel Paid Media Optimization do not. |
+| Layer 5 (Content/Creative) | Content Strategy, Content Creation, Content Repurposing, Brand & Creative Strategy, Design, Video Marketing, PR & Influencer Marketing exist. Standalone Brand Identity & Logo, Creative Director, Creative QA, Social Media do not. |
+| Layer 6 (Website/CRO) | Website Builder, Landing Page, CRO exist. Funnel Intelligence, Web Personalization, standalone Conversion Experiment do not (Marketing Analytics partially covers experimentation). |
+| Layer 7 (CRM) | CRM & Customer Data, Lead Routing & SLA, Lead Data Quality & Identity, Audience & Suppression exist. Lead Enrichment, Lead Scoring (distinct from Lead Behaviour), Next Best Action (~= Omnichannel & Next-Best-Channel, already built) do not exist separately. |
+| Layer 8 (Sales/Revenue) | Sales Intelligence, Revenue & Pipeline Intelligence, ABM exist. Sales Follow-up, Appointment Intelligence, Revenue Attribution (distinct from Analytics), Sales Forecasting do not. |
+| Layer 9 (Email/Omnichannel) | Email Marketing, Email Compliance & Deliverability, WhatsApp & SMS Marketing, Conversational AI & Appointment, Omnichannel & Next-Best-Channel exist. RCS, standalone Voicebot, standalone Push/In-App do not. |
+| Layer 10 (Lifecycle/Retention) | Lifecycle & Nurture Strategy, Referral & Loyalty exist. Retention Intelligence, Churn Prediction, standalone Upsell/Cross-sell, Customer Experience & Reputation do not. |
+| Layer 11 (Ops/Automation) | Marketing Tracking & Integration, Audience & Suppression, Marketing Automation & Workflow exist. Event/Conversion Mapping, UTM & Campaign Taxonomy, and real third-party Integration Management (actual connectors) do not. |
+| Layer 12 (Analytics/Learning) | Marketing Analytics & Experimentation, Marketing Score & AI Evaluation exist. Standalone Attribution, Incrementality, Cohort/Funnel Intelligence, and a formal AI Learning/Marketing Memory agent do not. |
+| Layer 13 (Freelancer/Agency) | Nothing exists yet — Prospect Discovery, Prospect Digital Audit, Opportunity Scoring, Proposal/90-Day Plan, White-label Reporting are all net-new. |
+
+**Read this table before adding more agents** — most "new" requests will already have a home;
+genuinely net-new territory is Layer 0's Concierge/Onboarding, Layer 13 (freelancer/agency
+mode), formal Attribution/Incrementality, and real third-party CRM/ad-platform connectors.
+
+**Built this session in direct response to this message**: `seo-blog-intelligence` — the one
+capability Karthikeyan specifically named twice as important. Given the full Agent Contract
+treatment (expert role, decision framework, dependencies, test cases) as the reference example
+of "top-most expert in each field," not a shallow addition — see `lib/agent-contract.ts` and
+`lib/agent-prompts.ts`.
+
 Recommended next session: pick ONE of Orchestrator (7), Cross-agent messaging (8), or the
 Section-44 acceptance test (12) as the next focused piece — not all three at once.

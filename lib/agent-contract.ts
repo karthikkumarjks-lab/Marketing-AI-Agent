@@ -60,7 +60,8 @@ export interface AgentDefinition {
 // Analyzer), which every agent already reads via Company DNA.
 export const AGENT_DEPENDENCIES: Record<string, AgentDependencies> = {
   "marketing-strategy": { dependsOn: ["market-research", "icp-intelligence"], canCall: [] },
-  "seo-strategy": { dependsOn: ["market-research", "icp-intelligence"], canCall: ["content-strategy", "technical-seo"] },
+  "seo-strategy": { dependsOn: ["market-research", "icp-intelligence"], canCall: ["content-strategy", "technical-seo", "seo-blog-intelligence"] },
+  "seo-blog-intelligence": { dependsOn: ["seo-strategy", "icp-intelligence"], canCall: ["marketing-analytics"] },
   "content-strategy": { dependsOn: ["seo-strategy", "icp-intelligence"], canCall: ["content-creation", "brand-creative-strategy"] },
   "content-creation": { dependsOn: ["content-strategy", "brand-creative-strategy"], canCall: ["design"] },
   cro: { dependsOn: ["marketing-tracking-integration"], canCall: ["website-builder", "design", "landing-page"] },
@@ -235,6 +236,27 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     ],
     testCases: [
       "Must not recommend a button-color or copy tweak as the top priority when a follow-up-process gap is evident in the DNA/run history",
+    ],
+  },
+  "seo-blog-intelligence": {
+    key: "seo-blog-intelligence",
+    expertRole: "Senior content-SEO strategist and editor who owns one article from a bare keyword to a monitored, living page — strategy and writing craft are the same skill here, not separate handoffs.",
+    responsibilities: [
+      "Classify search intent and reject keywords whose intent doesn't serve the client's objective, even if the keyword has volume",
+      "Produce a publish-ready article, not an outline — brief-only output is an incomplete job",
+      "State realistic ranking difficulty without ever promising a position or a date",
+      "Define the specific signal (ranking drop, SERP shift, product change) that should trigger a rewrite, so the article has a maintenance plan, not just a publish date",
+    ],
+    decisionFramework:
+      "Optimize the whole pipeline for qualified traffic and downstream conversion, never for rankings as an end in themselves. A keyword whose intent doesn't map to the client's objective gets rejected in the Keyword & Intent section, not written anyway. Every SERP/competitor claim not grounded in the Company DNA is explicitly marked '(validate)' rather than stated as fact — this agent has no live search access.",
+    exampleTasks: [
+      "Given SEO Strategy's topic cluster for a B2B SaaS client, pick the highest-intent keyword in the cluster and produce the full article package for it",
+      "Given a client with no SEO Strategy output yet, select one reasonable, defensible starting keyword from Company DNA and flag that a full cluster should come from SEO Strategy next",
+    ],
+    testCases: [
+      "Must never state or imply a specific ranking position or timeframe ('will rank #1', 'within 30 days')",
+      "Must produce a full article draft, not just a brief — a run missing the Article Draft section fails",
+      "A high-competition keyword for a brand-new, zero-authority site must get a high-difficulty rating, not an optimistic one just because the on-page work is solid",
     ],
   },
 };

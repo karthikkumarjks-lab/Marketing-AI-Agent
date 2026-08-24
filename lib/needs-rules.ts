@@ -176,6 +176,11 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "local-marketplace-seo": website
       ? { status: "active", reason: "A website exists — worth checking Google Business Profile/Maps and relevant marketplace listings alongside it." }
       : { status: "idle", reason: "No web presence yet to extend into local/marketplace listings." },
+    "seo-blog-intelligence": website && !organicObjective && paidActive
+      ? { status: "idle", reason: "Paid-led objective for now — organic content compounds slower; revisit once SEO Strategy sets topic clusters." }
+      : website
+        ? { status: "active", reason: "A website exists and organic growth matters here — the blog pipeline can start producing qualified-traffic content." }
+        : { status: "idle", reason: "No website yet — nothing to publish a blog on until Website Builder runs." },
     "pr-influencer": {
       status: "idle",
       reason: "Typically a second-wave awareness channel — activate once core acquisition (SEO/paid) is validated and budget allows.",

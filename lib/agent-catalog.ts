@@ -263,6 +263,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     sortOrder: 132,
   },
   {
+    key: "seo-blog-intelligence",
+    name: "SEO Blog Intelligence & Publishing Agent",
+    category: "Acquisition",
+    mission: "Owns the full blog pipeline end to end — keyword, intent, SERP, competition, brief, article, on-page SEO, internal links, publish, monitor, update — optimizing for qualified traffic and conversion, never promising rankings.",
+    inputs: ["SEO Strategy topic clusters", "Website URL", "Brand DNA", "Country/region"],
+    outputs: ["SERP/competition analysis", "Content brief", "Full article draft", "On-page SEO checklist", "Internal linking plan", "Update/refresh triggers"],
+    wired: true,
+    sortOrder: 133,
+  },
+  {
     key: "pr-influencer",
     name: "PR & Influencer Marketing Agent",
     category: "Acquisition",
@@ -270,7 +280,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     inputs: ["Brand positioning", "Objective", "Budget & currency"],
     outputs: ["PR angle & story ideas", "Influencer/creator tier strategy", "Outreach plan"],
     wired: true,
-    sortOrder: 133,
+    sortOrder: 134,
   },
   // Content & Creative
   {
