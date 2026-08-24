@@ -29,7 +29,7 @@ export default async function ScorecardPage({ params }: PageProps<"/workspaces/[
         <h1 className="text-2xl font-semibold text-ink">{workspace.name} — evaluation log</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl">
           Every run is logged with a predicted outcome. Closing the loop with the actual outcome on the
-          agent's run page is what makes this number mean something over time.
+          agent&apos;s run page is what makes this number mean something over time.
         </p>
       </div>
 
