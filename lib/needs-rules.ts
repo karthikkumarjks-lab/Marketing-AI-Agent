@@ -178,6 +178,36 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "lead-data-quality": hasChannels
       ? { status: "active", reason: "Multiple channels can create duplicate or messy records — worth setting rules before volume grows." }
       : { status: "idle", reason: "No lead flow yet to protect the accuracy of." },
+    "sales-intelligence": hasChannels
+      ? { status: "active", reason: "Leads are flowing — worth checking whether the bottleneck is generation or follow-up." }
+      : { status: "idle", reason: "No lead flow yet to diagnose a sales bottleneck from." },
+    "revenue-pipeline": budget > 0 || hasChannels
+      ? { status: "active", reason: "Spend or lead flow exists — pipeline and CAC framing should start now, not after the fact." }
+      : { status: "idle", reason: "Nothing to build a revenue/pipeline framework around yet." },
+    abm: mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
+      ? { status: "idle", reason: "B2B signal noted, but ABM is a second-wave motion — activate once core acquisition and ICP are validated." }
+      : { status: "idle", reason: "No B2B/account-based signal in industry or objective." },
+    "email-deliverability": website || hasChannels
+      ? { status: "active", reason: "Email Marketing is active or likely to be — deliverability foundations should be set up alongside it, not after." }
+      : { status: "idle", reason: "No funnel or channel presence yet to send email against." },
+    "omnichannel-orchestration": hasChannels
+      ? { status: "active", reason: "More than one channel is in play — worth deciding the escalation order rather than leaving it ad hoc." }
+      : { status: "idle", reason: "Only one or no channels yet — nothing to sequence across." },
+    "conversational-ai-appointment": mentions(dna.objective, MESSAGING_WORDS) || mentions(dna.industry, ["clinic", "salon", "consult", "consulting", "studio"])
+      ? { status: "active", reason: "Objective or industry points to booking/consultation-driven conversion — a qualification and booking flow is worth designing now." }
+      : { status: "idle", reason: "No signal this business converts through booking or a qualifying conversation." },
+    "lifecycle-nurture": website || hasChannels
+      ? { status: "active", reason: "There's a funnel to move people through — the lifecycle stages should be defined before individual channels improvise them." }
+      : { status: "idle", reason: "No funnel or channel presence yet to build a lifecycle map around." },
+    "marketing-tracking-integration": paidActive || website
+      ? { status: "active", reason: "Paid spend or a website is in play — tracking gaps here silently waste budget and skew every other agent's numbers." }
+      : { status: "idle", reason: "No paid spend or website yet to instrument." },
+    "audience-suppression": paidActive
+      ? { status: "active", reason: "Paid campaigns are likely — suppression rules prevent wasting spend on people who already converted." }
+      : { status: "idle", reason: "No paid campaigns yet to build audience/suppression rules around." },
+    "marketing-automation-workflow": hasChannels
+      ? { status: "active", reason: "Leads are already coming in through channels — worth designing the hand-off logic before volume makes ad hoc handling unmanageable." }
+      : { status: "idle", reason: "No lead flow yet to automate." },
   };
 
   return agentKeys.map((key) => {
