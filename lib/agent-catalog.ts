@@ -71,7 +71,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Analyzes competitors across website, SEO, ads, content, pricing, and positioning to find exploitable gaps.",
     inputs: ["Competitor URLs / names", "Industry", "Objective"],
     outputs: ["Competitor teardown", "Positioning gaps", "Where we're losing and why"],
-    wired: false,
+    wired: true,
     sortOrder: 4,
   },
   {
@@ -91,7 +91,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Sequences active agents, resolves dependencies and conflicts, and coordinates hand-offs between them.",
     inputs: ["Active agent set", "Agent outputs so far"],
     outputs: ["Execution sequence", "Dependency graph", "Hand-off notes"],
-    wired: false,
+    wired: true,
     sortOrder: 6,
   },
   {
@@ -101,7 +101,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Continuously scans for what's missing — no CRM, no tracking, weak SEO, poor follow-up — and ranks the highest-impact gaps.",
     inputs: ["Current channels", "Marketing assets", "Agent run history"],
     outputs: ["Ranked opportunity list", "Effort/impact estimate per gap"],
-    wired: false,
+    wired: true,
     sortOrder: 7,
   },
   {
@@ -111,7 +111,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Decides how total marketing budget should split across brand, digital, content, tech, and experiments — before Performance Marketing allocates the digital slice.",
     inputs: ["Total monthly budget (INR)", "Objective", "Strategy output"],
     outputs: ["Top-level budget split", "Rationale per bucket"],
-    wired: false,
+    wired: true,
     sortOrder: 8,
   },
   // Acquisition
@@ -132,7 +132,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Audits crawlability, indexation, schema, internal linking, and Core Web Vitals.",
     inputs: ["Website URL"],
     outputs: ["Technical issue list", "Fix priority order"],
-    wired: false,
+    wired: true,
     sortOrder: 10,
   },
   {
@@ -152,7 +152,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Keyword research, campaign structure, bidding, and Quality Score optimization for search campaigns.",
     inputs: ["Approved paid budget", "Keyword priorities", "Landing page status"],
     outputs: ["Campaign structure", "Match type & negative keyword plan", "Bid strategy"],
-    wired: false,
+    wired: true,
     sortOrder: 12,
   },
   {
@@ -162,7 +162,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Audience strategy, funnel design, and creative strategy for Meta campaigns.",
     inputs: ["Approved paid budget", "ICP/personas", "Creative assets"],
     outputs: ["Audience strategy", "Funnel structure", "Creative brief"],
-    wired: false,
+    wired: true,
     sortOrder: 13,
   },
   // Content & Creative
@@ -173,7 +173,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Decides what content to create, for whom, at which funnel stage, and in what format.",
     inputs: ["ICP/personas", "SEO topic clusters", "Objective"],
     outputs: ["Content pillars", "Editorial calendar shape", "Format & channel map"],
-    wired: false,
+    wired: true,
     sortOrder: 14,
   },
   {
@@ -183,7 +183,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Writes blog, landing page, ad, and email copy from strategy, ICP, SEO, and brand inputs.",
     inputs: ["Content strategy", "Brand voice", "SEO targets"],
     outputs: ["Draft copy by asset type"],
-    wired: false,
+    wired: true,
     sortOrder: 15,
   },
   {
@@ -193,7 +193,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Converts one core content asset into LinkedIn, Instagram, email, and short-form variants.",
     inputs: ["Source asset", "Target channels"],
     outputs: ["Per-channel repurposed variants"],
-    wired: false,
+    wired: true,
     sortOrder: 16,
   },
   {
@@ -203,7 +203,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Defines positioning, brand personality, messaging, and creative direction.",
     inputs: ["Business model", "ICP", "Competitor positioning"],
     outputs: ["Brand voice guide", "Positioning statement", "Creative direction notes"],
-    wired: false,
+    wired: true,
     sortOrder: 17,
   },
   {
@@ -213,7 +213,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Produces ad, social, landing page, and email creative briefs that follow Brand DNA.",
     inputs: ["Brand guide", "Campaign brief"],
     outputs: ["Creative asset briefs"],
-    wired: false,
+    wired: true,
     sortOrder: 18,
   },
   {
@@ -223,7 +223,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Develops video concepts, hooks, and scripts for reels, shorts, and YouTube.",
     inputs: ["Content strategy", "Brand voice", "Target channel"],
     outputs: ["Video concepts & scripts"],
-    wired: false,
+    wired: true,
     sortOrder: 19,
   },
   // Digital Experience
@@ -234,7 +234,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Plans website architecture, UX, and page structure when no site or a weak site exists.",
     inputs: ["Business model", "ICP", "SEO structure"],
     outputs: ["Site map", "Page-by-page content brief"],
-    wired: false,
+    wired: true,
     sortOrder: 20,
   },
   {
@@ -244,7 +244,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Builds campaign- and SEO-specific landing pages optimized for conversion.",
     inputs: ["Campaign objective", "ICP", "Offer"],
     outputs: ["Landing page brief & copy structure"],
-    wired: false,
+    wired: true,
     sortOrder: 21,
   },
   {
@@ -254,7 +254,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Diagnoses funnel leakage — visitor to lead to sale — and recommends conversion fixes.",
     inputs: ["Funnel data", "Website URL", "Current conversion rate"],
     outputs: ["Funnel leak diagnosis", "Prioritized fix list"],
-    wired: false,
+    wired: true,
     sortOrder: 22,
   },
   // Intelligence & Measurement
@@ -265,7 +265,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Analyzes individual lead behavior across channels to produce conversion probability and next-best-action.",
     inputs: ["Lead activity data", "CRM stage", "Channel source"],
     outputs: ["Conversion probability", "Primary barrier", "Next-best-action"],
-    wired: false,
+    wired: true,
     sortOrder: 23,
   },
   {
@@ -275,7 +275,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Tracks funnel, channel, and campaign performance, and designs A/B tests with control/treatment and success thresholds.",
     inputs: ["Run history", "Channel spend & results"],
     outputs: ["Performance dashboard summary", "Experiment plan"],
-    wired: false,
+    wired: true,
     sortOrder: 24,
   },
   {
@@ -285,7 +285,7 @@ export const AGENT_CATALOG: AgentSpec[] = [
     mission: "Scores prediction accuracy and business impact across all agents using the predicted-vs-actual outcome log — the system's evaluation loop.",
     inputs: ["All agent_runs with predicted + actual outcomes"],
     outputs: ["Per-agent accuracy score", "Overall marketing health score", "Trend over time"],
-    wired: false,
+    wired: true,
     sortOrder: 25,
   },
 ];

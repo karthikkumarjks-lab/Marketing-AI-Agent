@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { runAgentLLM } from "@/lib/agent-prompts";
+import { runAgentLLM, RUNTIME_CONTEXT_AGENTS, buildRuntimeSnapshot } from "@/lib/agent-prompts";
 
 export async function POST(req: NextRequest) {
   const { workspaceId, agentKey, predictedOutcome } = await req.json();
@@ -29,9 +29,36 @@ export async function POST(req: NextRequest) {
     marketingAssets: workspace.marketingAssets,
   };
 
+  let extraContext: string | undefined;
+  if (RUNTIME_CONTEXT_AGENTS.has(agentKey)) {
+    const [needs, runs] = await Promise.all([
+      prisma.needsAnalysis.findMany({ where: { workspaceId }, include: { agent: true } }),
+      prisma.agentRun.findMany({
+        where: { workspaceId },
+        include: { agent: true },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+      }),
+    ]);
+    extraContext = buildRuntimeSnapshot(
+      needs.map((n) => ({
+        agentName: n.agent.name,
+        status: (n.overriddenStatus ?? n.recommendedStatus) as "active" | "idle",
+        reason: n.reason,
+      })),
+      runs.map((r) => ({
+        agentName: r.agent.name,
+        predictedOutcome: r.predictedOutcome,
+        actualOutcome: r.actualOutcome,
+        outcomeStatus: r.outcomeStatus,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    );
+  }
+
   let result;
   try {
-    result = await runAgentLLM(agentKey, agent.name, dna);
+    result = await runAgentLLM(agentKey, agent.name, dna, extraContext);
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Agent run failed." },
