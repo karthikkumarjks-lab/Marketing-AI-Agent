@@ -35,6 +35,8 @@ const mentions = (s: string | null | undefined, words: string[]) => {
 const ORGANIC_WORDS = ["organic", "seo", "content", "blog", "inbound", "search rank"];
 const PAID_WORDS = ["lead", "appointment", "sale", "revenue", "paid", "ads", "acquisition", "sign-up", "signup", "booking", "enquiry", "inquiry", "customer"];
 const VIDEO_WORDS = ["video", "youtube", "reels", "shorts"];
+const B2B_WORDS = ["b2b", "saas", "enterprise", "software", "agency", "consulting", "b2b saas"];
+const MESSAGING_WORDS = ["whatsapp", "sms", "messaging", "chat", "booking", "appointment"];
 
 export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecommendation[] {
   const website = has(dna.websiteUrl);
@@ -140,6 +142,42 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "idle",
       reason: "Activates once agent runs have predicted and actual outcomes to evaluate.",
     },
+    "linkedin-ads": organicObjective
+      ? { status: "idle", reason: "Objective is organic-led — paid social stays idle." }
+      : mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
+        ? { status: "idle", reason: "B2B-shaped ICP noted — hold until Performance Marketing confirms spend readiness and split." }
+        : { status: "idle", reason: "No B2B signal in industry/objective — LinkedIn's CPCs aren't worth it for this ICP yet." },
+    "tiktok-ads": organicObjective
+      ? { status: "idle", reason: "Objective is organic-led — paid social stays idle." }
+      : mentions(dna.currentChannels, VIDEO_WORDS) || mentions(dna.marketingAssets, VIDEO_WORDS)
+        ? { status: "idle", reason: "Video presence noted — hold until Performance Marketing confirms spend readiness and split." }
+        : { status: "idle", reason: "No short-form video assets or mandate yet — creative needs to exist before this channel does." },
+    "local-marketplace-seo": website
+      ? { status: "active", reason: "A website exists — worth checking Google Business Profile/Maps and relevant marketplace listings alongside it." }
+      : { status: "idle", reason: "No web presence yet to extend into local/marketplace listings." },
+    "pr-influencer": {
+      status: "idle",
+      reason: "Typically a second-wave awareness channel — activate once core acquisition (SEO/paid) is validated and budget allows.",
+    },
+    "email-marketing": website || hasChannels
+      ? { status: "active", reason: "There's a funnel or channel presence to capture and nurture email subscribers from." }
+      : { status: "idle", reason: "No website or channels yet to capture email signups from." },
+    "whatsapp-sms-marketing": mentions(dna.currentChannels, MESSAGING_WORDS) || mentions(dna.objective, MESSAGING_WORDS)
+      ? { status: "active", reason: "Objective or channels point to fast, direct contact — a natural fit for WhatsApp/SMS." }
+      : { status: "idle", reason: "No signal yet that WhatsApp/SMS fits this client's buying process." },
+    "referral-loyalty": {
+      status: "idle",
+      reason: "Needs an existing customer base to refer or retain — revisit once the first customers are acquired.",
+    },
+    "crm-customer-data": hasChannels
+      ? { status: "active", reason: "Channels are already generating contacts — a clean CRM structure prevents mess from compounding." }
+      : { status: "idle", reason: "No channels or lead flow yet to design CRM structure around." },
+    "lead-routing-sla": hasChannels
+      ? { status: "active", reason: "Leads are already coming in — routing and response-time rules matter from the first one." }
+      : { status: "idle", reason: "No lead flow yet to route." },
+    "lead-data-quality": hasChannels
+      ? { status: "active", reason: "Multiple channels can create duplicate or messy records — worth setting rules before volume grows." }
+      : { status: "idle", reason: "No lead flow yet to protect the accuracy of." },
   };
 
   return agentKeys.map((key) => {

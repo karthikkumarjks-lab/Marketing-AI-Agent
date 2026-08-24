@@ -25,7 +25,7 @@ export default async function AgentHubPage({ params }: PageProps<"/workspaces/[i
     <main className="max-w-6xl mx-auto px-8 py-10">
       <div className="mb-8">
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Agent Hub</div>
-        <h1 className="text-2xl font-semibold text-ink">{workspace.name} — 25 agents</h1>
+        <h1 className="text-2xl font-semibold text-ink">{workspace.name} — {agents.length} agents</h1>
         <p className="text-sm text-ink-soft mt-1.5">
           Every agent is visible here, even the ones not wired to real execution yet.
         </p>

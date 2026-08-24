@@ -1,13 +1,15 @@
-// The full 25-agent catalog: presentation + seed metadata.
+// The full agent catalog (25 core + specialist additions): presentation + seed metadata.
 // This is the single source of truth for what agents exist, what category
 // they belong to, and what they're supposed to do. `lib/agent-prompts.ts`
 // only has system prompts for the agents marked `wired: true` here.
 
 export const CATEGORY_ORDER = [
   "Executive & Intelligence",
+  "CRM & Lead Operations",
   "Acquisition",
   "Content & Creative",
   "Digital Experience",
+  "Retention & Lifecycle",
   "Intelligence & Measurement",
 ] as const;
 
@@ -15,9 +17,11 @@ export type CategoryName = (typeof CATEGORY_ORDER)[number];
 
 export const CATEGORY_COLORS: Record<CategoryName, string> = {
   "Executive & Intelligence": "#4C5FD5",
+  "CRM & Lead Operations": "#2A6F97",
   Acquisition: "#1F8A5C",
   "Content & Creative": "#B5541C",
   "Digital Experience": "#0E7C86",
+  "Retention & Lifecycle": "#B5388E",
   "Intelligence & Measurement": "#8A3FA0",
 };
 
@@ -78,9 +82,9 @@ export const AGENT_CATALOG: AgentSpec[] = [
     key: "needs-analyzer",
     name: "Marketing Needs Analyzer",
     category: "Executive & Intelligence",
-    mission: "Decides which of the 25 agents should be active vs. idle for this client right now, and explains why.",
+    mission: "Decides which agents in the catalog should be active vs. idle for this client right now, and explains why.",
     inputs: ["Full Company DNA", "Agent catalog"],
-    outputs: ["Activation plan (all 25 agents)", "First three agents to run", "What would change the verdict"],
+    outputs: ["Activation plan (every agent)", "First three agents to run", "What would change the verdict"],
     wired: true,
     sortOrder: 5,
   },
@@ -113,6 +117,37 @@ export const AGENT_CATALOG: AgentSpec[] = [
     outputs: ["Top-level budget split", "Rationale per bucket"],
     wired: true,
     sortOrder: 8,
+  },
+  // CRM & Lead Operations
+  {
+    key: "crm-customer-data",
+    name: "CRM & Customer Data Agent",
+    category: "CRM & Lead Operations",
+    mission: "Designs the CRM structure a client needs — pipeline stages, lifecycle definitions, fields — advisory only, not a live connection to any CRM yet.",
+    inputs: ["Business model", "Objective", "Sales motion implied by DNA"],
+    outputs: ["Lifecycle stages", "Pipeline structure", "Minimum viable field set"],
+    wired: true,
+    sortOrder: 1,
+  },
+  {
+    key: "lead-routing-sla",
+    name: "Lead Routing & SLA Agent",
+    category: "CRM & Lead Operations",
+    mission: "Designs who a lead should go to and how fast, based on territory, product, language, score, and rep capacity — advisory rule design, not live lead monitoring.",
+    inputs: ["Team size/capacity implied by DNA", "Geography", "Objective"],
+    outputs: ["Routing rules", "Response SLA targets", "Escalation rules"],
+    wired: true,
+    sortOrder: 2,
+  },
+  {
+    key: "lead-data-quality",
+    name: "Lead Data Quality & Identity Agent",
+    category: "CRM & Lead Operations",
+    mission: "Defines deduplication, identity resolution, and validation rules that protect the accuracy of lead counts and CAC math — advisory rule design, not a live duplicate scan.",
+    inputs: ["Current channels", "Business model"],
+    outputs: ["Deduplication rules", "Validation rules", "Data completeness checklist"],
+    wired: true,
+    sortOrder: 3,
   },
   // Acquisition
   {
@@ -164,6 +199,46 @@ export const AGENT_CATALOG: AgentSpec[] = [
     outputs: ["Audience strategy", "Funnel structure", "Creative brief"],
     wired: true,
     sortOrder: 13,
+  },
+  {
+    key: "linkedin-ads",
+    name: "LinkedIn Ads Agent",
+    category: "Acquisition",
+    mission: "Audience, campaign structure, and creative strategy for LinkedIn campaigns, for B2B clients.",
+    inputs: ["Approved paid budget", "ICP/personas (job titles, seniority)", "Objective"],
+    outputs: ["Audience targeting plan", "Campaign objective/format mix", "Creative & copy angles"],
+    wired: true,
+    sortOrder: 130,
+  },
+  {
+    key: "tiktok-ads",
+    name: "TikTok Ads Agent",
+    category: "Acquisition",
+    mission: "Audience, creative, and campaign strategy for TikTok (and short-form video ad placements generally).",
+    inputs: ["Approved paid budget", "ICP/personas", "Existing video/creative assets"],
+    outputs: ["Audience & placement plan", "Creative concepts suited to the format", "Campaign structure"],
+    wired: true,
+    sortOrder: 131,
+  },
+  {
+    key: "local-marketplace-seo",
+    name: "Local & Marketplace SEO Agent",
+    category: "Acquisition",
+    mission: "Optimizes visibility on Google Business Profile/Maps and relevant marketplaces (app stores, Amazon, etc.) for location- or listing-based businesses.",
+    inputs: ["Business type", "Website URL", "Country/region"],
+    outputs: ["Listing optimization checklist", "Local ranking factors to fix", "Review/reputation plan"],
+    wired: true,
+    sortOrder: 132,
+  },
+  {
+    key: "pr-influencer",
+    name: "PR & Influencer Marketing Agent",
+    category: "Acquisition",
+    mission: "Plans earned-media and influencer/creator partnerships to build awareness and third-party credibility.",
+    inputs: ["Brand positioning", "Objective", "Budget & currency"],
+    outputs: ["PR angle & story ideas", "Influencer/creator tier strategy", "Outreach plan"],
+    wired: true,
+    sortOrder: 133,
   },
   // Content & Creative
   {
@@ -256,6 +331,37 @@ export const AGENT_CATALOG: AgentSpec[] = [
     outputs: ["Funnel leak diagnosis", "Prioritized fix list"],
     wired: true,
     sortOrder: 22,
+  },
+  // Retention & Lifecycle
+  {
+    key: "email-marketing",
+    name: "Email Marketing Agent",
+    category: "Retention & Lifecycle",
+    mission: "Designs lifecycle email flows (welcome, nurture, abandonment, win-back) and campaign sends that turn subscribers into customers and customers into repeat customers.",
+    inputs: ["Objective", "ICP/personas", "Current channels & assets"],
+    outputs: ["Lifecycle flow map", "Flow-by-flow email sequence briefs", "Subject line angles"],
+    wired: true,
+    sortOrder: 1,
+  },
+  {
+    key: "whatsapp-sms-marketing",
+    name: "WhatsApp & SMS Marketing Agent",
+    category: "Retention & Lifecycle",
+    mission: "Designs WhatsApp/SMS messaging flows for time-sensitive updates, reminders, and conversational sales — for businesses where buyers expect fast, direct contact.",
+    inputs: ["Objective", "Current channels", "Country/region"],
+    outputs: ["Message flow map", "Template message drafts", "Opt-in & compliance notes"],
+    wired: true,
+    sortOrder: 2,
+  },
+  {
+    key: "referral-loyalty",
+    name: "Referral & Loyalty Agent",
+    category: "Retention & Lifecycle",
+    mission: "Designs referral programs and loyalty mechanics that turn existing customers into a repeatable, low-cost acquisition channel.",
+    inputs: ["Objective", "Existing customer base signal", "Budget & currency"],
+    outputs: ["Referral program mechanics", "Loyalty tier structure", "Launch messaging"],
+    wired: true,
+    sortOrder: 3,
   },
   // Intelligence & Measurement
   {
