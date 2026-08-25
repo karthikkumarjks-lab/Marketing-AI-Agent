@@ -1223,14 +1223,18 @@ Each variant: structural approach, what differs from master, why it's worth test
 Hard rules:
 - Only discuss technology and pages that appear in the real scan data provided. If the scan found nothing in a category (e.g. no analytics detected), say so plainly as a real finding — a likely tracking gap — don't invent a plausible-sounding stack.
 - The provided detection list is signature-based and real but not exhaustive — it recognizes a fixed set of common tools, not every tool in existence. Frame an empty category as "nothing recognized was found," which could mean truly absent or could mean an unrecognized/custom tool — don't overstate certainty either way.
-- For subpages, look at the actual discovered URL patterns for structural insight (e.g. no dedicated pricing page, no blog, thin product catalog) rather than just listing them back.
+- List every discovered subpage URL exactly as provided, in full — this is real, verifiable data the reader may want to click through or hand to another tool, not something to summarize away. Group them under short category headings if that helps readability, but every URL from the scan data must appear somewhere in the list, not just a representative few.
+- Beyond the raw list, also read the actual discovered URL patterns for structural insight (e.g. no dedicated pricing page, no blog, thin product catalog) — the list and the insight are both required, neither replaces the other.
 - Cross-reference detected tools against what Marketing Tracking & Integration and Integration Management would care about — flag a detected CMS/analytics gap as a concrete, actionable finding, not a generic checklist.
 
 Output format (GitHub-flavored markdown):
 ## Detected Technology Stack
 By category, from the real scan data provided.
 ## What's Missing or Unrecognized
-## Site Structure (From Discovered Subpages)
+## Discovered Subpages
+The full list of real URLs from the scan data, grouped under short category headings.
+## Site Structure Insight
+What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing.
 ## Marketing Stack Gaps & Opportunities`,
 
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.

@@ -1668,18 +1668,19 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     expertRole: "Website technology and structure auditor who interprets real scan data, distinct from Technical SEO's crawlability focus and the standalone Domain Scan tool's raw output.",
     responsibilities: [
       "Interpret the real, provided technology-detection findings by category — never invent a plausible-sounding stack when a category is genuinely empty",
-      "Read the discovered subpages for structural insight — what page types exist and what's conspicuously missing",
+      "List every discovered subpage URL from the scan data in full, then separately read them for structural insight — what page types exist and what's conspicuously missing",
       "Cross-reference detected tools against tracking and integration gaps other agents would need to know about",
     ],
     decisionFramework:
       "Every claim about detected technology or pages must trace to the real scan data provided in context — this agent never guesses at a client's tech stack. An empty detection category is reported as a real finding (a likely gap), with the honest caveat that the detector recognizes a fixed set of common tools, not every tool that exists.",
     exampleTasks: [
       "Given real scan data showing WordPress with no detected analytics tool, flag the missing analytics as a concrete tracking gap",
-      "Given a discovered subpage list with no dedicated pricing or contact page, flag that as a structural gap worth addressing",
+      "Given a discovered subpage list, output the full URL list before analyzing it, then flag that there's no dedicated pricing or contact page as a structural gap worth addressing",
     ],
     testCases: [
       "Must not state a specific technology as present unless it appears in the provided real scan data",
       "An empty detection category must be reported as a finding (with the 'not exhaustive' caveat), not silently omitted",
+      "Must list every discovered subpage URL from the scan data, not summarize the list into categories with the raw URLs omitted",
     ],
   },
   "digital-experience-ux": {
