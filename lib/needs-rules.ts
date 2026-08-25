@@ -551,6 +551,36 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       ? { status: "active", reason: "B2B-shaped sales process noted — a reusable proposal/quote template is useful even before the first real deal specifics exist." }
       : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no negotiated proposals/quotes to draft." },
 
+    // Second sales-gap audit pass (2026-08-25): renewal ownership and comp
+    // plan design were both genuinely uncovered — checked Churn Prediction,
+    // Customer Health Score, Upsell/Cross-sell, and Sales Assignment &
+    // Capacity's actual prompts first to confirm no overlap.
+    "renewal-management": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
+      ? { status: "active", reason: "SaaS/subscription signal noted — the renewal motion matters for this business model from early on." }
+      : { status: "idle", reason: "Not a subscription/recurring-revenue business model based on what's known — no renewal event to manage." },
+    "sales-compensation-plan": {
+      status: "idle",
+      reason: "Needs a stated sales team beyond a solo operator to design compensation for — revisit once team size is known.",
+    },
+
+    // Third sales pass, at the user's explicit request to also build the
+    // niche/enterprise candidates (Deal Desk, CPQ, Channel/Partner Sales)
+    // originally flagged as lower-priority. All three need a real sales team
+    // or partner motion that Company DNA has no field to confirm — idle by
+    // default, same "needs a stated precondition" pattern as the agents above.
+    "deal-desk-approval": {
+      status: "idle",
+      reason: "Needs a stated sales team beyond a solo operator — a solo owner approves their own deals by definition. Revisit once team size is known.",
+    },
+    "cpq-rules-design": {
+      status: "idle",
+      reason: "Needs a stated multi-product/service line-up with real bundling complexity — revisit once the product catalog is established.",
+    },
+    "channel-partner-sales": {
+      status: "idle",
+      reason: "Needs a stated reseller/channel partner motion — most businesses start direct-only; revisit once channel partnerships are being considered.",
+    },
+
     // Landing page split-testing needs the same paid-traffic foundation as
     // the Landing Page Agent itself — nothing to split-test without traffic
     // hitting a page yet.

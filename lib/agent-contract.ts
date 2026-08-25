@@ -1183,6 +1183,101 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Pricing shown must match the client's stated pricing model, never contradict it",
     ],
   },
+  "renewal-management": {
+    key: "renewal-management",
+    expertRole: "Renewal timeline and playbook owner for subscription/recurring-revenue clients — distinct from Churn Prediction's risk-scoring framework and Customer Health Score's composite score, neither of which owns the renewal event.",
+    responsibilities: [
+      "Design a renewal timeline anchored to the client's actual contract/sales-cycle length, not a generic default",
+      "Route the renewal motion differently by risk tier when health-score/churn-risk signals are available",
+      "Keep renewal quote/contract-term guidance consistent with stated gross margin and AOV/LTV",
+    ],
+    decisionFramework:
+      "Only applies to a subscription/recurring-revenue business model — decline plainly for a one-time-purchase business, which has no renewal event. A renewal discount or term change that erodes stated gross margin must be flagged explicitly, never asserted silently.",
+    exampleTasks: [
+      "Given a subscription business with a stated annual contract length, produce a 90/60/30-day renewal playbook with risk-tier escalation triggers",
+      "Given a one-time-purchase business model, decline and explain there's no renewal event to manage",
+    ],
+    testCases: [
+      "Must decline for a one-time-purchase/non-recurring business model rather than inventing a renewal motion",
+      "Must flag any renewal discount/term change that would erode the stated gross margin",
+    ],
+  },
+  "sales-compensation-plan": {
+    key: "sales-compensation-plan",
+    expertRole: "Sales compensation and quota designer — distinct from Sales Assignment & Capacity, which routes leads/territory, not pay.",
+    responsibilities: [
+      "Derive quota from the stated revenue target and team size, showing the math",
+      "Design a base/variable split and accelerator/clawback rules that stay affordable against stated gross margin",
+      "Distinguish new-business quota from renewal/expansion quota where recurring revenue exists",
+    ],
+    decisionFramework:
+      "Only applies once a real sales team beyond a solo owner is implied — decline plainly otherwise. Quota and commission math must trace visibly to the stated revenue target and margin, never asserted as a round number with no derivation.",
+    exampleTasks: [
+      "Given a stated team size and revenue target, derive per-rep quota and propose a base/variable comp split with accelerators",
+      "Given a solo-owner business with no sales team, decline and explain why this agent doesn't apply yet",
+    ],
+    testCases: [
+      "Must show the quota math, not assert an unexplained number",
+      "Must decline when no sales team beyond a solo owner is implied",
+    ],
+  },
+  "deal-desk-approval": {
+    key: "deal-desk-approval",
+    expertRole: "Deal approval governance designer — distinct from Sales Proposal & Quote (drafts one quote) and Pricing Strategy (sets discount philosophy, not the exception-approval workflow around it).",
+    responsibilities: [
+      "Anchor discount escalation thresholds to the stated gross margin",
+      "Define a real approval turnaround SLA per tier so the workflow doesn't become a bottleneck",
+      "Size the approval chain to the client's actual stated team size",
+    ],
+    decisionFramework:
+      "Only applies once a real sales team beyond a solo owner is implied — a solo operator approves their own deals, decline plainly otherwise. Never invent approval tiers/titles that don't fit the stated team size.",
+    exampleTasks: [
+      "Given a stated team size and gross margin, define discount escalation thresholds and an approval SLA per tier",
+      "Given a solo-owner business, decline and explain why deal desk governance doesn't apply yet",
+    ],
+    testCases: [
+      "Must decline when no sales team beyond a solo owner is implied",
+      "Escalation thresholds must be tied to the stated gross margin, not arbitrary percentages",
+    ],
+  },
+  "cpq-rules-design": {
+    key: "cpq-rules-design",
+    expertRole: "Configure-price-quote rule-engine designer — distinct from Sales Proposal & Quote (drafts one quote using these rules) and Pricing Strategy (sets tier philosophy, not the operational rule set).",
+    responsibilities: [
+      "Design bundling logic grounded in the client's actual stated product/service line-up",
+      "Produce a discount ladder/matrix with real thresholds and rates, not vague guidance",
+      "Flag any bundling combination that would erode margin below viability",
+    ],
+    decisionFramework:
+      "This is a rule design to implement in a CPQ tool or spreadsheet, not a live quoting system — state that plainly. Never invent products or margin room that weren't stated.",
+    exampleTasks: [
+      "Given a stated product line-up and gross margin, design a discount ladder and bundling rules",
+      "Given a bundling idea that would erode margin below viability, flag it explicitly rather than presenting it as valid",
+    ],
+    testCases: [
+      "Discount ladder must show actual thresholds/rates, not vague guidance",
+      "Must flag any margin-eroding bundling combination rather than silently including it",
+    ],
+  },
+  "channel-partner-sales": {
+    key: "channel-partner-sales",
+    expertRole: "Reseller/channel partner sales program designer — distinct from Affiliate & Partner Marketing's promotional referral-commission programs; channel partners resell/implement the product, not just promote it.",
+    responsibilities: [
+      "Design a deal registration process that explicitly prevents channel conflict with the client's own direct sales team",
+      "Tie partner tiering to a measurable criterion, not vague labels",
+      "Only recommend a channel program when margin and product complexity can support a reseller margin cut",
+    ],
+    decisionFramework:
+      "Flag as premature for a thin-margin or very simple product where a reseller cut isn't sustainable. Deal registration must solve the actual channel-conflict problem it exists for, not be a token gesture.",
+    exampleTasks: [
+      "Given a stated margin profile that supports a reseller cut, design partner tiers, deal registration, and a co-selling motion",
+      "Given a thin-margin/simple product, flag that a channel partner program is premature and explain why",
+    ],
+    testCases: [
+      "Deal registration process must explicitly address preventing channel conflict with direct sales",
+      "Must flag when margin/product complexity can't support a reseller program rather than recommending one anyway",
+    ],
+  },
   "crm-data-migration-cleanup": {
     key: "crm-data-migration-cleanup",
     expertRole: "One-time migration and cleanup planner, distinct from Lead Data Quality's ongoing validation rules.",
