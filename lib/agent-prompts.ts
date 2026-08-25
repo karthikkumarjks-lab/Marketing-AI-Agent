@@ -1991,7 +1991,22 @@ This is a structural sample of what this agent will produce once an OpenRouter A
 // current free options if this one starts erroring or rate-limiting.
 const DEFAULT_MODEL = "minimax/minimax-m3:free";
 
-async function callOpenRouter(apiKey: string, model: string, system: string, user: string): Promise<string> {
+async function callOpenRouter(
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  imageDataUri?: string,
+): Promise<string> {
+  // Multimodal content array only when an image is attached — plain string
+  // content otherwise, since most models (and most agents) never need this.
+  const userContent = imageDataUri
+    ? [
+        { type: "text", text: user },
+        { type: "image_url", image_url: { url: imageDataUri } },
+      ]
+    : user;
+
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -2002,7 +2017,7 @@ async function callOpenRouter(apiKey: string, model: string, system: string, use
       model,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: user },
+        { role: "user", content: userContent },
       ],
       temperature: 0.4,
       // Bounded rather than left to the model's max — an unbounded request
@@ -2027,6 +2042,7 @@ export async function runAgentLLM(
   dna: CompanyDNAInput,
   extraContext?: string,
   brand?: BrandDNAInput | null,
+  imageDataUri?: string,
 ): Promise<LLMResult> {
   let system = getSystemPrompt(agentKey);
   if (!system) {
@@ -2049,7 +2065,7 @@ export async function runAgentLLM(
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   if (openrouterKey) {
     const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
-    const markdown = await callOpenRouter(openrouterKey, model, system, user);
+    const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri);
     return { markdown, isDemo: false, model: `openrouter:${model}` };
   }
 

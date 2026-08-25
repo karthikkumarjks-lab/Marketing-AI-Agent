@@ -20,15 +20,18 @@ export default function AgentRunner({
   workspaceId,
   agentKey,
   isWired,
+  uploadType,
   runs,
 }: {
   workspaceId: string;
   agentKey: string;
   isWired: boolean;
+  uploadType: "excel" | "screenshot" | null;
   runs: RunLite[];
 }) {
   const router = useRouter();
   const [predictedOutcome, setPredictedOutcome] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,16 +39,19 @@ export default function AgentRunner({
     setRunning(true);
     setError(null);
     try {
-      const res = await fetch("/api/agents/run", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ workspaceId, agentKey, predictedOutcome: predictedOutcome || null }),
-      });
+      const form = new FormData();
+      form.set("workspaceId", workspaceId);
+      form.set("agentKey", agentKey);
+      if (predictedOutcome) form.set("predictedOutcome", predictedOutcome);
+      if (file) form.set("file", file);
+
+      const res = await fetch("/api/agents/run", { method: "POST", body: form });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Run failed.");
       }
       setPredictedOutcome("");
+      setFile(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Run failed.");
@@ -58,6 +64,32 @@ export default function AgentRunner({
     <div>
       {isWired ? (
         <div className="bg-surface border border-line rounded-lg p-5 mb-8">
+          {uploadType && (
+            <div className="mb-3">
+              <label className="text-sm font-medium text-ink mb-1 block">
+                {uploadType === "excel" ? "Upload data (.xlsx, .xls, .csv — optional)" : "Upload a screenshot (optional)"}
+              </label>
+              <input
+                type="file"
+                accept={uploadType === "excel" ? ".xlsx,.xls,.csv" : "image/png,image/jpeg,image/webp,image/gif"}
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-ink-soft file:mr-3 file:rounded-md file:border-0 file:bg-accent-soft file:text-accent-ink file:px-3 file:py-1.5 file:text-sm file:font-medium file:cursor-pointer"
+              />
+              {file && (
+                <div className="text-xs text-ink-faint mt-1">
+                  {file.name} ({(file.size / 1024).toFixed(0)}KB){" "}
+                  <button type="button" onClick={() => setFile(null)} className="text-accent hover:underline ml-1">
+                    remove
+                  </button>
+                </div>
+              )}
+              <p className="text-[11px] text-ink-faint mt-1">
+                {uploadType === "excel"
+                  ? "Used for this run only, not saved. Data is read directly from the file — real numbers, not summarized."
+                  : "Used for this run only, not saved. The model reads the image directly."}
+              </p>
+            </div>
+          )}
           <label className="text-sm font-medium text-ink mb-1 block">
             Predicted outcome (optional, for the evaluation log)
           </label>

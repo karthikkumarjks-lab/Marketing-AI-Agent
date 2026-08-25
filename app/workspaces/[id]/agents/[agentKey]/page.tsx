@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AgentRunner from "@/components/agent-runner";
+import { getUploadType } from "@/lib/agent-uploads";
 
 export default async function AgentRunPage({
   params,
@@ -52,6 +53,7 @@ export default async function AgentRunPage({
         workspaceId={id}
         agentKey={agentKey}
         isWired={agent.isWired}
+        uploadType={getUploadType(agentKey)}
         runs={runs.map((r) => ({
           id: r.id,
           outputMarkdown: r.outputMarkdown,
