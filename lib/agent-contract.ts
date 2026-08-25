@@ -95,7 +95,7 @@ export function getAgentDependencies(key: string): AgentDependencies {
 // recommends real spend, not hand-set per agent. This is the shared
 // "guardrail layer" the upgrade spec asked for instead of duplicating a
 // risk paragraph inside every prompt.
-const SPEND_AGENT_KEYS = new Set([
+export const SPEND_AGENT_KEYS = new Set([
   "performance-marketing",
   "google-ads",
   "meta-ads",

@@ -102,6 +102,10 @@ model Agent {
   triggerNotes    String?
   isWired         Boolean @default(false)
   sortOrder       Int     @default(0)
+  // Selling price in INR (whole rupees), set via the pricing admin page —
+  // never written by the catalog seed, so re-seeding after a catalog change
+  // never overwrites a price Karthikeyan has set. Null until priced.
+  priceInr        Int?
 
   agentRuns       AgentRun[]
   needsAnalyses   NeedsAnalysis[]
