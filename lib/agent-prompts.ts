@@ -2019,7 +2019,7 @@ export interface LLMResult {
 }
 
 const DEMO_PREFIX =
-  "[DEMO OUTPUT — add OPENROUTER_API_KEY to .env.local to enable real reasoning]";
+  "[DEMO OUTPUT — add GEMINI_API_KEY or OPENROUTER_API_KEY to .env.local to enable real reasoning]";
 
 function demoOutput(agentName: string, dna: CompanyDNAInput): string {
   const budget = formatMoney(dna.monthlyBudget, dna.currency) + (dna.monthlyBudget != null ? "/month" : "");
@@ -2027,7 +2027,7 @@ function demoOutput(agentName: string, dna: CompanyDNAInput): string {
 
 ## ${agentName} — Demo Run for ${dna.name}
 
-This is a structural sample of what this agent will produce once an OpenRouter API key is configured. The real run reasons over the Company DNA below; this sample only echoes it.
+This is a structural sample of what this agent will produce once a Gemini or OpenRouter API key is configured. The real run reasons over the Company DNA below; this sample only echoes it.
 
 ### Inputs received
 - **Industry:** ${dna.industry?.trim() || "Not specified"}
@@ -2096,6 +2096,52 @@ async function callOpenRouter(
   return content;
 }
 
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
+// Google's own Gemini API (ai.google.dev), called directly — not through
+// OpenRouter. A genuinely separate quota from OpenRouter's, on Google's own
+// free tier: no card required, and every source checked before building
+// this converges on Google's Flash-tier free daily limit being an order of
+// magnitude above OpenRouter's 50/day (Google doesn't publish one fixed
+// number — it's visible per-project at https://aistudio.google.com/rate-limit
+// once a key exists). Get a free key at https://aistudio.google.com/apikey.
+async function callGemini(
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  imageDataUri?: string,
+): Promise<string> {
+  const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: user }];
+  if (imageDataUri) {
+    const match = imageDataUri.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+  }
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 4000 },
+      }),
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`LLM request failed (${res.status}): ${body.slice(0, 300)}`);
+  }
+  const json = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const content = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("");
+  if (!content) throw new Error("LLM returned an empty response");
+  return content;
+}
+
 export async function runAgentLLM(
   agentKey: string,
   agentName: string,
@@ -2120,6 +2166,18 @@ export async function runAgentLLM(
   let user = buildCompanyDNAPrompt(dna) + (extraContext ?? "");
   if (BRAND_DNA_AGENTS.has(agentKey)) {
     user += buildBrandDNAPrompt(brand ?? null);
+  }
+
+  // Gemini checked first: a genuinely separate quota from OpenRouter's, on
+  // Google's own free tier, which every source checked before adding this
+  // converges on being far above OpenRouter's 50-requests-per-day cap. Once
+  // a Gemini key is set, it's used automatically — no toggle needed, and
+  // OpenRouter still works as a fallback if the Gemini key is ever removed.
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey) {
+    const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+    const markdown = await callGemini(geminiKey, model, system, user, imageDataUri);
+    return { markdown, isDemo: false, model: `gemini:${model}` };
   }
 
   const openrouterKey = process.env.OPENROUTER_API_KEY;
