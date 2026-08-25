@@ -1955,7 +1955,14 @@ This is a structural sample of what this agent will produce once an OpenRouter A
 *Save this run with a predicted outcome to start building the evaluation log, or add the key and run again for real reasoning.*`;
 }
 
-async function callOpenRouter(apiKey: string, system: string, user: string): Promise<string> {
+// Defaults to a free OpenRouter model rather than a paid one — free-model
+// availability on OpenRouter shifts over time (shared-pool rate limits,
+// models getting deprecated), so this is overridable via OPENROUTER_MODEL
+// without a code change. Check https://openrouter.ai/models?max_price=0 for
+// current free options if this one starts erroring or rate-limiting.
+const DEFAULT_MODEL = "minimax/minimax-m3:free";
+
+async function callOpenRouter(apiKey: string, model: string, system: string, user: string): Promise<string> {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -1963,12 +1970,16 @@ async function callOpenRouter(apiKey: string, system: string, user: string): Pro
       authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
       temperature: 0.4,
+      // Bounded rather than left to the model's max — an unbounded request
+      // on some models fails outright when the account's remaining credits
+      // can't cover the theoretical max output, even on a free model.
+      max_tokens: 4000,
     }),
   });
   if (!res.ok) {
@@ -2008,8 +2019,9 @@ export async function runAgentLLM(
 
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   if (openrouterKey) {
-    const markdown = await callOpenRouter(openrouterKey, system, user);
-    return { markdown, isDemo: false, model: "openrouter:google/gemini-2.5-flash" };
+    const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+    const markdown = await callOpenRouter(openrouterKey, model, system, user);
+    return { markdown, isDemo: false, model: `openrouter:${model}` };
   }
 
   return { markdown: demoOutput(agentName, dna), isDemo: true, model: "demo" };
