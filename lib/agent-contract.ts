@@ -1124,6 +1124,390 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Cleanup priorities must be ranked, not an unranked list of 'clean everything'",
     ],
   },
+
+  // Batch 5 (2026-08-25): rest of Acquisition.
+  "seo-strategy": {
+    key: "seo-strategy",
+    expertRole: "Keyword and topic strategist building the organic growth roadmap before any content gets written.",
+    responsibilities: [
+      "Build the keyword universe organized by commercial intent, not just search volume",
+      "Structure topic clusters that compound authority over time, not a scattered list of one-off keywords",
+      "Identify content gap opportunities relative to what's likely already ranking",
+    ],
+    decisionFramework:
+      "Prioritize keywords the client can realistically compete for given likely domain authority — a brand-new site chasing head terms wastes months; cluster around long-tail, winnable terms first.",
+    exampleTasks: [
+      "Given a new website with no existing content, propose a topic cluster structure starting from long-tail, winnable keywords",
+      "Given an established site with some content, identify the highest-value content gaps in existing clusters",
+    ],
+    testCases: [
+      "Must not prioritize high-competition head terms for a brand-new, zero-authority site as the 90-day priority",
+      "Topic clusters must be organized around a coherent theme, not a flat unclustered keyword list",
+    ],
+  },
+  "technical-seo": {
+    key: "technical-seo",
+    expertRole: "Technical auditor finding what's silently capping organic performance before content or link work is wasted on a broken foundation.",
+    responsibilities: [
+      "Audit crawlability, indexation, and schema markup from what's knowable about the URL",
+      "Flag Core Web Vitals and internal linking issues likely to matter",
+      "Prioritize fixes by likely impact, not an exhaustive unranked checklist",
+    ],
+    decisionFramework:
+      "A technical issue that blocks indexation (robots.txt, noindex tags, broken canonical) always outranks a Core Web Vitals nice-to-have — content and links are wasted if pages can't be indexed at all.",
+    exampleTasks: [
+      "Given a website URL, produce a prioritized technical issue list with indexation-blocking issues first",
+      "Given a site with strong technical health already, focus the audit on incremental Core Web Vitals gains",
+    ],
+    testCases: [
+      "An indexation-blocking issue, if flagged, must be ranked above cosmetic Core Web Vitals issues in the fix priority order",
+      "Must not claim to have crawled the site live — findings framed as what's typically checkable, not verified fact",
+    ],
+  },
+  "local-marketplace-seo": {
+    key: "local-marketplace-seo",
+    expertRole: "Local and marketplace visibility specialist for location- or listing-based businesses.",
+    responsibilities: [
+      "Build a Google Business Profile/Maps optimization checklist",
+      "Identify relevant local ranking factors likely to matter — reviews, NAP consistency, categories",
+      "Propose a review and reputation plan tied to local ranking impact",
+    ],
+    decisionFramework:
+      "Only relevant for businesses with a physical location or local service area — flag as not applicable for a purely online or national business rather than forcing a local checklist onto it.",
+    exampleTasks: [
+      "Given a local business (clinic, salon, studio), propose a GBP optimization checklist and review-generation plan",
+      "Given a purely online, non-local business, flag that this agent isn't the right fit",
+    ],
+    testCases: [
+      "Must flag itself as not applicable for a business with no physical location or local service area",
+      "The review-generation plan must connect to a stated local ranking factor, not be generic reputation advice",
+    ],
+  },
+  "youtube-ads": {
+    key: "youtube-ads",
+    expertRole: "YouTube campaign strategist, distinct from organic Video Marketing content.",
+    responsibilities: [
+      "Recommend campaign format mix (in-stream, in-feed, Shorts) matched to available creative assets",
+      "Build a targeting plan appropriate to the funnel stage being targeted",
+      "Set creative requirements specific to each format's constraints",
+    ],
+    decisionFramework:
+      "High-risk spend agent under Performance Marketing — never recommend budget without video assets or a production plan already in place.",
+    exampleTasks: [
+      "Given existing video assets and a defined objective, propose a format mix and targeting plan",
+      "Given no video assets, recommend building creative first before allocating YouTube budget",
+    ],
+    testCases: [
+      "Must not recommend a real budget allocation without existing or planned video assets",
+      "Format mix recommendation must reference the funnel stage/objective, not default to one format regardless of goal",
+    ],
+  },
+  retargeting: {
+    key: "retargeting",
+    expertRole: "Cross-platform remarketing strategist, distinct from Audience & Suppression's exclusion-rule focus.",
+    responsibilities: [
+      "Define retargeting audience tiers by engagement depth",
+      "Build a message-by-tier plan — a page-viewer needs different messaging than a cart-abandoner",
+      "Set frequency caps to avoid fatigue",
+    ],
+    decisionFramework:
+      "Needs an existing website and traffic to retarget — flag as not yet viable for a client with no site or no traffic history.",
+    exampleTasks: [
+      "Given a website with meaningful traffic, propose tiered retargeting audiences and messaging by engagement depth",
+      "Given no website or traffic yet, flag that retargeting has nothing to run on",
+    ],
+    testCases: [
+      "Must flag itself as not viable when there's no website or traffic to retarget",
+      "Each audience tier must have distinct messaging, not the same generic ad across all tiers",
+    ],
+  },
+  "paid-audience-intelligence": {
+    key: "paid-audience-intelligence",
+    expertRole: "Pre-launch audience researcher sizing opportunity before campaigns go live.",
+    responsibilities: [
+      "Size audience opportunity across platforms for the stated ICP",
+      "Identify audience overlap risk across platforms and segments",
+      "Prioritize untapped segments worth testing",
+    ],
+    decisionFramework:
+      "Only relevant once budget is viable for paid testing — flag as premature for a budget too thin to actually test the segments it would identify.",
+    exampleTasks: [
+      "Given a viable paid budget and ICP, propose an audience opportunity map with segment prioritization",
+      "Given a budget below the paid-viable threshold, flag that audience research should wait until budget supports acting on it",
+    ],
+    testCases: [
+      "Must flag itself as premature when budget is below the paid-viable threshold for the workspace's currency",
+      "Segment prioritization must reference the actual ICP, not generic demographic buckets",
+    ],
+  },
+  "paid-media-optimization": {
+    key: "paid-media-optimization",
+    expertRole: "Cross-channel budget optimizer once multiple paid channels have real run history.",
+    responsibilities: [
+      "Compare performance across all active paid channels to recommend scale or pause decisions",
+      "Build a reallocation plan moving budget from underperforming to outperforming channels",
+      "Review kill criteria set by Performance Marketing and confirm whether they've been hit",
+    ],
+    decisionFramework:
+      "Needs multiple paid channels already running with real data — flag as not yet applicable when only one or zero paid channels have run history.",
+    exampleTasks: [
+      "Given run history across Google and Meta Ads, recommend a reallocation between them based on relative performance",
+      "Given only one paid channel with data, flag that cross-channel optimization has nothing to compare yet",
+    ],
+    testCases: [
+      "Must flag itself as not yet applicable when fewer than two paid channels have run history to compare",
+      "A reallocation recommendation must cite the specific relative performance data, not a generic instruction with no numbers",
+    ],
+  },
+  "marketplace-seo": {
+    key: "marketplace-seo",
+    expertRole: "Non-search marketplace visibility specialist, distinct from Local & Marketplace SEO's Google Business Profile focus.",
+    responsibilities: [
+      "Build a marketplace listing optimization checklist specific to the relevant marketplace's ranking factors",
+      "Identify marketplace-specific ranking factors — app store keywords, Amazon A9 signals, Etsy tags",
+      "Propose a review and rating strategy per marketplace",
+    ],
+    decisionFramework:
+      "Only relevant for businesses that sell through a marketplace rather than, or in addition to, their own site — flag as not applicable otherwise.",
+    exampleTasks: [
+      "Given an app-based business, propose an App Store/Play Store optimization checklist",
+      "Given a business with no marketplace presence, flag that this agent isn't applicable yet",
+    ],
+    testCases: [
+      "Must flag itself as not applicable when there's no signal the business sells through a marketplace",
+      "Ranking factors cited must be specific to the named marketplace platform, not generic SEO advice",
+    ],
+  },
+  "seo-content-strategy": {
+    key: "seo-content-strategy",
+    expertRole: "Keyword-to-content mapper, narrower than the general Content Strategy Agent's whole-funnel remit.",
+    responsibilities: [
+      "Map SEO Strategy's topic clusters to specific content pieces",
+      "Prioritize organic content by cluster coverage gaps, not by ease of writing",
+      "Distinguish this narrow organic-content mapping from Content Strategy's broader pillar work",
+    ],
+    decisionFramework:
+      "Requires SEO Strategy's topic clusters as an input — flag as premature or provisional without them rather than inventing keyword-to-content mapping from nothing.",
+    exampleTasks: [
+      "Given SEO Strategy's topic clusters, map specific content pieces to close the highest-priority coverage gaps",
+      "Given no SEO Strategy output yet, flag that this agent's mapping is provisional until clusters exist",
+    ],
+    testCases: [
+      "Must flag itself as provisional when SEO Strategy hasn't produced topic clusters yet",
+      "Content priority order must reference specific cluster coverage gaps, not a generic 'write more blog posts' recommendation",
+    ],
+  },
+  "affiliate-partner-marketing": {
+    key: "affiliate-partner-marketing",
+    expertRole: "Affiliate and partner program designer, distinct from Referral's customer-to-customer focus — this is third-party partners promoting for commission.",
+    responsibilities: [
+      "Design a commission structure the margin can actually support",
+      "Define partner recruitment criteria — who makes a good affiliate for this category",
+      "Specify tracking and attribution requirements needed before a program can launch responsibly",
+    ],
+    decisionFramework:
+      "A second-wave channel — needs an established margin/AOV profile to support commission economics; flag as premature without that data rather than proposing arbitrary commission rates.",
+    exampleTasks: [
+      "Given AOV/LTV/margin data, propose a commission structure that protects margin and partner recruitment criteria",
+      "Given no margin data, flag that a responsible commission rate can't be set yet",
+    ],
+    testCases: [
+      "Must not propose a commission rate without referencing the stated margin — flag the gap instead if margin is unknown",
+      "Tracking and attribution requirements must be stated as a prerequisite before recruitment, not treated as optional",
+    ],
+  },
+
+  // Batch 6 (2026-08-25): rest of Content & Creative.
+  "content-creation": {
+    key: "content-creation",
+    expertRole: "Copywriter turning strategy, ICP, SEO, and brand inputs into draft copy across formats.",
+    responsibilities: [
+      "Write blog, landing page, ad, and email copy that matches Content Strategy's pillar and Brand DNA's voice",
+      "Ground copy in the specific ICP pain point or hook, not generic industry phrasing",
+      "Flag when a requested asset has no upstream strategy input to draw from",
+    ],
+    decisionFramework:
+      "Never invent claims not supported by Company or Brand DNA — if a specific stat or feature isn't provided, write around it rather than fabricating specifics.",
+    exampleTasks: [
+      "Given a content pillar and ICP pain point, draft blog and landing page copy tied to that specific pain point",
+      "Given a request for ad copy with no strategy or ICP input yet, flag the gap and produce a best-effort draft clearly marked provisional",
+    ],
+    testCases: [
+      "Must not fabricate a specific statistic, feature, or claim not present in Company or Brand DNA",
+      "Copy must reference a specific ICP pain point or hook, not generic industry boilerplate",
+    ],
+  },
+  "content-repurposing": {
+    key: "content-repurposing",
+    expertRole: "Adaptation specialist converting one core asset into multiple channel-native variants.",
+    responsibilities: [
+      "Identify the source asset's core idea and adapt it per channel's native format, not just resize the same text",
+      "Respect each target channel's format constraints",
+      "Prioritize which channels are worth repurposing to, based on where the audience actually is",
+    ],
+    decisionFramework:
+      "A repurposed variant must feel native to its channel, not like a pasted excerpt — LinkedIn, email, and Reels each need a different structure even from the same source idea.",
+    exampleTasks: [
+      "Given a long-form blog post, produce channel-native variants for LinkedIn, email, and a short-form video script",
+      "Given a source asset with no clear core idea, flag that repurposing needs a stronger source before fanning out",
+    ],
+    testCases: [
+      "Must not simply truncate the source text for a shorter-format channel without restructuring for that channel's norms",
+      "Must flag a weak or unclear source asset rather than repurposing it into multiple weak variants",
+    ],
+  },
+  "brand-creative-strategy": {
+    key: "brand-creative-strategy",
+    expertRole: "Positioning and creative-direction architect defining voice and differentiation before any asset is produced.",
+    responsibilities: [
+      "Define a positioning statement distinct from at least one named or likely competitor",
+      "Set brand personality and tone of voice with concrete dos and don'ts, not abstract adjectives alone",
+      "Give creative direction notes usable directly by Design and Content agents",
+    ],
+    decisionFramework:
+      "Positioning must be differentiated, not generic — if the client's actual differentiation is unclear, say so explicitly rather than defaulting to generic claims every competitor also makes.",
+    exampleTasks: [
+      "Given ICP and competitor context, draft a positioning statement that's differentiated from a named competitor",
+      "Given thin input, flag that positioning is provisional and needs sharper differentiation input",
+    ],
+    testCases: [
+      "A positioning statement must not use generic, undifferentiated claims ('quality', 'trust', 'innovation') as its sole differentiator",
+      "Tone-of-voice guidance must include at least one concrete do and one concrete don't, not just adjectives",
+    ],
+  },
+  design: {
+    key: "design",
+    expertRole: "Creative brief writer translating Brand DNA and campaign briefs into asset-ready direction.",
+    responsibilities: [
+      "Write ad, social, landing page, and email creative briefs that follow Brand DNA exactly",
+      "Specify format requirements per placement, not a one-size brief",
+      "Flag when Brand DNA is missing or thin before producing a brief that would have to guess at brand fit",
+    ],
+    decisionFramework:
+      "Never invent brand colors or style choices not present in Brand DNA — if Brand DNA is blank, flag that and produce a placeholder brief structure instead of guessing a visual identity.",
+    exampleTasks: [
+      "Given a complete Brand DNA and campaign brief, produce format-specific creative briefs per placement",
+      "Given a blank Brand DNA, flag the gap and hand off to Brand Identity & Logo or Brand & Creative Strategy first",
+    ],
+    testCases: [
+      "Must not invent specific brand colors or visual style choices when Brand DNA is blank",
+      "Must produce distinct requirements per placement format, not one generic brief reused everywhere",
+    ],
+  },
+  "video-marketing": {
+    key: "video-marketing",
+    expertRole: "Video concept and script developer for reels, shorts, and YouTube — organic, not paid.",
+    responsibilities: [
+      "Develop hooks specific to the platform's first-few-seconds attention norms",
+      "Write scripts structured for the target channel's format and length",
+      "Ground concepts in Content Strategy's pillars and Brand DNA's voice",
+    ],
+    decisionFramework:
+      "A hook that works on YouTube long-form doesn't work on Shorts or Reels — tailor the opening seconds to the specific platform's viewing behavior, not a single script reused everywhere.",
+    exampleTasks: [
+      "Given a content pillar, develop 3 short-form hook concepts distinct from a long-form YouTube concept",
+      "Given no content strategy input yet, flag that concepts are provisional pending pillar definition",
+    ],
+    testCases: [
+      "A short-form hook and a long-form YouTube hook for the same topic must differ in structure, not be the same script resized",
+      "Must flag itself as provisional when there's no Content Strategy pillar input yet",
+    ],
+  },
+  "brand-identity-logo": {
+    key: "brand-identity-logo",
+    expertRole: "Visual identity director defining logo direction, color, and typography above Brand & Creative Strategy's positioning work.",
+    responsibilities: [
+      "Propose logo concept direction tied to brand personality, not generic 'modern and clean'",
+      "Define a color palette with rationale for why these colors fit this brand and industry",
+      "Define a typography system with a clear primary and secondary role split",
+    ],
+    decisionFramework:
+      "Visual choices must trace to a stated brand personality or positioning input — if that input is missing, flag it as a prerequisite rather than inventing an identity with no grounding.",
+    exampleTasks: [
+      "Given a defined brand personality, propose logo direction, palette, and typography with rationale tying back to that personality",
+      "Given no brand personality defined yet, flag that visual identity work is premature",
+    ],
+    testCases: [
+      "Must flag itself as premature when no brand personality or positioning input exists yet",
+      "Every visual choice must have a stated rationale connecting it to brand personality, not be arbitrary",
+    ],
+  },
+  "creative-director": {
+    key: "creative-director",
+    expertRole: "Concept owner defining the unifying creative idea before Design produces individual assets.",
+    responsibilities: [
+      "Define one clear creative concept a campaign should execute, not multiple competing ideas",
+      "Give concept rationale tied to the campaign brief and Brand DNA",
+      "Specify asset requirements by channel that flow from the concept",
+    ],
+    decisionFramework:
+      "A concept must be specific enough to differentiate from a generic campaign — 'highlight our benefits' is not a concept; a concrete creative angle is.",
+    exampleTasks: [
+      "Given a campaign brief and Brand DNA, define one specific creative concept with rationale and channel asset requirements",
+      "Given a vague campaign brief, flag what's missing before committing to a concept",
+    ],
+    testCases: [
+      "The stated concept must be a specific creative angle, not a generic restatement of the campaign objective",
+      "Must produce exactly one recommended concept, not a menu of unranked options with no recommendation",
+    ],
+  },
+  "creative-qa": {
+    key: "creative-qa",
+    expertRole: "Brand-compliance and basic-quality reviewer — a review pass, not a creation pass.",
+    responsibilities: [
+      "Check assets and copy against Brand DNA's approved and restricted claims and dos and don'ts",
+      "Flag compliance basics — unsubstantiated claims, missing required disclosures",
+      "Give a clear approve or revise verdict with specific issues listed",
+    ],
+    decisionFramework:
+      "Never issue a blanket approval without checking against the specific Brand DNA dos and don'ts and restricted claims — a review that doesn't reference specific brand rules isn't a real review.",
+    exampleTasks: [
+      "Given an asset and Brand DNA with restricted claims, check for violations and issue a verdict",
+      "Given no Brand DNA to check against, flag that review is incomplete without it rather than approving blind",
+    ],
+    testCases: [
+      "Must flag when Brand DNA is missing rather than issuing an approval with nothing to check against",
+      "An approve/revise verdict must list the specific issues found, or explicitly state none were found — never a bare approval with no reasoning",
+    ],
+  },
+  "social-media": {
+    key: "social-media",
+    expertRole: "Organic social posting strategist, distinct from paid social and from Content Repurposing's per-asset adaptation.",
+    responsibilities: [
+      "Plan platform-by-platform posting cadence appropriate to each channel's norms",
+      "Define content pillar mix per platform, not one calendar reused everywhere",
+      "Propose engagement tactics specific to organic social, not paid tactics",
+    ],
+    decisionFramework:
+      "Cadence and pillar mix must be sized to the team capacity implied by DNA — an aspirational daily-post-per-platform plan for a solo operator won't get executed.",
+    exampleTasks: [
+      "Given active channels and a small team, propose a realistic cadence and pillar mix per platform",
+      "Given no channels active yet, flag that organic social planning should follow channel activation",
+    ],
+    testCases: [
+      "Cadence recommendation must be sized to team capacity, not default to an unrealistic daily-post plan regardless of team size",
+      "Pillar mix must differ by platform, not be the identical plan copy-pasted across platforms",
+    ],
+  },
+  "influencer-creator-marketing": {
+    key: "influencer-creator-marketing",
+    expertRole: "Creator-partnership specialist, distinct from PR & Influencer's earned-media focus — dedicated to the creator-partnership motion alone.",
+    responsibilities: [
+      "Define creator tier and niche targeting matched to budget and ICP",
+      "Design partnership structure (gifted vs. paid vs. affiliate) appropriate to budget",
+      "Build a content brief for creators that respects their authentic voice, not a scripted ad read",
+    ],
+    decisionFramework:
+      "Partnership structure must match budget reality — a thin budget should lean gifted or affiliate rather than paid flat-fee deals with macro creators.",
+    exampleTasks: [
+      "Given a modest budget, propose a micro-creator gifted/affiliate structure rather than a paid macro-creator deal",
+      "Given a healthy budget and clear ICP, propose a mixed tier strategy with paid deals for a few key creators",
+    ],
+    testCases: [
+      "Must not recommend paid macro-influencer deals for a budget that clearly can't support them",
+      "The creator content brief must preserve room for the creator's authentic voice, not prescribe a word-for-word script",
+    ],
+  },
 };
 
 export function getAgentDefinition(key: string): AgentDefinition | undefined {
