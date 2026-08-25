@@ -83,7 +83,7 @@ export const AGENT_DEPENDENCIES: Record<string, AgentDependencies> = {
   "marketing-score": { dependsOn: ["marketing-analytics"], canCall: [] },
   "sales-intelligence": { dependsOn: ["crm-customer-data", "lead-routing-sla"], canCall: ["marketing-orchestrator"] },
   "revenue-pipeline": { dependsOn: ["crm-customer-data", "budget-investment"], canCall: [] },
-  "marketing-orchestrator": { dependsOn: ["marketing-needs-analyzer"], canCall: [] },
+  "marketing-orchestrator": { dependsOn: ["needs-analyzer"], canCall: [] },
 };
 
 export function getAgentDependencies(key: string): AgentDependencies {
