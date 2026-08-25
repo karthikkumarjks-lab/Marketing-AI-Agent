@@ -172,5 +172,25 @@ treatment (expert role, decision framework, dependencies, test cases) as the ref
 of "top-most expert in each field," not a shallow addition — see `lib/agent-contract.ts` and
 `lib/agent-prompts.ts`.
 
+## Update — the coverage table above is now stale (2026-08-25)
+
+Karthikeyan asked for the entire "genuinely missing" list to be built, to refine individually
+himself afterward. All 47 gaps identified in the table above were built in the same session —
+catalog now has **93 agents** across 10 categories (added "Front Office" and "Freelancer &
+Agency Growth" as new categories). Every one of them follows the same advisory-only honesty
+pattern as the rest of the catalog: agents implying live external access (competitor intel,
+digital audits, third-party integrations) state plainly they're reasoning from category
+knowledge, not live crawl/API/OAuth access.
+
+**What this means going forward**: the coverage table above is a historical snapshot of what
+was missing before 2026-08-25, not a current gap list. Before assuming something is missing,
+check `lib/agent-catalog.ts` directly — grep it first. What's still genuinely absent is
+unchanged from before: the Concierge/Onboarding agents are advisory only (not a real
+conversational intake UX), Integration Management is advisory only (no real OAuth/API
+connections to any platform), and the freelancer-mode agents have no real prospecting/scraping
+capability behind them. None of the 93 agents execute anything in the real world — they all
+produce analysis and recommendations. That gap (Steps 7-12 from the earlier master
+instruction: a real orchestrator, real integrations, live data) is still exactly where it was.
+
 Recommended next session: pick ONE of Orchestrator (7), Cross-agent messaging (8), or the
 Section-44 acceptance test (12) as the next focused piece — not all three at once.
