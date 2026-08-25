@@ -64,6 +64,11 @@ export default function Sidebar({
             active={pathname.includes("/agents")}
           />
           <NavLink
+            href={`/workspaces/${activeWorkspaceId}/orchestrator`}
+            label="Orchestrator"
+            active={pathname.endsWith("/orchestrator")}
+          />
+          <NavLink
             href={`/workspaces/${activeWorkspaceId}/scorecard`}
             label="Scorecard"
             active={pathname.endsWith("/scorecard")}

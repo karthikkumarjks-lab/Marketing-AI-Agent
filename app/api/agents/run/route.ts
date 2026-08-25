@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { runAgentLLM, RUNTIME_CONTEXT_AGENTS, buildRuntimeSnapshot } from "@/lib/agent-prompts";
+import { getAgentDependencies } from "@/lib/agent-contract";
+import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
 
 export async function POST(req: NextRequest) {
   const { workspaceId, agentKey, predictedOutcome } = await req.json();
@@ -73,6 +75,33 @@ export async function POST(req: NextRequest) {
         createdAt: r.createdAt.toISOString(),
       })),
     );
+  }
+
+  // Orchestration hand-off: if this agent declares dependencies, pull each
+  // dependency's most recent real run in this workspace and pass it in as
+  // structured context — actual prior output, not a summary this agent
+  // invents itself. Silently skipped when a dependency hasn't run yet
+  // (computeRunPlan is what tells the UI an agent is "blocked" beforehand;
+  // this route still allows running out of order rather than hard-failing).
+  const { dependsOn } = getAgentDependencies(agentKey);
+  if (dependsOn.length > 0) {
+    const depAgents = await prisma.agent.findMany({ where: { key: { in: dependsOn } } });
+    const depRuns = await Promise.all(
+      depAgents.map((depAgent) =>
+        prisma.agentRun.findFirst({
+          where: { workspaceId, agentId: depAgent.id },
+          orderBy: { createdAt: "desc" },
+        }),
+      ),
+    );
+    const handoffDeps: DependencyRunSnapshot[] = depAgents
+      .map((depAgent, i) => {
+        const run = depRuns[i];
+        return run ? { agentName: depAgent.name, outputMarkdown: run.outputMarkdown } : null;
+      })
+      .filter((d): d is DependencyRunSnapshot => d !== null);
+    const handoff = buildHandoffContext(handoffDeps);
+    if (handoff) extraContext = (extraContext ?? "") + handoff;
   }
 
   let result;
