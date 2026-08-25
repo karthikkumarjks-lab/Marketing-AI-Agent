@@ -1052,6 +1052,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     sortOrder: 6,
   },
   {
+    key: "marketing-compliance-governance",
+    name: "Marketing Compliance & Governance Agent",
+    category: "Marketing Operations",
+    mission: "Centralizes policy across data privacy, consent, advertising rules, brand claims, and communication compliance — a policy layer other agents should defer to, not a replacement for legal advice.",
+    inputs: ["Country/region", "Current channels", "Industry"],
+    outputs: ["Applicable regulatory framework checklist", "Consent & data-privacy requirements", "Advertising/claims restrictions by channel", "Audit trail recommendations"],
+    wired: true,
+    sortOrder: 8,
+  },
+  {
     key: "audience-sync-offline-conversion",
     name: "Audience Sync & Offline Conversion Agent",
     category: "Marketing Operations",

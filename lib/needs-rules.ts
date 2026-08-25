@@ -494,6 +494,9 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "idle",
       reason: "Needs baseline performance data across channels first — revisit once there's a run history to build a backlog against.",
     },
+    "marketing-compliance-governance": hasChannels || website
+      ? { status: "active", reason: "Real channels or a public site are already active — compliance groundwork should exist before volume makes gaps expensive." }
+      : { status: "idle", reason: "No active channels or public presence yet to apply compliance policy to." },
   };
 
   return agentKeys.map((key) => {
