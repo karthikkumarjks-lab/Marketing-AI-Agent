@@ -68,6 +68,11 @@ export default function Sidebar({
             label="Scorecard"
             active={pathname.endsWith("/scorecard")}
           />
+          <NavLink
+            href={`/workspaces/${activeWorkspaceId}/integrations`}
+            label="Integrations"
+            active={pathname.endsWith("/integrations")}
+          />
         </nav>
       )}
 

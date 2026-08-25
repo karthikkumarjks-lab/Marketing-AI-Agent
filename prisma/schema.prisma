@@ -49,6 +49,26 @@ model Workspace {
   agentRuns         AgentRun[]
   needsAnalyses     NeedsAnalysis[]
   brandDna          BrandDNA?
+  integrations      Integration[]
+}
+
+// Connector status per workspace. No live OAuth flow exists yet — this
+// persists which providers a workspace intends to use and whatever account
+// label a human enters after connecting manually. See lib/integrations.ts
+// for the provider registry and what real OAuth wiring would still need.
+model Integration {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  provider     String // matches a key in lib/integrations.ts's INTEGRATION_PROVIDERS
+  status       String    @default("not_connected") // "not_connected" | "connected"
+  accountLabel String? // free text, e.g. "Acme Co — 123-456-7890" — entered by hand, not fetched
+  connectedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
 }
 
 model BrandDNA {
