@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
   let workspaceId: string | null = null;
   let agentKey: string | null = null;
   let predictedOutcome: string | null = null;
+  let websiteUrlOverride: string | null = null;
   let file: File | null = null;
 
   if (contentType.includes("multipart/form-data")) {
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
     workspaceId = (form.get("workspaceId") as string) || null;
     agentKey = (form.get("agentKey") as string) || null;
     predictedOutcome = (form.get("predictedOutcome") as string) || null;
+    websiteUrlOverride = (form.get("websiteUrlOverride") as string) || null;
     const uploaded = form.get("file");
     if (uploaded instanceof File && uploaded.size > 0) file = uploaded;
   } else {
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
     workspaceId = body.workspaceId ?? null;
     agentKey = body.agentKey ?? null;
     predictedOutcome = body.predictedOutcome ?? null;
+    websiteUrlOverride = body.websiteUrlOverride ?? null;
   }
 
   if (!workspaceId || !agentKey) {
@@ -118,7 +121,10 @@ export async function POST(req: NextRequest) {
   // subpage discovery for the one agent that needs it — never fabricated,
   // and clearly labeled as real data in the prompt (buildWebsiteAuditContext).
   if (LIVE_WEBSITE_AUDIT_AGENTS.has(agentKey)) {
-    const websiteUrl = workspace.websiteUrl;
+    // A per-run override (typed directly on the agent's page) always wins
+    // over whatever's stored in Company DNA — lets a client-facing agent
+    // scan a different or prospective site without editing the workspace.
+    const websiteUrl = websiteUrlOverride || workspace.websiteUrl;
     if (!websiteUrl) {
       extraContext = (extraContext ?? "") + buildWebsiteAuditContext(null, null, null);
     } else {
