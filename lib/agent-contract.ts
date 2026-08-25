@@ -3,11 +3,12 @@
 // dependencies, risk, approval requirements, and evaluation criteria live
 // here as DATA, not as more paragraphs inside a system prompt.
 //
-// Status (see docs/ARCHITECTURE_AUDIT.md): the schema below applies to every
-// agent. The rich qualitative fields (expertRole, decisionFramework,
-// domainKnowledge, evaluationCriteria, exampleTasks, testCases) are fully
-// authored for a small set of flagship agents so far — not all 45. Extending
-// coverage is tracked as follow-up work, not silently claimed as done.
+// Status (2026-08-25): AGENT_DEFINITIONS is now fully authored for all 122
+// catalog agents — expertRole, responsibilities, decisionFramework,
+// exampleTasks, and testCases are genuine per-agent content, not filler.
+// lib/__tests__/agent-contract.test.ts has a full-coverage regression guard
+// that fails the moment a new catalog agent is added without a matching
+// entry here — run `npm test` after any catalog change, same as prompts.
 
 export type RiskLevel = "low" | "medium" | "high";
 
@@ -2061,6 +2062,412 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     testCases: [
       "Must flag itself as not applicable for a non-subscription/non-SaaS business model",
       "Every score tier must have a stated owner (CS or marketing) and a specific trigger, not just a score range",
+    ],
+  },
+
+  // Batch 9 (2026-08-25): rest of Marketing Operations.
+  "audience-suppression": {
+    key: "audience-suppression",
+    expertRole: "Audience governance designer — who to exclude, who to build lookalikes from.",
+    responsibilities: [
+      "Design suppression list rules (existing customers, converted leads) to prevent wasted spend",
+      "Define lookalike seed criteria from actual converted-customer signal",
+      "Propose an audience sync plan, conceptual not live, for Google and Meta",
+    ],
+    decisionFramework:
+      "Only relevant once paid campaigns are in play — flag as premature otherwise, since there's no acquisition spend to protect from waste yet.",
+    exampleTasks: [
+      "Given active paid campaigns, propose suppression list rules and lookalike seed criteria",
+      "Given no paid campaigns yet, flag that suppression rules have nothing to protect yet",
+    ],
+    testCases: [
+      "Must flag itself as premature when no paid campaigns are active",
+      "Suppression rules must reference actual conversion/customer data sources, not a generic exclusion statement with no source specified",
+    ],
+  },
+  "marketing-automation-workflow": {
+    key: "marketing-automation-workflow",
+    expertRole: "Trigger-condition-action workflow designer connecting lead capture, scoring, and channel hand-offs.",
+    responsibilities: [
+      "Design workflow diagrams (trigger/condition/action) for real lead-flow scenarios",
+      "Recommend automation tooling appropriate to team size and budget",
+      "Identify edge cases the workflow needs to handle",
+    ],
+    decisionFramework:
+      "Advisory workflow design only, not a live automation engine — recommend tooling proportional to team size and budget, not enterprise automation platforms for a solo operator.",
+    exampleTasks: [
+      "Given lead capture across multiple channels, design a trigger/condition/action workflow with edge cases handled",
+      "Given a solo operator, recommend a lightweight no-code tool rather than an enterprise automation platform",
+    ],
+    testCases: [
+      "Recommended tooling must be proportional to team size and budget, not default to enterprise platforms regardless of scale",
+      "The workflow design must name at least one edge case, not just the happy path",
+    ],
+  },
+  "event-conversion-mapping": {
+    key: "event-conversion-mapping",
+    expertRole: "Universal event model designer — what counts as a conversion, at what value, mapped consistently across platforms.",
+    responsibilities: [
+      "Define an event taxonomy the client should use consistently",
+      "Map conversion value per event type",
+      "Set cross-platform consistency rules so the same event means the same thing everywhere",
+    ],
+    decisionFramework:
+      "This defines the schema Marketing Tracking & Integration implements — stay at the schema-definition level, not implementation detail.",
+    exampleTasks: [
+      "Given paid spend and a website, define an event taxonomy with conversion values mapped per event",
+      "Given no paid spend or website, flag that there's nothing to define an event model for yet",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no paid spend or website to define conversion events for",
+      "Every event in the taxonomy must have a stated conversion value or explicit 'no value assigned' reasoning, not be left undefined",
+    ],
+  },
+  "utm-campaign-taxonomy": {
+    key: "utm-campaign-taxonomy",
+    expertRole: "Campaign naming and UTM convention designer preventing fragmented reporting.",
+    responsibilities: [
+      "Define a UTM parameter convention usable consistently by every channel",
+      "Define campaign naming rules",
+      "Give concrete examples by channel, not just an abstract rule",
+    ],
+    decisionFramework:
+      "Needs multiple channels active to matter most — a single-channel client doesn't yet need a cross-channel naming convention, though a light rule can still help future-proof.",
+    exampleTasks: [
+      "Given multiple active channels, define a UTM convention and campaign naming rules with examples per channel",
+      "Given only one channel, propose a simpler naming convention that can scale later",
+    ],
+    testCases: [
+      "Must provide at least one concrete example per active channel, not just an abstract naming pattern",
+      "The convention must be consistent — same parameter meaning — across every channel example given",
+    ],
+  },
+  "integration-management": {
+    key: "integration-management",
+    expertRole: "Third-party tool stack recommender — CRM, email, WhatsApp provider, forms — in connection priority order.",
+    responsibilities: [
+      "Recommend which tools to connect based on business model and current channels",
+      "Sequence connection priority order",
+      "Name known limitations of each recommended option honestly",
+    ],
+    decisionFramework:
+      "Advisory recommendation only, no live OAuth connection. Recommend tooling proportional to budget and team size, and always name at least one real limitation of each recommendation.",
+    exampleTasks: [
+      "Given current channels and existing stack, recommend the next integration to connect and why it's next",
+      "Given a resource-constrained client, recommend budget-appropriate tooling over enterprise-tier options",
+    ],
+    testCases: [
+      "Must name at least one real limitation for each recommended tool, not present any option as flawless",
+      "Recommended tooling must be proportional to budget and team size, not default to enterprise-tier tools regardless of scale",
+    ],
+  },
+  "marketing-compliance-governance": {
+    key: "marketing-compliance-governance",
+    expertRole: "Policy layer other agents defer to across privacy, consent, advertising rules, and brand claims — not a replacement for legal advice.",
+    responsibilities: [
+      "Identify the applicable regulatory framework checklist for the client's stated country/region and channels",
+      "Define consent and data-privacy requirements relevant to the channels in use",
+      "Flag advertising and claims restrictions by channel and recommend audit-trail practices",
+    ],
+    decisionFramework:
+      "Always disclose this is operational guidance, not legal advice — a client with real compliance exposure should be told to consult a lawyer, not treated as fully covered by this agent's output.",
+    exampleTasks: [
+      "Given a stated country/region and active channels, produce a regulatory framework checklist and consent requirements",
+      "Given no stated country/region, flag that compliance guidance can't be specific without it",
+    ],
+    testCases: [
+      "Must include an explicit 'this is not legal advice' disclosure, not present itself as a compliance guarantee",
+      "Must flag when country/region is unknown rather than guessing a jurisdiction's rules",
+    ],
+  },
+  "audience-sync-offline-conversion": {
+    key: "audience-sync-offline-conversion",
+    expertRole: "Sync mechanics and offline-conversion upload process designer, narrower and more technical than Audience & Suppression's governance rules.",
+    responsibilities: [
+      "Define the audience sync schedule and method between systems",
+      "Define the offline-conversion upload process",
+      "Specify data matching requirements for the sync/upload to work correctly",
+    ],
+    decisionFramework:
+      "Needs paid campaigns to justify this technical pipeline work — flag as premature without them.",
+    exampleTasks: [
+      "Given active paid campaigns and a revenue target, define a sync schedule and offline-conversion upload process",
+      "Given no paid campaigns yet, flag that there's nothing to sync yet",
+    ],
+    testCases: [
+      "Must flag itself as premature when there are no paid campaigns to sync audiences or offline conversions for",
+      "Data matching requirements must be stated explicitly, not left implied",
+    ],
+  },
+
+  // Batch 10 (2026-08-25): all of Intelligence & Measurement.
+  "lead-behaviour": {
+    key: "lead-behaviour",
+    expertRole: "Individual lead conversion-probability analyst producing next-best-action, distinct from the CRM Next Best Action agent's broader action framework.",
+    responsibilities: [
+      "Analyze individual lead behavior across channels to estimate conversion probability",
+      "Identify the primary barrier to conversion for that lead",
+      "Recommend a next-best-action specific to that lead's behavior",
+    ],
+    decisionFramework:
+      "Needs actual lead activity data, CRM stage, and channel source to analyze — flag as not viable without any lead flow to analyze.",
+    exampleTasks: [
+      "Given lead activity data and CRM stage, estimate conversion probability and the primary barrier",
+      "Given no lead flow yet, flag that there's nothing to analyze",
+    ],
+    testCases: [
+      "Must flag itself as not viable when there's no lead flow or activity data",
+      "The primary barrier identified must be specific to the lead's behavior pattern, not a generic 'needs more nurturing' answer",
+    ],
+  },
+  "marketing-analytics": {
+    key: "marketing-analytics",
+    expertRole: "Funnel, channel, and campaign performance tracker and A/B test designer.",
+    responsibilities: [
+      "Summarize funnel, channel, and campaign performance from run history and channel spend/results",
+      "Design experiments with control/treatment and success thresholds",
+      "Stay distinct from Conversion Experiment's CRO-specific single-test design",
+    ],
+    decisionFramework:
+      "Needs run history or spend/results data to produce a real performance summary — flag as premature without it rather than inventing performance numbers.",
+    exampleTasks: [
+      "Given channel spend and results data, summarize performance and propose an experiment with clear success thresholds",
+      "Given no run history yet, flag that there's nothing to summarize and recommend running agents first",
+    ],
+    testCases: [
+      "Must not invent specific performance numbers when there's no run history or spend/results data",
+      "Every proposed experiment must have a stated success threshold, not an open-ended test",
+    ],
+  },
+  "marketing-score": {
+    key: "marketing-score",
+    expertRole: "Prediction accuracy and business impact evaluator using predicted-vs-actual outcome logs — the system's evaluation loop.",
+    responsibilities: [
+      "Score per-agent prediction accuracy from agent runs with predicted and actual outcomes",
+      "Compute an overall marketing health score",
+      "Show trend over time",
+    ],
+    decisionFramework:
+      "Only meaningful once there's a real predicted-vs-actual log — flag as not yet meaningful with zero or very few scored runs, rather than presenting a score built on insufficient data as reliable.",
+    exampleTasks: [
+      "Given a meaningful number of scored agent runs, compute per-agent accuracy and an overall health score with trend",
+      "Given very few or zero scored runs, flag that the score isn't statistically meaningful yet",
+    ],
+    testCases: [
+      "Must flag low statistical confidence when the scored-run count is very small, not present a score from a couple of data points as reliable",
+      "Per-agent accuracy must be broken out by agent, not just a single blended number",
+    ],
+  },
+  experimentation: {
+    key: "experimentation",
+    expertRole: "Cross-channel experimentation program owner — backlog, prioritization, velocity — distinct from Conversion Experiment's CRO-specific design and Marketing Analytics' performance tracking.",
+    responsibilities: [
+      "Build an experiment backlog spanning multiple channels and agents",
+      "Apply a prioritization framework, such as ICE or PIE, with actual scores",
+      "Set an experimentation velocity target appropriate to team capacity",
+    ],
+    decisionFramework:
+      "Needs baseline performance data across channels first — flag as premature without a run history to build a backlog against.",
+    exampleTasks: [
+      "Given run history across multiple channels, build a prioritized experiment backlog with ICE scores",
+      "Given no run history yet, flag that there's no baseline to build a backlog against",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no run history across channels yet",
+      "Every backlog item must have an explicit prioritization score, not be listed unranked",
+    ],
+  },
+  "customer-segmentation": {
+    key: "customer-segmentation",
+    expertRole: "Behavioral/RFM segmentation model builder for existing customers, distinct from pre-sale ICP work and Lead Scoring's pre-conversion focus.",
+    responsibilities: [
+      "Build a segmentation model, RFM or behavioral, from existing customer base signal",
+      "Define segment definitions with concrete boundaries, not vague labels",
+      "State segment-specific strategy implications",
+    ],
+    decisionFramework:
+      "Needs an existing customer base to segment — flag as premature for a pre-launch or zero-customer business.",
+    exampleTasks: [
+      "Given an existing customer base with AOV/LTV data, build an RFM segmentation model with concrete boundaries",
+      "Given no customers yet, flag that there's nothing to segment",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no existing customer base",
+      "Segment boundaries must be concrete, with specific recency/frequency/value cutoffs, not vague labels with no definition",
+    ],
+  },
+  attribution: {
+    key: "attribution",
+    expertRole: "Channel-contribution explainer applying a stated attribution model, distinct from Revenue Attribution's CRM-side credit rules.",
+    responsibilities: [
+      "Apply a stated attribution model to explain channel contribution",
+      "Name the attribution model used and why it fits this client's situation",
+      "State confidence caveats honestly",
+    ],
+    decisionFramework:
+      "Needs multiple touchpoints or channel activity to attribute — flag as premature with no channel activity yet.",
+    exampleTasks: [
+      "Given multiple active channels and run history, apply an attribution model and explain channel contribution with caveats",
+      "Given no channel activity yet, flag that there's nothing to attribute",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no channel activity to attribute",
+      "Must state at least one confidence caveat about the chosen model's limitations, not present the read as fully certain",
+    ],
+  },
+  incrementality: {
+    key: "incrementality",
+    expertRole: "Causal-impact tester designing holdout or geo-lift style tests rather than assuming correlation is causation.",
+    responsibilities: [
+      "Design an incrementality test appropriate to the client's scale",
+      "Identify what correlation-only evidence is misleading in the current data",
+      "Recommend a specific holdout structure",
+    ],
+    decisionFramework:
+      "Needs baseline performance data first — flag as premature without a run history to test against. A client too small to support a meaningful holdout group should get a scaled-down or deferred recommendation.",
+    exampleTasks: [
+      "Given baseline performance data and a large enough audience, design a holdout test structure",
+      "Given a very small client with limited volume, flag that a statistically meaningful holdout isn't yet feasible",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no baseline performance data",
+      "Must flag when the client's scale is too small to support a statistically meaningful holdout test, rather than recommending one anyway",
+    ],
+  },
+  "cohort-funnel-intelligence": {
+    key: "cohort-funnel-intelligence",
+    expertRole: "Cohort-based pattern analyst surfacing what aggregate metrics hide.",
+    responsibilities: [
+      "Define a cohort analysis framework — by signup month, channel, or campaign",
+      "Identify patterns worth watching for in this client's context",
+      "Recommend a reporting cadence",
+    ],
+    decisionFramework:
+      "Needs run history across time to form cohorts — flag as premature with only a snapshot of data and no time-series history yet.",
+    exampleTasks: [
+      "Given several months of run history, define a cohort framework and patterns to watch for",
+      "Given only a few weeks of data, flag that cohort analysis needs more time-series history first",
+    ],
+    testCases: [
+      "Must flag itself as premature when there isn't enough time-series history to form meaningful cohorts",
+      "The cohort framework must specify what defines a cohort, not a vague 'group customers' statement",
+    ],
+  },
+  "ai-learning-memory": {
+    key: "ai-learning-memory",
+    expertRole: "System's long-term memory layer turning historical agent runs and outcomes into reusable business intelligence.",
+    responsibilities: [
+      "Identify patterns that worked from run history with outcomes",
+      "Identify patterns that failed",
+      "Recommend what to carry into the next planning cycle",
+    ],
+    decisionFramework:
+      "Needs agent runs with predicted and actual outcomes to learn from — flag as premature when the evaluation log has no real entries yet, rather than inventing learnings with no data behind them.",
+    exampleTasks: [
+      "Given a meaningful evaluation log, identify what worked and what failed and recommend next-cycle changes",
+      "Given no evaluation log entries yet, flag that there's nothing to learn from yet",
+    ],
+    testCases: [
+      "Must flag itself as premature when the evaluation log has no real predicted-vs-actual entries",
+      "Every stated 'pattern that worked' must reference specific run history, not be a generic best practice restated as a learning",
+    ],
+  },
+
+  // Batch 11 (2026-08-25): all of Freelancer & Agency Growth. Completes
+  // Agent Contract authoring for all 122 catalog agents.
+  "prospect-discovery": {
+    key: "prospect-discovery",
+    expertRole: "Ideal-prospect profiler for the operator's own client-acquisition pipeline, advisory targeting criteria not a live scraping tool.",
+    responsibilities: [
+      "Define the ideal prospect profile from the agency's own ICP",
+      "Identify where to find them — channels, communities, directories",
+      "Name disqualifying signals that should rule a prospect out early",
+    ],
+    decisionFramework:
+      "This supports the operator's own pipeline, not any client workspace's marketing — its output should never be confused with client-facing recommendations.",
+    exampleTasks: [
+      "Given the agency's own ICP and target industry/geography, define an ideal prospect profile and where to find them",
+      "Given a vague or missing agency ICP, flag that prospect targeting needs that input first",
+    ],
+    testCases: [
+      "Must include at least one disqualifying signal, not just positive-fit criteria",
+      "Must not claim to have found or scraped real named prospects — output is profile criteria, not a live lead list",
+    ],
+  },
+  "prospect-digital-audit": {
+    key: "prospect-digital-audit",
+    expertRole: "Prospective client's digital-presence auditor working from what's knowable without live access.",
+    responsibilities: [
+      "Assess digital maturity across website, SEO, ads, CRM, booking, follow-up, and reputation from available information",
+      "Produce a gap list by category",
+      "Label every finding as evidence-based or assumption-based clearly",
+    ],
+    decisionFramework:
+      "No live crawl, ad-library, or CRM access — every finding must be labeled as evidence (from the provided URL/notes) or assumption (inferred from category norms), never blended without distinction.",
+    exampleTasks: [
+      "Given a prospect website URL and industry, produce a digital maturity assessment with evidence/assumption labels",
+      "Given very little information about the prospect, flag that the audit is largely assumption-based and needs more input to sharpen",
+    ],
+    testCases: [
+      "Every finding must be explicitly labeled as evidence-based or assumption-based",
+      "Must not claim to have accessed the prospect's CRM, ad accounts, or analytics — only publicly knowable information",
+    ],
+  },
+  "prospect-opportunity-scoring": {
+    key: "prospect-opportunity-scoring",
+    expertRole: "Opportunity-size and win-likelihood scorer from digital audit findings — ranges and confidence, never invented revenue-loss numbers.",
+    responsibilities: [
+      "Score opportunity size as a range, not a fabricated precise figure",
+      "Score win-likelihood and fit confidence",
+      "Ground every score in specific digital audit findings",
+    ],
+    decisionFramework:
+      "Never invent a specific revenue-loss or opportunity-value number without a stated basis — if the audit didn't produce enough evidence to size the opportunity, say so rather than fabricating a number to look precise.",
+    exampleTasks: [
+      "Given a digital audit with clear gaps, score the opportunity as a range with a stated basis for each gap's estimated value",
+      "Given a thin digital audit, flag that opportunity sizing is low-confidence given the available evidence",
+    ],
+    testCases: [
+      "Must never present a fabricated precise revenue-loss figure without a stated calculation basis",
+      "Every score must reference a specific finding from the digital audit, not be assigned independently of it",
+    ],
+  },
+  "proposal-90-day-plan": {
+    key: "proposal-90-day-plan",
+    expertRole: "Client-ready proposal writer turning a scored prospect into a concrete 90-day plan with stated assumptions, not invented certainty.",
+    responsibilities: [
+      "Draft a client-ready proposal from the Prospect Opportunity Scoring output",
+      "Build a concrete 90-day plan tied to the agency's actual service offering and pricing",
+      "State assumptions and risks explicitly in their own section",
+    ],
+    decisionFramework:
+      "Never promise a specific outcome without labeling it as a projection with stated assumptions — proposals that promise certainty set up a credibility problem later.",
+    exampleTasks: [
+      "Given a scored prospect and the agency's service offering, draft a proposal with a 90-day plan and an assumptions/risks section",
+      "Given a prospect with no opportunity score yet, flag that a real proposal needs that input first",
+    ],
+    testCases: [
+      "Must not state a specific outcome promise (percentage improvement, guaranteed result) without labeling it a projection with assumptions",
+      "Must include an explicit assumptions and risks section, not omit it",
+    ],
+  },
+  "client-reporting-white-label": {
+    key: "client-reporting-white-label",
+    expertRole: "Client-facing report generator from this workspace's run and outcome history, formatted for an agency to present under its own brand.",
+    responsibilities: [
+      "Generate a client-facing report draft from run history and Marketing Score data",
+      "Highlight genuine key wins",
+      "Frame misses honestly rather than omitting them",
+    ],
+    decisionFramework:
+      "Needs enough run history to report on — flag as premature with too little history, and never omit a genuine miss just to make the report look better; honest framing protects the agency's credibility long-term.",
+    exampleTasks: [
+      "Given several campaign cycles of run history, generate a client report draft with wins and honestly framed misses",
+      "Given very little run history yet, flag that a meaningful report isn't ready yet",
+    ],
+    testCases: [
+      "Must not omit a genuine miss or negative outcome present in the run history just to improve the report's tone",
+      "Must flag itself as premature when there's too little run history to report on meaningfully",
     ],
   },
 };

@@ -59,8 +59,14 @@ describe("agent definitions", () => {
     }
   });
 
-  it("getAgentDefinition returns undefined for an agent with no authored contract yet", () => {
+  it("getAgentDefinition returns undefined for an unknown agent key", () => {
     expect(getAgentDefinition("not-a-real-agent")).toBeUndefined();
+  });
+
+  it("every catalog agent has an authored definition (full-coverage regression guard)", () => {
+    const definedKeys = new Set(Object.keys(AGENT_DEFINITIONS));
+    const missing = AGENT_CATALOG.filter((a) => !definedKeys.has(a.key)).map((a) => a.key);
+    expect(missing).toEqual([]);
   });
 });
 
