@@ -466,6 +466,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 21,
   },
+  {
+    key: "sales-prospecting-outbound",
+    name: "Sales Prospecting & Outbound Agent",
+    category: "CRM & Lead Operations",
+    mission: "Researches individual target accounts/contacts against the ICP and drafts personalized first-touch outbound outreach — the client's own sales team's tactical prospecting motion, distinct from ABM's program-level account selection and from the Freelancer & Agency Growth prospecting agents, which serve the operator's own pipeline, not this client's.",
+    inputs: ["ICP/personas", "Target account or contact details if provided", "Objective"],
+    outputs: ["Account/contact research summary", "Personalized first-touch outreach draft", "Follow-up sequence outline"],
+    wired: true,
+    sortOrder: 22,
+  },
   // Acquisition
   {
     key: "seo-strategy",

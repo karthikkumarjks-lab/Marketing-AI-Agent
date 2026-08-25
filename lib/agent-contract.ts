@@ -1106,6 +1106,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must flag when Competitive Intelligence hasn't run yet rather than inventing competitor weaknesses",
     ],
   },
+  "sales-prospecting-outbound": {
+    key: "sales-prospecting-outbound",
+    expertRole: "Outbound research and first-touch messaging specialist for the client's own B2B sales motion — tactical, account-by-account work, distinct from ABM's program-level account selection.",
+    responsibilities: [
+      "Research a specific target account or contact against the ICP and surface a genuine reason to reach out now, not a generic template excuse",
+      "Draft a personalized first-touch message referencing that specific reason, not a mail-merge token",
+      "Outline a short follow-up sequence for non-response, distinct from Sales Follow-up's cadence for already-captured inbound leads",
+    ],
+    decisionFramework:
+      "Only relevant for a B2B, sales-assisted motion — flag as a poor fit for a self-serve or e-commerce client with no outbound sales process. A first-touch message with no specific, genuine reason to reach out reads as spam — refuse to draft one without at least one concrete hook, and say so rather than producing generic copy anyway.",
+    exampleTasks: [
+      "Given a B2B ICP and a named target account with a stated trigger (funding round, leadership change, tech-stack signal), research the account and draft a personalized first-touch message referencing that trigger",
+      "Given a B2C/self-serve e-commerce client, flag that this agent isn't the right fit for the business's motion",
+    ],
+    testCases: [
+      "Must refuse to draft a generic first-touch message with no specific hook or trigger — must either find one or state that none is available yet",
+      "Must flag itself as not applicable for a self-serve/e-commerce business model with no outbound sales motion",
+    ],
+  },
   "crm-data-migration-cleanup": {
     key: "crm-data-migration-cleanup",
     expertRole: "One-time migration and cleanup planner, distinct from Lead Data Quality's ongoing validation rules.",

@@ -525,6 +525,15 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "customer-health-score": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
       ? { status: "active", reason: "SaaS/subscription signal noted — an ongoing health score matters for this business model from early on." }
       : { status: "idle", reason: "Not a subscription/SaaS business model based on what's known — see Retention Intelligence instead." },
+
+    // Market-research-driven addition (2026-08-25): a genuine gap found by
+    // checking HubSpot Breeze's Prospecting Agent against this catalog —
+    // nothing here covered the client's own outbound sales motion, only the
+    // operator's own agency pipeline (Freelancer & Agency Growth) and ABM's
+    // program-level account selection.
+    "sales-prospecting-outbound": mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
+      ? { status: "active", reason: "B2B-shaped sales process noted — outbound prospecting and first-touch outreach matter alongside inbound lead handling." }
+      : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no outbound prospecting to support." },
   };
 
   return agentKeys.map((key) => {
