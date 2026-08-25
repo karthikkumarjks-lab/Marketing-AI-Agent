@@ -67,13 +67,13 @@ export default function IntegrationCard({
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Account label (e.g. account ID/name)"
           disabled={pending}
-          className="flex-1 rounded-md border border-line bg-canvas px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60"
+          className="flex-1 rounded-md border border-line bg-bg px-2 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60"
         />
         {status === "connected" ? (
           <button
             onClick={() => setStatus("not_connected")}
             disabled={pending}
-            className="text-xs px-3 py-1 rounded-md border border-line text-ink-soft hover:bg-canvas disabled:opacity-60"
+            className="text-xs px-3 py-1 rounded-md border border-line text-ink-soft hover:bg-bg disabled:opacity-60"
           >
             Disconnect
           </button>

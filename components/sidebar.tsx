@@ -46,6 +46,11 @@ export default function Sidebar({
         <div className="text-[11px] text-ink-faint mt-0.5 ml-[26px]">{agentCount} agents · 1 shared runtime</div>
       </div>
 
+      <nav className="px-3 py-3 border-b border-line flex flex-col gap-0.5">
+        <div className="text-[11px] font-mono uppercase tracking-wider text-ink-faint px-3 mb-1">Tools</div>
+        <NavLink href="/domain-scan" label="Domain Scan" active={pathname === "/domain-scan"} />
+      </nav>
+
       {activeWorkspaceId && (
         <nav className="px-3 py-3 border-b border-line flex flex-col gap-0.5">
           <NavLink
