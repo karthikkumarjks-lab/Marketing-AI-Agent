@@ -102,8 +102,13 @@ function buildAdLibraryLinks(domain: string): AdLibraryLink[] {
   ];
 }
 
-const FETCH_TIMEOUT_MS = 8000;
-const MAX_HTML_BYTES = 500_000;
+const FETCH_TIMEOUT_MS = 15000;
+// Real pages routinely exceed the old 500KB cap this started at — a real
+// bug, not a theoretical one: found by scanning an actual site whose tel:
+// link and chat-widget script both sat past 500KB, well into the footer,
+// so this scanner reported "not found" for things that were genuinely on
+// the page. 3MB comfortably covers the large majority of real-world pages.
+const MAX_HTML_BYTES = 3_000_000;
 
 function normalizeDomain(input: string): string {
   let d = input.trim().toLowerCase();
@@ -148,7 +153,7 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
-async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html: string | null }> {
+async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html: string | null; htmlTruncated: boolean }> {
   for (const scheme of ["https", "http"]) {
     const url = `${scheme}://${domain}`;
     const start = Date.now();
@@ -157,6 +162,7 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
       const loadTimeMs = Date.now() - start;
       const reader = res.body?.getReader();
       let html = "";
+      let htmlTruncated = false;
       if (reader) {
         const decoder = new TextDecoder();
         let bytes = 0;
@@ -165,6 +171,10 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
           if (done) break;
           bytes += value.byteLength;
           html += decoder.decode(value, { stream: true });
+        }
+        if (bytes >= MAX_HTML_BYTES) {
+          const { done } = await reader.read();
+          if (!done) htmlTruncated = true;
         }
         reader.cancel().catch(() => {});
       }
@@ -178,6 +188,7 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
           error: res.ok ? null : `HTTP ${res.status}`,
         },
         html: html || null,
+        htmlTruncated,
       };
     } catch (err) {
       if (scheme === "http") {
@@ -191,6 +202,7 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
             error: err instanceof Error ? err.message : "Unreachable",
           },
           html: null,
+          htmlTruncated: false,
         };
       }
       // https failed, fall through to try http
@@ -199,6 +211,7 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
   return {
     check: { reachable: false, url: null, statusCode: null, https: false, loadTimeMs: null, error: "Unreachable" },
     html: null,
+    htmlTruncated: false,
   };
 }
 
@@ -315,7 +328,12 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     };
   }
 
-  const { check: website, html } = await checkWebsite(domain);
+  const { check: website, html, htmlTruncated } = await checkWebsite(domain);
+  if (htmlTruncated) {
+    notes.push(
+      `This page is larger than ${(MAX_HTML_BYTES / 1_000_000).toFixed(0)}MB — only the first part was read. A tel: link, social link, or chat widget positioned further down the page (common in a large footer or a page with heavy inline scripts) could be missed.`,
+    );
+  }
 
   if (!html) {
     if (website.reachable) notes.push("Website responded but returned no readable HTML content.");
