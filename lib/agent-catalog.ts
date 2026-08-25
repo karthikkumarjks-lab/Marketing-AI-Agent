@@ -1093,12 +1093,12 @@ export const AGENT_CATALOG: AgentSpec[] = [
   {
     key: "lead-nurturing-strategy",
     name: "Lead Nurturing Strategy Agent",
-    category: "Retention & Lifecycle",
+    category: "CRM & Lead Operations",
     mission: "Pre-conversion nurture strategy specifically for leads not yet customers — distinct from Lifecycle & Nurture's whole-customer-lifecycle remit, which includes post-purchase stages.",
     inputs: ["ICP/personas", "Objective", "Lead scoring model if available"],
     outputs: ["Pre-conversion nurture stage map", "Lead-stage-specific messaging goals", "Hand-off point to sales"],
     wired: true,
-    sortOrder: 16,
+    sortOrder: 31,
   },
   {
     key: "whatsapp-marketing",
@@ -1245,12 +1245,12 @@ export const AGENT_CATALOG: AgentSpec[] = [
   {
     key: "lead-behaviour",
     name: "Lead Behaviour & Conversion Intelligence Agent",
-    category: "Intelligence & Measurement",
+    category: "CRM & Lead Operations",
     mission: "Analyzes individual lead behavior across channels to produce conversion probability and next-best-action.",
     inputs: ["Lead activity data", "CRM stage", "Channel source"],
     outputs: ["Conversion probability", "Primary barrier", "Next-best-action"],
     wired: true,
-    sortOrder: 23,
+    sortOrder: 32,
   },
   {
     key: "marketing-analytics",
