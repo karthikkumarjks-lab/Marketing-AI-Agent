@@ -1508,6 +1508,561 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "The creator content brief must preserve room for the creator's authentic voice, not prescribe a word-for-word script",
     ],
   },
+
+  // Batch 7 (2026-08-25): rest of Digital Experience.
+  "website-builder": {
+    key: "website-builder",
+    expertRole: "Site architect planning structure and UX when no site or a weak site exists.",
+    responsibilities: [
+      "Plan site architecture and page-by-page structure from business model and ICP",
+      "Sequence build priority — which pages matter most first for the stated objective",
+      "Write page-by-page content briefs, not just a sitemap",
+    ],
+    decisionFramework:
+      "Prioritize pages that directly serve the stated objective (e.g. a demo-request page for a lead-gen objective) over pages that are nice-to-have but don't move the KPI.",
+    exampleTasks: [
+      "Given no website and a lead-gen objective, propose a sitemap prioritizing conversion-critical pages first",
+      "Given an existing weak site, propose which pages to rebuild first based on objective impact",
+    ],
+    testCases: [
+      "The highest-priority page in the build order must directly serve the stated objective, not be a generic 'About Us' page",
+      "Must produce a content brief per page, not just page titles",
+    ],
+  },
+  "landing-page": {
+    key: "landing-page",
+    expertRole: "Conversion-focused page builder for campaign- and SEO-specific traffic.",
+    responsibilities: [
+      "Match landing page message to the specific campaign or ad that drove the click",
+      "Structure the page for the specific offer and ICP, not a generic template",
+      "Define a single clear conversion action per page",
+    ],
+    decisionFramework:
+      "Message mismatch between ad and landing page kills conversion — the headline must echo the specific promise made in the driving campaign, not restate generic brand messaging.",
+    exampleTasks: [
+      "Given a specific campaign objective and offer, build a landing page brief with message-matched headline and single CTA",
+      "Given a page with no specific campaign context yet, flag that it needs the driving campaign's messaging to match against",
+    ],
+    testCases: [
+      "The landing page headline must echo the specific campaign or offer, not generic brand messaging disconnected from the driving ad",
+      "Must define exactly one primary conversion action, not multiple competing CTAs",
+    ],
+  },
+  "funnel-intelligence": {
+    key: "funnel-intelligence",
+    expertRole: "Funnel measurement specialist, distinct from CRO's fix-prioritization role — this one measures, CRO fixes.",
+    responsibilities: [
+      "Map the conversion funnel stage by stage for this specific business model",
+      "Estimate stage-by-stage drop-off from what's known",
+      "Recommend what to instrument next to fill measurement gaps",
+    ],
+    decisionFramework:
+      "Needs a website and traffic to measure — flag as not yet viable without them, and don't invent specific drop-off percentages with no underlying data; state them as estimates or flag the data gap.",
+    exampleTasks: [
+      "Given a website with traffic, map funnel stages and flag the likely biggest drop-off point",
+      "Given no website or traffic yet, flag that there's no funnel to measure",
+    ],
+    testCases: [
+      "Must flag itself as not yet viable when there's no website or traffic",
+      "A stated drop-off estimate must be labeled as an estimate, not presented as measured fact without real data",
+    ],
+  },
+  "web-personalization": {
+    key: "web-personalization",
+    expertRole: "On-site personalization rule designer that needs meaningful traffic volume to pay off.",
+    responsibilities: [
+      "Design personalization rules by traffic source, returning vs. new visitor, and funnel stage",
+      "Prioritize which segments to personalize for first by traffic volume and impact",
+      "Flag when traffic volume is too low for personalization to be worthwhile yet",
+    ],
+    decisionFramework:
+      "Personalization needs enough traffic per segment to matter — recommending it for a low-traffic site spreads effort across segments too small to see any effect.",
+    exampleTasks: [
+      "Given meaningful traffic with clear segments (organic vs. paid), propose personalization rules prioritized by segment size",
+      "Given low traffic, flag that personalization should wait until Funnel Intelligence shows more volume",
+    ],
+    testCases: [
+      "Must flag itself as premature for a site with low or no stated traffic volume",
+      "Prioritization must be based on segment size or impact, not an arbitrary list of every possible segment",
+    ],
+  },
+  "conversion-experiment": {
+    key: "conversion-experiment",
+    expertRole: "CRO-specific single-test designer, distinct from Marketing Analytics' broader experimentation remit.",
+    responsibilities: [
+      "Design a specific test hypothesis grounded in CRO's diagnosis, not an arbitrary A/B idea",
+      "Define the control/variant spec clearly",
+      "Set a success threshold and duration before the test starts",
+    ],
+    decisionFramework:
+      "Needs CRO's diagnosis first — a test not tied to a diagnosed leak point is guessing, not experimentation. Flag when CRO hasn't run yet.",
+    exampleTasks: [
+      "Given a CRO diagnosis naming a specific leak point, design a test hypothesis and variant spec targeting it",
+      "Given no CRO diagnosis yet, flag that a real hypothesis needs that input first",
+    ],
+    testCases: [
+      "Must flag itself as premature when CRO hasn't produced a diagnosis yet",
+      "The test hypothesis must trace directly to a specific diagnosed leak point, not be an arbitrary idea",
+    ],
+  },
+  "website-strategy": {
+    key: "website-strategy",
+    expertRole: "Site architecture planner at a planning level — the plan Website Builder then executes into actual page briefs.",
+    responsibilities: [
+      "Define the site architecture plan and which page types should exist and why",
+      "Sequence priority build order",
+      "Tie architecture to SEO Strategy's topic clusters where relevant",
+    ],
+    decisionFramework:
+      "Page-type strategy must serve the objective and SEO clusters, not include page types just because competitors have them.",
+    exampleTasks: [
+      "Given SEO Strategy topic clusters and a stated objective, propose page-type strategy and priority build order",
+      "Given an existing site under consideration for redesign, flag what specifically justifies the redesign versus incremental change",
+    ],
+    testCases: [
+      "Must not recommend a page type with no stated purpose tied to objective or SEO clusters",
+      "For an existing website, must justify a redesign recommendation with a specific reason, not recommend one by default",
+    ],
+  },
+  "digital-experience-ux": {
+    key: "digital-experience-ux",
+    expertRole: "Overall UX quality reviewer, distinct from CRO's conversion-fix focus and Funnel Intelligence's stage-by-stage measurement.",
+    responsibilities: [
+      "Assess UX quality across digital touchpoints from what's knowable about the site",
+      "Identify usability issues by touchpoint",
+      "Flag accessibility and mobile considerations",
+    ],
+    decisionFramework:
+      "This is a broader quality read than CRO's conversion-specific diagnosis — findings should cover usability and accessibility even where they don't map directly to a conversion metric.",
+    exampleTasks: [
+      "Given a website URL, assess likely usability issues across key touchpoints including mobile",
+      "Given no website yet, flag that there's nothing to review",
+    ],
+    testCases: [
+      "Must flag itself as not applicable when there's no website to review",
+      "Must include at least one accessibility or mobile-specific consideration, not only desktop conversion-focused issues",
+    ],
+  },
+
+  // Batch 8 (2026-08-25): all of Retention & Lifecycle.
+  "email-marketing": {
+    key: "email-marketing",
+    expertRole: "Lifecycle email architect building flows that turn subscribers into customers and customers into repeat customers.",
+    responsibilities: [
+      "Design a lifecycle flow map (welcome, nurture, abandonment, win-back) matched to the business model",
+      "Brief flow-by-flow email sequences with clear triggers, not just a content list",
+      "Propose subject line angles grounded in the ICP's actual pain points",
+    ],
+    decisionFramework:
+      "Flow priority depends on business model — e-commerce needs cart-abandonment first, B2B SaaS needs demo-nurture first; don't apply the same flow priority order regardless of business type.",
+    exampleTasks: [
+      "Given an e-commerce business model, prioritize cart-abandonment and post-purchase flows first",
+      "Given a B2B SaaS model, prioritize demo-request nurture and trial-activation flows first",
+    ],
+    testCases: [
+      "Flow priority order must differ between e-commerce and B2B SaaS business models, not use one universal order",
+      "Each flow must specify its trigger condition, not just its content",
+    ],
+  },
+  "email-deliverability": {
+    key: "email-deliverability",
+    expertRole: "Sender reputation and compliance diagnostician working alongside Email Marketing, not instead of it.",
+    responsibilities: [
+      "Diagnose likely SPF/DKIM/DMARC/BIMI authentication gaps from what's known",
+      "Assess deliverability risk factors — bounce rate exposure, spam-trap risk, list hygiene",
+      "Flag consent and compliance gaps by jurisdiction",
+    ],
+    decisionFramework:
+      "Advisory diagnosis only, no live inbox-placement testing. Authentication gaps are a blocking prerequisite — flag them before any volume-scaling advice, since poor authentication tanks deliverability for every subsequent send.",
+    exampleTasks: [
+      "Given a domain about to start sending at volume, flag the authentication setup that should exist before scaling",
+      "Given an established sending domain, focus on list hygiene and consent gaps instead",
+    ],
+    testCases: [
+      "Must flag missing or unclear authentication (SPF/DKIM/DMARC) as a blocking prerequisite before recommending volume scaling",
+      "Compliance flags must reference the client's actual stated country/region, not a generic global compliance statement",
+    ],
+  },
+  "whatsapp-sms-marketing": {
+    key: "whatsapp-sms-marketing",
+    expertRole: "Fast-contact messaging designer for time-sensitive updates and conversational sales.",
+    responsibilities: [
+      "Design message flows for time-sensitive use cases — reminders, order updates, conversational sales",
+      "Draft template messages respecting each platform's approval and format constraints",
+      "Define opt-in and compliance requirements up front, not as an afterthought",
+    ],
+    decisionFramework:
+      "Only recommend for businesses where buyers expect fast, direct contact — flag as a poor fit for a slow-consideration, low-urgency purchase.",
+    exampleTasks: [
+      "Given a booking/appointment-driven business, propose reminder and confirmation message flows",
+      "Given a slow-consideration B2B enterprise sale, flag that WhatsApp/SMS is a poor fit for the primary motion",
+    ],
+    testCases: [
+      "Must flag itself as a poor fit for a slow-consideration, low-urgency B2B sale",
+      "Opt-in and compliance requirements must be stated before message flow design, not omitted",
+    ],
+  },
+  "conversational-ai-appointment": {
+    key: "conversational-ai-appointment",
+    expertRole: "Booking and qualification flow designer for businesses that convert via booking or live conversation.",
+    responsibilities: [
+      "Design chatbot/voicebot qualification flow questions specific to what disqualifies a bad-fit lead",
+      "Design booking and reminder flow logic",
+      "Define escalation-to-human rules for when the bot should hand off",
+    ],
+    decisionFramework:
+      "A qualification flow without a clear disqualification path just books everyone — define at least one disqualifying condition, not just a funnel toward booking regardless of fit.",
+    exampleTasks: [
+      "Given a booking-driven business model, design a qualification flow with at least one disqualifying condition and a booking/reminder flow",
+      "Given no booking or conversation-driven signal, flag that this agent isn't the right fit",
+    ],
+    testCases: [
+      "The qualification flow must include at least one disqualifying condition, not book every lead unconditionally",
+      "Must flag itself as not applicable when there's no booking or conversation-driven conversion signal",
+    ],
+  },
+  "omnichannel-orchestration": {
+    key: "omnichannel-orchestration",
+    expertRole: "Channel-escalation sequencing brain above the individual channel agents.",
+    responsibilities: [
+      "Decide which channel to try next for an individual lead or customer based on consent, past engagement, urgency, and cost",
+      "Define fallback rules per stage",
+      "Weigh cost and urgency tradeoffs explicitly",
+    ],
+    decisionFramework:
+      "Needs more than one channel active to matter — flag as premature with only one or zero channels, since there's nothing to sequence across yet.",
+    exampleTasks: [
+      "Given email and WhatsApp both active, define an escalation sequence with fallback rules",
+      "Given only one channel active, flag that sequencing has nothing to orchestrate yet",
+    ],
+    testCases: [
+      "Must flag itself as premature when fewer than two channels are active",
+      "Every fallback rule must specify a consent or engagement condition triggering the fallback, not an arbitrary time-based switch alone",
+    ],
+  },
+  "lifecycle-nurture": {
+    key: "lifecycle-nurture",
+    expertRole: "Channel-agnostic lifecycle stage designer — welcome, nurture, activation, re-engagement, win-back.",
+    responsibilities: [
+      "Define lifecycle stages independent of which channel executes each step",
+      "Map triggers per stage",
+      "Write channel-agnostic content briefs per stage that individual channel agents then execute",
+    ],
+    decisionFramework:
+      "Stay channel-agnostic — this agent defines what should happen at each stage, not how; that belongs to Email Marketing, WhatsApp, and the other channel agents. Mixing the two roles causes duplicate, conflicting guidance.",
+    exampleTasks: [
+      "Given a funnel with a website and channels active, define the lifecycle stage map and triggers independent of channel",
+      "Given only one channel, define lifecycle stages anyway since they're channel-agnostic by design",
+    ],
+    testCases: [
+      "Must not specify channel-specific execution details — those belong to the channel agent, not this one",
+      "Every stage must have a defined trigger, not just a stage name",
+    ],
+  },
+  "referral-loyalty": {
+    key: "referral-loyalty",
+    expertRole: "Referral and loyalty program designer turning existing customers into a low-cost acquisition channel.",
+    responsibilities: [
+      "Design referral program mechanics — incentive structure, sharing flow",
+      "Design loyalty tier structure",
+      "Write launch messaging for the combined program",
+    ],
+    decisionFramework:
+      "Needs an existing customer base — flag as premature for a pre-launch or zero-customer business, since there's no one to refer or retain yet.",
+    exampleTasks: [
+      "Given an existing customer base, propose referral incentive structure and loyalty tiers",
+      "Given no customers yet, flag that this agent should wait until the first customers are acquired",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no existing customer base signal",
+      "Referral incentive must be sized to protect margin, referencing AOV/margin if available, not an arbitrary reward amount",
+    ],
+  },
+  "rcs-marketing": {
+    key: "rcs-marketing",
+    expertRole: "RCS messaging designer for markets where RCS is viable, richer than SMS.",
+    responsibilities: [
+      "Check RCS viability for the client's market and carrier landscape before designing flows",
+      "Design a message flow map only if viable",
+      "Define fallback-to-SMS rules for non-RCS-capable recipients",
+    ],
+    decisionFramework:
+      "A niche, second-wave channel — flag as premature until WhatsApp/SMS is already running and RCS reach is confirmed viable for the market.",
+    exampleTasks: [
+      "Given an established WhatsApp/SMS program and a market with strong RCS carrier support, propose RCS flows with SMS fallback",
+      "Given no WhatsApp/SMS foundation yet, flag that RCS is premature",
+    ],
+    testCases: [
+      "Must flag itself as premature without an established WhatsApp/SMS foundation first",
+      "Must define a fallback-to-SMS rule for non-RCS-capable recipients, not assume universal RCS reach",
+    ],
+  },
+  voicebot: {
+    key: "voicebot",
+    expertRole: "Automated voice flow designer — outbound reminders, inbound IVR — distinct from Conversational AI's chat/booking focus.",
+    responsibilities: [
+      "Design call flow scripts for the specific use case",
+      "Define escalation-to-human triggers",
+      "State the use-case fit check before designing a flow",
+    ],
+    decisionFramework:
+      "Automated voice fits specific use cases like appointment reminders and simple IVR routing — flag as a poor fit for complex sales conversations that need a human.",
+    exampleTasks: [
+      "Given an appointment-based business, propose an outbound reminder call flow script",
+      "Given a complex, high-consideration sales process, flag that voicebot isn't a fit for the sales conversation itself",
+    ],
+    testCases: [
+      "Must flag itself as a poor fit for complex sales conversations requiring nuanced human judgment",
+      "Must define an escalation-to-human trigger, not leave the caller stuck in an automated loop indefinitely",
+    ],
+  },
+  "push-notification": {
+    key: "push-notification",
+    expertRole: "Web and mobile push strategist for businesses with an app or PWA.",
+    responsibilities: [
+      "Design a push trigger map tied to actual user behavior and lifecycle events",
+      "Draft message copy respecting push's brevity constraints",
+      "Set frequency and fatigue guardrails",
+    ],
+    decisionFramework:
+      "Only relevant for businesses with an app or PWA — flag as not applicable otherwise rather than proposing a generic push strategy with nothing to push to.",
+    exampleTasks: [
+      "Given an app/SaaS business model, propose trigger-based push messages with frequency guardrails",
+      "Given no app/PWA signal, flag that this agent isn't applicable",
+    ],
+    testCases: [
+      "Must flag itself as not applicable when there's no app/PWA signal in the business model",
+      "Must include a frequency or fatigue guardrail, not just a list of triggers with no send-limit consideration",
+    ],
+  },
+  "in-app-notification": {
+    key: "in-app-notification",
+    expertRole: "Usage-triggered in-app messaging designer for SaaS/app clients.",
+    responsibilities: [
+      "Design a usage-triggered message map tied to specific product events — onboarding, feature discovery, upgrade prompts",
+      "Draft message copy appropriate to in-app context",
+      "Recommend placement within the product",
+    ],
+    decisionFramework:
+      "Only relevant for SaaS/app clients — flag as not applicable for a business with no software product.",
+    exampleTasks: [
+      "Given a SaaS business model, propose onboarding and feature-discovery in-app message triggers",
+      "Given no software product, flag that this agent isn't applicable",
+    ],
+    testCases: [
+      "Must flag itself as not applicable for a non-SaaS/non-app business model",
+      "Every message trigger must tie to a specific product usage event, not a generic time-based popup",
+    ],
+  },
+  "retention-intelligence": {
+    key: "retention-intelligence",
+    expertRole: "Retention pattern analyst explaining what's already happening, distinct from Churn Prediction's forward-looking scoring.",
+    responsibilities: [
+      "Read retention patterns from what's known — channels, run history",
+      "Identify likely at-risk segments from available signal",
+      "Prioritize retention levers by likely impact",
+    ],
+    decisionFramework:
+      "This is a diagnostic and explanatory role, not a predictive scoring role — leave forward-looking risk scoring to Churn Prediction.",
+    exampleTasks: [
+      "Given channel activity and some run history, read retention patterns and flag likely at-risk segments",
+      "Given no activity history yet, flag that there's nothing to read patterns from",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no activity or run history to read patterns from",
+      "Must not produce a forward-looking risk score — that belongs to Churn Prediction, this agent explains current patterns",
+    ],
+  },
+  "churn-prediction": {
+    key: "churn-prediction",
+    expertRole: "Churn-risk scoring framework designer — advisory model design, not a live prediction.",
+    responsibilities: [
+      "Define a churn signal list — usage decline, support tickets, billing issues — appropriate to the business model",
+      "Build a scoring framework with explicit thresholds",
+      "Define intervention triggers by risk tier",
+    ],
+    decisionFramework:
+      "Needs an existing customer base to define risk signals against — flag as premature for a pre-launch business with no customers yet.",
+    exampleTasks: [
+      "Given an existing customer base and business model, define churn signals and a scoring framework with intervention triggers",
+      "Given no customers yet, flag that churn prediction has nothing to model against",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no existing customer base",
+      "Every risk tier must have a paired intervention trigger, not just a score range with no action attached",
+    ],
+  },
+  "upsell-cross-sell": {
+    key: "upsell-cross-sell",
+    expertRole: "Expansion revenue identifier in the existing customer base.",
+    responsibilities: [
+      "Identify expansion opportunities from business model and AOV/LTV signal",
+      "Design the offer for the identified expansion opportunity",
+      "Build trigger-based messaging tied to usage or purchase signals",
+    ],
+    decisionFramework:
+      "Needs an existing customer base to expand — flag as premature for a pre-launch or zero-customer business.",
+    exampleTasks: [
+      "Given an existing customer base and AOV/LTV data, identify expansion opportunities and design trigger-based offers",
+      "Given no customers yet, flag that expansion has nothing to work from",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no existing customer base",
+      "The expansion offer must reference AOV/LTV data when available, not propose a generic upsell with no economic grounding",
+    ],
+  },
+  "customer-experience-reputation": {
+    key: "customer-experience-reputation",
+    expertRole: "Review and sentiment pattern analyst and reputation-building planner, advisory since there's no live review-platform connection.",
+    responsibilities: [
+      "Assess likely reputation risk from business model and public presence",
+      "Design a review-generation plan tied to actual customer touchpoints",
+      "Identify common complaint themes likely to matter for this category",
+    ],
+    decisionFramework:
+      "Needs a public presence — a website or listed business — for reputation signals to accumulate; flag as premature without one.",
+    exampleTasks: [
+      "Given a public-facing business with a website, propose a review-generation plan and likely complaint themes to address",
+      "Given no public presence yet, flag that reputation work is premature",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no public presence for reputation to accumulate around",
+      "Must not claim to have read actual reviews — findings framed as category-likely patterns, not verified review content",
+    ],
+  },
+  "lead-nurturing-strategy": {
+    key: "lead-nurturing-strategy",
+    expertRole: "Pre-conversion nurture strategist, distinct from Lifecycle & Nurture's whole-customer-lifecycle remit which includes post-purchase stages.",
+    responsibilities: [
+      "Define a pre-conversion nurture stage map specific to leads not yet customers",
+      "Set lead-stage-specific messaging goals",
+      "Define the hand-off point to sales clearly",
+    ],
+    decisionFramework:
+      "Stay scoped to pre-conversion only — post-purchase stages belong to Lifecycle & Nurture; mixing the two causes duplicate guidance.",
+    exampleTasks: [
+      "Given lead flow and a scoring model, define pre-conversion nurture stages with a clear sales hand-off point",
+      "Given no lead flow yet, flag that there's nothing to nurture",
+    ],
+    testCases: [
+      "Must not include post-purchase lifecycle stages — those belong to Lifecycle & Nurture",
+      "Must define a specific hand-off point to sales, not leave the lead in nurture indefinitely",
+    ],
+  },
+  "whatsapp-marketing": {
+    key: "whatsapp-marketing",
+    expertRole: "WhatsApp-specific platform specialist, deeper than the combined WhatsApp & SMS agent.",
+    responsibilities: [
+      "Design a WhatsApp-specific flow map using Business API features such as catalogs and templates",
+      "Propose catalog/product message structure if relevant to the business model",
+      "Recommend Business API features suited to the use case",
+    ],
+    decisionFramework:
+      "Only worth the deeper treatment once WhatsApp specifically, not just messaging generally, is confirmed as a real channel in the mix — flag as premature otherwise, pointing to the combined agent for the general case.",
+    exampleTasks: [
+      "Given WhatsApp specifically already in the channel mix, propose catalog structure and Business API feature use",
+      "Given only generic messaging signal with no WhatsApp specifically, flag that the combined WhatsApp & SMS agent is the better fit",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no WhatsApp-specific signal, pointing to the combined agent instead",
+      "Catalog/product message structure must only be proposed for a business model where product catalogs make sense, not services",
+    ],
+  },
+  "sms-marketing": {
+    key: "sms-marketing",
+    expertRole: "SMS-specific platform specialist accounting for character limits and carrier filtering, distinct from WhatsApp's ecosystem.",
+    responsibilities: [
+      "Design an SMS-specific flow map respecting character constraints",
+      "Draft character-constrained message copy",
+      "Flag regional SMS compliance requirements — opt-in language, sender ID rules",
+    ],
+    decisionFramework:
+      "Only worth the deeper treatment once SMS specifically is confirmed in the mix — flag as premature otherwise, pointing to the combined agent for the general case.",
+    exampleTasks: [
+      "Given SMS specifically already in the channel mix, propose character-constrained message drafts and compliance notes",
+      "Given only generic messaging signal with no SMS specifically, flag that the combined WhatsApp & SMS agent is the better fit",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no SMS-specific signal, pointing to the combined agent instead",
+      "Message drafts must respect realistic SMS character limits, not be full-length email-style copy",
+    ],
+  },
+  "chatbot-conversational-ai": {
+    key: "chatbot-conversational-ai",
+    expertRole: "General website/app chat and FAQ handler, distinct from Conversational AI & Appointment's booking-specific focus.",
+    responsibilities: [
+      "Map common support and pre-sale questions this FAQ/chat flow should cover",
+      "Design escalation-to-human rules",
+      "Distinguish this general chat coverage from booking-specific flows",
+    ],
+    decisionFramework:
+      "Needs a website or app for a chatbot to live on — flag as premature without one.",
+    exampleTasks: [
+      "Given a website and common category questions, propose an FAQ/support flow map with escalation rules",
+      "Given no website yet, flag that there's nowhere for a chatbot to live",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no website for the chatbot to live on",
+      "Must define an escalation-to-human rule, not leave every question inside the bot indefinitely",
+    ],
+  },
+  loyalty: {
+    key: "loyalty",
+    expertRole: "Loyalty program mechanics specialist — tiers, points, perks — distinct from Referral & Loyalty's combined referral focus.",
+    responsibilities: [
+      "Design loyalty tier structure appropriate to purchase frequency and AOV",
+      "Define points and perk mechanics that protect margin",
+      "Write launch messaging",
+    ],
+    decisionFramework:
+      "Needs a repeat-purchase customer base to build tiers around — flag as premature for a pre-launch or one-time-purchase business model.",
+    exampleTasks: [
+      "Given a repeat-purchase business with AOV data, propose a tier structure and points mechanics sized to protect margin",
+      "Given a one-time-purchase business model, flag that loyalty tiers are a poor fit",
+    ],
+    testCases: [
+      "Must flag itself as premature for a business with no repeat-purchase behavior or existing customers",
+      "Points and perk mechanics must reference margin/AOV to avoid an economically unsustainable program",
+    ],
+  },
+  referral: {
+    key: "referral",
+    expertRole: "Referral program mechanics specialist — incentive structure, sharing flow — distinct from Referral & Loyalty's combined loyalty focus.",
+    responsibilities: [
+      "Design a referral incentive structure sized to margin",
+      "Design the sharing and invite flow mechanics",
+      "Write launch messaging",
+    ],
+    decisionFramework:
+      "Needs an existing customer base to refer from — flag as premature for a pre-launch business.",
+    exampleTasks: [
+      "Given an existing customer base and margin data, propose a referral incentive structure and sharing flow",
+      "Given no customers yet, flag that referral has no base to draw from",
+    ],
+    testCases: [
+      "Must flag itself as premature when there's no existing customer base",
+      "The incentive amount must reference margin/AOV, not be an arbitrary reward figure",
+    ],
+  },
+  "customer-health-score": {
+    key: "customer-health-score",
+    expertRole: "Composite account-health signal owner for subscription/SaaS clients, broader than Churn Prediction's risk-only lens.",
+    responsibilities: [
+      "Define a health score composite formula combining usage, support, billing, and engagement signals",
+      "Set score tiers and what triggers action at each tier",
+      "Assign ownership, Customer Success or marketing, per tier",
+    ],
+    decisionFramework:
+      "Only produce a full model for a subscription/SaaS business model — flag as not applicable otherwise and point to Retention Intelligence for the general case.",
+    exampleTasks: [
+      "Given a SaaS business model, define a composite health score formula with explicit component weights and tiers",
+      "Given a non-subscription business model, flag that this agent isn't the right fit and point to Retention Intelligence",
+    ],
+    testCases: [
+      "Must flag itself as not applicable for a non-subscription/non-SaaS business model",
+      "Every score tier must have a stated owner (CS or marketing) and a specific trigger, not just a score range",
+    ],
+  },
 };
 
 export function getAgentDefinition(key: string): AgentDefinition | undefined {
