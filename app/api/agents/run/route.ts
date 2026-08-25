@@ -10,6 +10,7 @@ import {
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
 import { getUploadType } from "@/lib/agent-uploads";
+import { getTextInputSpec } from "@/lib/agent-text-input";
 import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
   let agentKey: string | null = null;
   let predictedOutcome: string | null = null;
   let websiteUrlOverride: string | null = null;
+  let runNote: string | null = null;
   let file: File | null = null;
 
   if (contentType.includes("multipart/form-data")) {
@@ -36,6 +38,7 @@ export async function POST(req: NextRequest) {
     agentKey = (form.get("agentKey") as string) || null;
     predictedOutcome = (form.get("predictedOutcome") as string) || null;
     websiteUrlOverride = (form.get("websiteUrlOverride") as string) || null;
+    runNote = (form.get("runNote") as string) || null;
     const uploaded = form.get("file");
     if (uploaded instanceof File && uploaded.size > 0) file = uploaded;
   } else {
@@ -44,6 +47,7 @@ export async function POST(req: NextRequest) {
     agentKey = body.agentKey ?? null;
     predictedOutcome = body.predictedOutcome ?? null;
     websiteUrlOverride = body.websiteUrlOverride ?? null;
+    runNote = body.runNote ?? null;
   }
 
   if (!workspaceId || !agentKey) {
@@ -186,6 +190,15 @@ export async function POST(req: NextRequest) {
       .filter((d): d is DependencyRunSnapshot => d !== null);
     const handoff = buildHandoffContext(handoffDeps);
     if (handoff) extraContext = (extraContext ?? "") + handoff;
+  }
+
+  // Free-text run input (call transcript, closed-deal outcomes, deal specifics)
+  // — transient, never persisted beyond this call. Capped to keep the prompt
+  // from ballooning on an accidental paste of an entire document.
+  const MAX_RUN_NOTE_CHARS = 20000;
+  if (runNote && getTextInputSpec(agentKey)) {
+    const trimmed = runNote.length > MAX_RUN_NOTE_CHARS ? runNote.slice(0, MAX_RUN_NOTE_CHARS) + "\n…(truncated)" : runNote;
+    extraContext = (extraContext ?? "") + `\n\n## User-Provided Input\n${trimmed}`;
   }
 
   // File upload — transient, never written to disk or the database. Parsed

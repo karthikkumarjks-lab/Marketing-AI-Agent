@@ -22,6 +22,7 @@ export default function AgentRunner({
   isWired,
   uploadType,
   websiteUrlField,
+  textInputField,
   runs,
 }: {
   workspaceId: string;
@@ -30,11 +31,14 @@ export default function AgentRunner({
   uploadType: "excel" | "screenshot" | null;
   /** Non-null for agents that scan a real website — prefilled from Company DNA, but overridable per run. */
   websiteUrlField: string | null;
+  /** Non-null for agents that need real per-run free text (a transcript, deal outcomes) with no Company DNA field. */
+  textInputField: { label: string; placeholder: string } | null;
   runs: RunLite[];
 }) {
   const router = useRouter();
   const [predictedOutcome, setPredictedOutcome] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState(websiteUrlField ?? "");
+  const [runNote, setRunNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +52,7 @@ export default function AgentRunner({
       form.set("agentKey", agentKey);
       if (predictedOutcome) form.set("predictedOutcome", predictedOutcome);
       if (websiteUrlField !== null && websiteUrl) form.set("websiteUrlOverride", websiteUrl);
+      if (textInputField && runNote) form.set("runNote", runNote);
       if (file) form.set("file", file);
 
       const res = await fetch("/api/agents/run", { method: "POST", body: form });
@@ -57,6 +62,7 @@ export default function AgentRunner({
       }
       setPredictedOutcome("");
       setFile(null);
+      setRunNote("");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Run failed.");
@@ -84,6 +90,18 @@ export default function AgentRunner({
                   ? "Prefilled from this workspace's Company DNA — change it to scan a different site for this run only."
                   : "No website is on record for this workspace yet — enter one here to scan it for this run only."}
               </p>
+            </div>
+          )}
+          {textInputField && (
+            <div className="mb-3">
+              <label className="text-sm font-medium text-ink mb-1 block">{textInputField.label}</label>
+              <textarea
+                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 min-h-24"
+                placeholder={textInputField.placeholder}
+                value={runNote}
+                onChange={(e) => setRunNote(e.target.value)}
+              />
+              <p className="text-[11px] text-ink-faint mt-1">Used for this run only, not saved.</p>
             </div>
           )}
           {uploadType && (

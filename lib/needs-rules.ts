@@ -535,6 +535,22 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       ? { status: "active", reason: "B2B-shaped sales process noted — outbound prospecting and first-touch outreach matter alongside inbound lead handling." }
       : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no outbound prospecting to support." },
 
+    // Sales-gap audit (2026-08-25): win/loss and call coaching both need real
+    // closed-deal/transcript data that Company DNA can't confirm exists yet —
+    // idle unconditionally, like crm-data-migration-cleanup's "needs a stated
+    // precondition" pattern, rather than gated on a B2B signal alone.
+    "win-loss-analysis": {
+      status: "idle",
+      reason: "Needs at least a handful of closed deals (won or lost, with reasons) to analyze — revisit once early deals have closed either way.",
+    },
+    "sales-call-coaching": {
+      status: "idle",
+      reason: "Needs a real sales call transcript to analyze — revisit once calls are happening and a transcript can be pasted or uploaded.",
+    },
+    "sales-proposal-quote": mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
+      ? { status: "active", reason: "B2B-shaped sales process noted — a reusable proposal/quote template is useful even before the first real deal specifics exist." }
+      : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no negotiated proposals/quotes to draft." },
+
     // Landing page split-testing needs the same paid-traffic foundation as
     // the Landing Page Agent itself — nothing to split-test without traffic
     // hitting a page yet.

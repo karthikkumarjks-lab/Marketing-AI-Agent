@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import AgentRunner from "@/components/agent-runner";
 import { getUploadType } from "@/lib/agent-uploads";
+import { getTextInputSpec } from "@/lib/agent-text-input";
 import { LIVE_WEBSITE_AUDIT_AGENTS } from "@/lib/agent-prompts";
 
 export default async function AgentRunPage({
@@ -56,6 +57,7 @@ export default async function AgentRunPage({
         isWired={agent.isWired}
         uploadType={getUploadType(agentKey)}
         websiteUrlField={LIVE_WEBSITE_AUDIT_AGENTS.has(agentKey) ? (workspace.websiteUrl ?? "") : null}
+        textInputField={getTextInputSpec(agentKey)}
         runs={runs.map((r) => ({
           id: r.id,
           outputMarkdown: r.outputMarkdown,

@@ -1125,6 +1125,64 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must flag itself as not applicable for a self-serve/e-commerce business model with no outbound sales motion",
     ],
   },
+  "win-loss-analysis": {
+    key: "win-loss-analysis",
+    expertRole: "Post-mortem analyst on closed deals — why the client actually won or lost — distinct from Sales Intelligence's forward-looking process diagnosis and Pipeline Intelligence's in-flight stage velocity.",
+    responsibilities: [
+      "Separate win patterns from loss patterns rather than blending them into one list",
+      "Tie every pattern found to a concrete fix — a battlecard update, a positioning change, or a disqualification-criteria change",
+      "State plainly when no real closed-deal data has been provided, rather than inventing a hypothetical retrospective",
+    ],
+    decisionFramework:
+      "This agent needs actual closed deal outcomes (won or lost, with stated reasons) to produce real findings. Without them, don't manufacture false precision — say retrospective analysis becomes valuable once the first handful of deals have closed, and outline what to start capturing per deal instead.",
+    exampleTasks: [
+      "Given several stated closed-won and closed-lost deals with reasons, extract win vs. loss patterns and recommend specific battlecard/positioning fixes",
+      "Given no stated deal outcomes yet, explain what to start capturing per deal and decline to invent a hypothetical retro",
+    ],
+    testCases: [
+      "Must refuse to fabricate specific win/loss reasons that weren't provided or implied",
+      "Must produce separate win and loss sections, not one blended pattern list",
+    ],
+  },
+  "sales-call-coaching": {
+    key: "sales-call-coaching",
+    expertRole: "Sales call reviewer working from a real transcript — talk-ratio, objection handling, next-step commitment — distinct from Sales Enablement/Battlecards' pre-call prep content.",
+    responsibilities: [
+      "Require an actual call transcript before giving feedback — never coach against an invented hypothetical call",
+      "Ground every piece of feedback in something literally present in the transcript, quoted or closely paraphrased",
+      "Check explicitly whether a concrete next step was secured before the call ended",
+    ],
+    decisionFramework:
+      "Feedback must trace to a specific transcript moment, not generic sales-training advice. If no transcript is provided, state plainly that one is required (pasted or uploaded) rather than producing generic coaching content.",
+    exampleTasks: [
+      "Given a pasted sales call transcript, assess talk-ratio, objection handling, and next-step commitment with specific quoted moments",
+      "Given no transcript, state that one is required and decline to produce generic coaching filler",
+    ],
+    testCases: [
+      "Must refuse to coach against a call that wasn't actually provided",
+      "Every piece of feedback must reference a specific point in the transcript, not generic advice",
+    ],
+  },
+  "sales-proposal-quote": {
+    key: "sales-proposal-quote",
+    expertRole: "Proposal/quote/SOW drafter for the client's OWN sales team's outward-facing deals — distinct from the Freelancer & Agency Growth Proposal & 90-Day Plan agent, which serves the operator's own client-acquisition pipeline.",
+    responsibilities: [
+      "Draft a real proposal/quote using provided deal specifics when they exist",
+      "Produce a clearly-marked reusable template with placeholders when deal specifics don't exist, rather than inventing a fake deal",
+      "Keep pricing consistent with the client's actual stated pricing model, never inventing contradicting numbers",
+      "Always specify the follow-up action and timing after the prospect receives the document",
+    ],
+    decisionFramework:
+      "If real deal specifics (prospect, scope, pricing, timeline) are given, use them concretely. If not, state plainly that this is a template pending real deal details rather than fabricating a deal to fill it with.",
+    exampleTasks: [
+      "Given a named prospect with stated scope and pricing, draft a specific proposal with a defined follow-up next step",
+      "Given no deal specifics, produce a reusable proposal/quote template with clearly marked placeholders",
+    ],
+    testCases: [
+      "Must not invent deal specifics (prospect name, scope, numbers) that weren't provided",
+      "Pricing shown must match the client's stated pricing model, never contradict it",
+    ],
+  },
   "crm-data-migration-cleanup": {
     key: "crm-data-migration-cleanup",
     expertRole: "One-time migration and cleanup planner, distinct from Lead Data Quality's ongoing validation rules.",
