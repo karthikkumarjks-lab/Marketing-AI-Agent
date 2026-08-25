@@ -419,6 +419,81 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "idle",
       reason: "Worth activating once this workspace has enough run history to report on — revisit after the first few campaign cycles.",
     },
+
+    // Split-out agents (2026-08-25): narrower siblings of an existing
+    // combined agent. Defaults lean idle-by-default for the ones that only
+    // add value once the broader/combined agent already has real output to
+    // narrow down on.
+    "objective-kpi": {
+      status: "active",
+      reason: "Sets the target system every other agent should read — worth having early, especially when North Star KPI isn't set yet.",
+    },
+    "marketplace-seo": {
+      status: "idle",
+      reason: "No signal yet that this business sells through a marketplace (app store, Amazon, Etsy) rather than its own site.",
+    },
+    "seo-content-strategy": organicObjective
+      ? { status: "active", reason: "Objective is organic-led — keyword-to-content mapping should happen alongside the general Content Strategy work." }
+      : { status: "idle", reason: "Objective isn't organic-led yet — revisit once SEO becomes a priority." },
+    "influencer-creator-marketing": {
+      status: "idle",
+      reason: "Typically a second-wave channel, same as PR — activate once core acquisition is validated and budget allows.",
+    },
+    "website-strategy": website
+      ? { status: "idle", reason: "A website already exists — revisit if a redesign or major restructure is being considered." }
+      : { status: "active", reason: "No website yet — architecture should be planned before Website Builder writes page briefs." },
+    "digital-experience-ux": website
+      ? { status: "active", reason: "A website exists — usability is worth reviewing alongside CRO's conversion-focused work." }
+      : { status: "idle", reason: "No website yet to review the UX of." },
+    "crm-schema-custom-field": hasChannels
+      ? { status: "active", reason: "Leads are flowing — field-level CRM design matters once CRM & Customer Data's structure exists to attach fields to." }
+      : { status: "idle", reason: "No lead flow yet to design CRM fields around." },
+    "lead-management": hasChannels
+      ? { status: "active", reason: "Multiple CRM specialist agents are relevant here — worth an umbrella view of gaps between them." }
+      : { status: "idle", reason: "No lead flow yet for CRM specialists to have gaps between." },
+    "sales-assignment-capacity": {
+      status: "idle",
+      reason: "Needs a stated team beyond a solo operator to plan territory/capacity around — revisit once team size is known.",
+    },
+    "identity-resolution-dedup": hasChannels
+      ? { status: "active", reason: "Multiple channels can create duplicate identities — worth defining matching logic before volume grows." }
+      : { status: "idle", reason: "No lead flow yet to resolve identities across." },
+    "next-best-action": hasChannels
+      ? { status: "active", reason: "Leads are flowing — action-level prioritization matters once there's more than one thing that could happen next." }
+      : { status: "idle", reason: "No lead flow yet to recommend next actions for." },
+    "pipeline-intelligence": hasChannels
+      ? { status: "active", reason: "Leads are flowing into a pipeline — velocity and stall points are worth watching from the start." }
+      : { status: "idle", reason: "No lead flow yet to build a pipeline view from." },
+    "revenue-intelligence": budget > 0 || hasChannels
+      ? { status: "active", reason: "Spend or lead flow exists — revenue performance quality should be watched, not just top-line growth." }
+      : { status: "idle", reason: "No revenue activity yet to analyze." },
+    "whatsapp-marketing": mentions(dna.currentChannels, ["whatsapp"]) || mentions(dna.objective, ["whatsapp"])
+      ? { status: "active", reason: "WhatsApp specifically is already in the mix — worth the deeper platform-specific treatment." }
+      : { status: "idle", reason: "No specific WhatsApp signal yet — see the combined WhatsApp & SMS agent for the general case." },
+    "sms-marketing": mentions(dna.currentChannels, ["sms"]) || mentions(dna.objective, ["sms"])
+      ? { status: "active", reason: "SMS specifically is already in the mix — worth the deeper platform-specific treatment." }
+      : { status: "idle", reason: "No specific SMS signal yet — see the combined WhatsApp & SMS agent for the general case." },
+    "chatbot-conversational-ai": website
+      ? { status: "active", reason: "A website exists — general FAQ/support chat is worth planning alongside booking-specific Conversational AI." }
+      : { status: "idle", reason: "No website yet for a chatbot to live on." },
+    loyalty: {
+      status: "idle",
+      reason: "Needs a repeat-purchase customer base to build tiers around — revisit once the first customers are acquired.",
+    },
+    referral: {
+      status: "idle",
+      reason: "Needs an existing customer base to refer from — revisit once the first customers are acquired.",
+    },
+    "lead-nurturing-strategy": hasChannels
+      ? { status: "active", reason: "Leads are flowing — pre-conversion nurture strategy matters before Lifecycle & Nurture's post-purchase stages become relevant." }
+      : { status: "idle", reason: "No lead flow yet to nurture." },
+    "audience-sync-offline-conversion": paidActive
+      ? { status: "active", reason: "Paid campaigns are likely — the sync/upload pipeline matters once there's real conversion data to feed back." }
+      : { status: "idle", reason: "No paid campaigns yet to sync audiences or offline conversions for." },
+    experimentation: {
+      status: "idle",
+      reason: "Needs baseline performance data across channels first — revisit once there's a run history to build a backlog against.",
+    },
   };
 
   return agentKeys.map((key) => {
