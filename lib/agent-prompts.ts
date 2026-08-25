@@ -2168,24 +2168,38 @@ export async function runAgentLLM(
     user += buildBrandDNAPrompt(brand ?? null);
   }
 
-  // Gemini checked first: a genuinely separate quota from OpenRouter's, on
-  // Google's own free tier, which every source checked before adding this
-  // converges on being far above OpenRouter's 50-requests-per-day cap. Once
-  // a Gemini key is set, it's used automatically — no toggle needed, and
-  // OpenRouter still works as a fallback if the Gemini key is ever removed.
+  // Two DIFFERENT providers, tried in order, each with its own separate
+  // quota — genuine failover (Gemini having an outage or hitting its own
+  // limit falls through to OpenRouter), not multiple accounts on the same
+  // provider pooling one limit, which this deliberately does not do (see
+  // the decision documented alongside GEMINI_API_KEY in .env.local.example).
   const geminiKey = process.env.GEMINI_API_KEY;
-  if (geminiKey) {
-    const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-    const markdown = await callGemini(geminiKey, model, system, user, imageDataUri);
-    return { markdown, isDemo: false, model: `gemini:${model}` };
-  }
-
   const openrouterKey = process.env.OPENROUTER_API_KEY;
-  if (openrouterKey) {
-    const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
-    const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri);
-    return { markdown, isDemo: false, model: `openrouter:${model}` };
+  let firstError: unknown;
+
+  if (geminiKey) {
+    try {
+      const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+      const markdown = await callGemini(geminiKey, model, system, user, imageDataUri);
+      return { markdown, isDemo: false, model: `gemini:${model}` };
+    } catch (err) {
+      firstError = err;
+    }
   }
 
+  if (openrouterKey) {
+    try {
+      const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+      const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri);
+      return { markdown, isDemo: false, model: `openrouter:${model}` };
+    } catch (err) {
+      // If Gemini also failed, surface that as the primary error — it's the
+      // one whichever provider is preferred actually hit first — rather than
+      // losing it in favor of the fallback's own failure.
+      throw firstError ?? err;
+    }
+  }
+
+  if (firstError) throw firstError;
   return { markdown: demoOutput(agentName, dna), isDemo: true, model: "demo" };
 }
