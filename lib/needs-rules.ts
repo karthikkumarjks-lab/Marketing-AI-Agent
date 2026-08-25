@@ -497,6 +497,34 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "marketing-compliance-governance": hasChannels || website
       ? { status: "active", reason: "Real channels or a public site are already active — compliance groundwork should exist before volume makes gaps expensive." }
       : { status: "idle", reason: "No active channels or public presence yet to apply compliance policy to." },
+
+    // Expert-suggested additions (2026-08-25): genuine coverage gaps found on
+    // a marketing + CRM domain review, not items from Karthikeyan's own lists.
+    "pricing-strategy": {
+      status: "active",
+      reason: "Pricing underpins every other economic decision this team makes — worth checking early, alongside Offer & Positioning.",
+    },
+    "marketing-calendar-campaign-planning": hasChannels
+      ? { status: "active", reason: "Multiple channels are active — a shared campaign calendar prevents them colliding or leaving gaps." }
+      : { status: "idle", reason: "No channels yet to build a campaign calendar around." },
+    "affiliate-partner-marketing": {
+      status: "idle",
+      reason: "A second-wave channel — needs an established margin/AOV profile to support commission economics; revisit once core acquisition is validated.",
+    },
+    "sales-enablement-battlecards": mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
+      ? { status: "active", reason: "B2B-shaped sales process noted — reps benefit from battlecards and objection handling from early on." }
+      : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion where this doesn't apply yet." },
+    "crm-data-migration-cleanup": {
+      status: "idle",
+      reason: "Needs a stated existing CRM/spreadsheet situation to plan a migration from — revisit once that's known.",
+    },
+    "customer-segmentation": {
+      status: "idle",
+      reason: "Needs an existing customer base to segment — revisit once the first customers are acquired.",
+    },
+    "customer-health-score": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
+      ? { status: "active", reason: "SaaS/subscription signal noted — an ongoing health score matters for this business model from early on." }
+      : { status: "idle", reason: "Not a subscription/SaaS business model based on what's known — see Retention Intelligence instead." },
   };
 
   return agentKeys.map((key) => {
