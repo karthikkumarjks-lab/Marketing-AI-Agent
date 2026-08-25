@@ -839,6 +839,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 27,
   },
+  {
+    key: "landing-page-split-test",
+    name: "Landing Page Split-Test Agent",
+    category: "Digital Experience",
+    mission: "Designs a landing page split test — one master/control page compared against multiple full-page variant designs — to find the best-performing whole-page approach, distinct from Conversion Experiment's single-hypothesis, element-level CRO test design.",
+    inputs: ["Master/control landing page or brief", "Campaign objective", "Traffic volume if known"],
+    outputs: ["Master page summary", "Multiple full-page variant concepts with what differs and why", "Traffic split plan", "Success metric and required sample size"],
+    wired: true,
+    sortOrder: 28,
+  },
   // Retention & Lifecycle
   {
     key: "email-marketing",

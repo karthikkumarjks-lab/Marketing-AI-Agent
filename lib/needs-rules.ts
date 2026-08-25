@@ -534,6 +534,13 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "sales-prospecting-outbound": mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS)
       ? { status: "active", reason: "B2B-shaped sales process noted — outbound prospecting and first-touch outreach matter alongside inbound lead handling." }
       : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no outbound prospecting to support." },
+
+    // Landing page split-testing needs the same paid-traffic foundation as
+    // the Landing Page Agent itself — nothing to split-test without traffic
+    // hitting a page yet.
+    "landing-page-split-test": paidActive
+      ? { status: "active", reason: "Paid traffic is driving to landing pages — worth testing multiple full-page approaches once there's enough traffic to split." }
+      : { status: "idle", reason: "No paid traffic planned yet — nothing to split-test." },
   };
 
   return agentKeys.map((key) => {

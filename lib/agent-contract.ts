@@ -1644,6 +1644,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "For an existing website, must justify a redesign recommendation with a specific reason, not recommend one by default",
     ],
   },
+  "landing-page-split-test": {
+    key: "landing-page-split-test",
+    expertRole: "Landing page split-test designer comparing whole-page approaches, distinct from Conversion Experiment's single-hypothesis, element-level test design.",
+    responsibilities: [
+      "Describe the master/control page and 2-3 genuinely distinct full-page variants — different structural approaches, not the same page with one element changed",
+      "State exactly what differs between each variant and why that difference is worth testing",
+      "Flag when traffic is too thin to split three or more ways and recommend a single A/B test instead",
+    ],
+    decisionFramework:
+      "Never produce variants that differ arbitrarily with no stated rationale — every difference must trace to a specific reason it's worth testing. Only worth running with enough traffic to reach a valid sample across all variants; below that, defer to Conversion Experiment's narrower single-test design.",
+    exampleTasks: [
+      "Given a master landing page and healthy paid traffic, design 2-3 structurally distinct full-page variants (long-form proof-heavy vs. short-form urgency-driven vs. video-led) with a traffic split plan",
+      "Given thin traffic that can't support a 3-way split, recommend a single A/B test via Conversion Experiment instead",
+    ],
+    testCases: [
+      "Must not propose variants that differ only in a single element (headline, button color) — that's Conversion Experiment's job, not this one",
+      "Must flag itself as premature when traffic is too thin to reach a valid sample across the proposed variants",
+    ],
+  },
   "digital-experience-ux": {
     key: "digital-experience-ux",
     expertRole: "Overall UX quality reviewer, distinct from CRO's conversion-fix focus and Funnel Intelligence's stage-by-stage measurement.",
