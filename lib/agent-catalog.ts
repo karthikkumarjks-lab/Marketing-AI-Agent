@@ -849,6 +849,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 28,
   },
+  {
+    key: "website-technology-structure",
+    name: "Website Technology & Structure Agent",
+    category: "Digital Experience",
+    mission: "Real, live audit of a client's website — actual technology stack detected via signature matching (CMS, framework, analytics, forms, CDN) and actual subpages discovered via sitemap or link crawling — then interprets what the findings mean for the marketing stack. Distinct from Technical SEO's crawlability focus and the standalone Domain Scan tool's raw, unopinionated output.",
+    inputs: ["Website URL"],
+    outputs: ["Detected technology stack by category", "Discovered subpages", "Gaps and integration opportunities"],
+    wired: true,
+    sortOrder: 29,
+  },
   // Retention & Lifecycle
   {
     key: "email-marketing",

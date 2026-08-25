@@ -1663,6 +1663,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must flag itself as premature when traffic is too thin to reach a valid sample across the proposed variants",
     ],
   },
+  "website-technology-structure": {
+    key: "website-technology-structure",
+    expertRole: "Website technology and structure auditor who interprets real scan data, distinct from Technical SEO's crawlability focus and the standalone Domain Scan tool's raw output.",
+    responsibilities: [
+      "Interpret the real, provided technology-detection findings by category — never invent a plausible-sounding stack when a category is genuinely empty",
+      "Read the discovered subpages for structural insight — what page types exist and what's conspicuously missing",
+      "Cross-reference detected tools against tracking and integration gaps other agents would need to know about",
+    ],
+    decisionFramework:
+      "Every claim about detected technology or pages must trace to the real scan data provided in context — this agent never guesses at a client's tech stack. An empty detection category is reported as a real finding (a likely gap), with the honest caveat that the detector recognizes a fixed set of common tools, not every tool that exists.",
+    exampleTasks: [
+      "Given real scan data showing WordPress with no detected analytics tool, flag the missing analytics as a concrete tracking gap",
+      "Given a discovered subpage list with no dedicated pricing or contact page, flag that as a structural gap worth addressing",
+    ],
+    testCases: [
+      "Must not state a specific technology as present unless it appears in the provided real scan data",
+      "An empty detection category must be reported as a finding (with the 'not exhaustive' caveat), not silently omitted",
+    ],
+  },
   "digital-experience-ux": {
     key: "digital-experience-ux",
     expertRole: "Overall UX quality reviewer, distinct from CRO's conversion-fix focus and Funnel Intelligence's stage-by-stage measurement.",

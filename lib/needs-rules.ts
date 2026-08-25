@@ -541,6 +541,11 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "landing-page-split-test": paidActive
       ? { status: "active", reason: "Paid traffic is driving to landing pages — worth testing multiple full-page approaches once there's enough traffic to split." }
       : { status: "idle", reason: "No paid traffic planned yet — nothing to split-test." },
+
+    // Needs a real website to scan — same trigger as Technical SEO.
+    "website-technology-structure": website
+      ? { status: "active", reason: "A website exists — worth auditing its real technology stack and structure before recommending integrations or flagging tracking gaps." }
+      : { status: "idle", reason: "No website on record yet to scan." },
   };
 
   return agentKeys.map((key) => {

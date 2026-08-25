@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { runAgentLLM, RUNTIME_CONTEXT_AGENTS, buildRuntimeSnapshot } from "@/lib/agent-prompts";
+import {
+  runAgentLLM,
+  RUNTIME_CONTEXT_AGENTS,
+  buildRuntimeSnapshot,
+  LIVE_WEBSITE_AUDIT_AGENTS,
+  buildWebsiteAuditContext,
+} from "@/lib/agent-prompts";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
 import { getUploadType } from "@/lib/agent-uploads";
 import { parseExcelBuffer } from "@/lib/excel-parse";
+import { detectTechStack } from "@/lib/tech-stack-detect";
+import { discoverSubpages } from "@/lib/sitemap-discover";
+
+const SCAN_TIMEOUT_MS = 10000;
+const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
 
 const MAX_EXCEL_BYTES = 5 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -101,6 +112,47 @@ export async function POST(req: NextRequest) {
         createdAt: r.createdAt.toISOString(),
       })),
     );
+  }
+
+  // Live website scan: real fetch + signature-based tech detection + real
+  // subpage discovery for the one agent that needs it — never fabricated,
+  // and clearly labeled as real data in the prompt (buildWebsiteAuditContext).
+  if (LIVE_WEBSITE_AUDIT_AGENTS.has(agentKey)) {
+    const websiteUrl = workspace.websiteUrl;
+    if (!websiteUrl) {
+      extraContext = (extraContext ?? "") + buildWebsiteAuditContext(null, null, null);
+    } else {
+      const domain = websiteUrl.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+      let html: string | null = null;
+      let headers: Headers | null = null;
+      for (const scheme of ["https", "http"]) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
+        try {
+          const res = await fetch(`${scheme}://${domain}`, {
+            signal: controller.signal,
+            headers: { "user-agent": SCAN_USER_AGENT },
+          });
+          if (res.ok) {
+            html = await res.text();
+            headers = res.headers;
+            break;
+          }
+        } catch {
+          // try next scheme
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+
+      if (!html || !headers) {
+        extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, null, null);
+      } else {
+        const tech = detectTechStack(html, headers);
+        const sitemap = await discoverSubpages(domain, html);
+        extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, tech, sitemap);
+      }
+    }
   }
 
   // Orchestration hand-off: if this agent declares dependencies, pull each

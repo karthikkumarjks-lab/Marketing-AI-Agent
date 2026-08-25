@@ -1218,6 +1218,21 @@ Each variant: structural approach, what differs from master, why it's worth test
 ## Traffic Split Plan
 ## Success Metric & Required Sample Size`,
 
+  "website-technology-structure": `You are the Website Technology & Structure Agent. You receive REAL data gathered by a live scan of the client's website — actual detected technology signatures and actual discovered subpages, provided to you below as ground truth, not something to guess or invent. Your job is to interpret it, not fabricate it.
+
+Hard rules:
+- Only discuss technology and pages that appear in the real scan data provided. If the scan found nothing in a category (e.g. no analytics detected), say so plainly as a real finding — a likely tracking gap — don't invent a plausible-sounding stack.
+- The provided detection list is signature-based and real but not exhaustive — it recognizes a fixed set of common tools, not every tool in existence. Frame an empty category as "nothing recognized was found," which could mean truly absent or could mean an unrecognized/custom tool — don't overstate certainty either way.
+- For subpages, look at the actual discovered URL patterns for structural insight (e.g. no dedicated pricing page, no blog, thin product catalog) rather than just listing them back.
+- Cross-reference detected tools against what Marketing Tracking & Integration and Integration Management would care about — flag a detected CMS/analytics gap as a concrete, actionable finding, not a generic checklist.
+
+Output format (GitHub-flavored markdown):
+## Detected Technology Stack
+By category, from the real scan data provided.
+## What's Missing or Unrecognized
+## Site Structure (From Discovered Subpages)
+## Marketing Stack Gaps & Opportunities`,
+
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
 
 Hard rules:
@@ -1886,6 +1901,13 @@ export const RUNTIME_CONTEXT_AGENTS = new Set([
   "funnel-intelligence",
 ]);
 
+// Agents whose context comes from a real live fetch of the client's actual
+// website (technology signatures, discovered subpages) rather than from
+// Company DNA or run history — the API route performs the real fetch/detect
+// step for these before calling the LLM, and injects the real findings as
+// extraContext. See lib/tech-stack-detect.ts and lib/sitemap-discover.ts.
+export const LIVE_WEBSITE_AUDIT_AGENTS = new Set(["website-technology-structure"]);
+
 export interface NeedsSnapshotItem {
   agentName: string;
   status: "active" | "idle";
@@ -1924,6 +1946,44 @@ ${activeLines}
 
 ## Recent run history (most recent first, max 15)
 ${runLines}`;
+}
+
+export function buildWebsiteAuditContext(
+  websiteUrl: string | null,
+  tech: { category: string; name: string }[] | null,
+  sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
+): string {
+  if (!websiteUrl) {
+    return `\n\n# Live Website Scan\nNo website URL is on record for this workspace — nothing was scanned. Do not invent a technology stack or page list.`;
+  }
+  if (!tech || !sitemap) {
+    return `\n\n# Live Website Scan\nAttempted to scan ${websiteUrl} but it did not respond or returned no readable content. Do not invent a technology stack or page list — report this as a reachability finding instead.`;
+  }
+
+  const byCategory = new Map<string, string[]>();
+  for (const t of tech) {
+    const list = byCategory.get(t.category) ?? [];
+    list.push(t.name);
+    byCategory.set(t.category, list);
+  }
+  const techLines =
+    [...byCategory.entries()].map(([cat, names]) => `- **${cat}:** ${names.join(", ")}`).join("\n") ||
+    "(nothing recognized in any category — see the agent's own caveat about detector coverage before concluding the site truly has none of these)";
+
+  const pageLines =
+    sitemap.pages.length > 0
+      ? sitemap.pages.map((p) => `- ${p}`).join("\n")
+      : "(no subpages discovered — no sitemap.xml found and no internal links extracted from the homepage)";
+
+  return `
+
+# Live Website Scan (real data — ${websiteUrl})
+
+## Detected technology (signature match, not exhaustive)
+${techLines}
+
+## Discovered subpages (source: ${sitemap.source}${sitemap.isSitemapIndex ? ", this is a sitemap INDEX — entries point to other sitemaps, not final pages" : ""}${sitemap.truncated ? ", truncated to first 50" : ""})
+${pageLines}`;
 }
 
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {
