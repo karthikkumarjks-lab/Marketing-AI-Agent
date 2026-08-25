@@ -255,10 +255,38 @@ const CHATBOT_SIGNATURES: { provider: string; needle: string }[] = [
   { provider: "WhatsApp Click-to-Chat", needle: "wa.me/" },
 ];
 
-function checkChatbot(html: string): ChatbotDetection {
+// Catches custom-built, first-party AI chat assistants that no vendor
+// signature can ever match — e.g. onlinejain.com's own "Ask Sensei"
+// assistant (`aria-label="Ask Sensei"` / `aria-label="Ask Sensei anything"`),
+// found by checking a real site directly rather than assuming a "not
+// detected" result meant no widget existed.
+//
+// Deliberately narrow: an aria-label reading "Ask <Name>" on an actual form
+// control is a real, common convention for a branded AI assistant widget,
+// and testing it against stripe.com/hubspot.com/intercom.com confirmed zero
+// false positives. A broader version of this heuristic that also matched
+// generic body-text phrases like "chatbot" or "AI assistant" was tried and
+// discarded — it matched all three of those sites' ordinary marketing copy
+// (companies that sell or write about chat products mention the words
+// constantly) with no actual widget behind it. Precision over recall here:
+// an aria-label is a UI description, not prose, so it's a much stronger
+// signal — don't reintroduce free-text phrase matching without re-testing
+// against real sites first.
+const CUSTOM_CHAT_HEURISTICS: RegExp[] = [/aria-label=["'][^"']*\bask\s+\w+/i];
+
+export function checkChatbot(html: string): ChatbotDetection {
   const lower = html.toLowerCase();
-  const providers = CHATBOT_SIGNATURES.filter((s) => lower.includes(s.needle.toLowerCase())).map((s) => s.provider);
-  return { detected: providers.length > 0, providers };
+  const vendorProviders = CHATBOT_SIGNATURES.filter((s) => lower.includes(s.needle.toLowerCase())).map((s) => s.provider);
+  if (vendorProviders.length > 0) {
+    return { detected: true, providers: vendorProviders };
+  }
+
+  const heuristicMatch = CUSTOM_CHAT_HEURISTICS.some((re) => re.test(html));
+  if (heuristicMatch) {
+    return { detected: true, providers: ["Possible custom chat/AI assistant (heuristic match — not a known vendor script, verify by eye)"] };
+  }
+
+  return { detected: false, providers: [] };
 }
 
 /**
@@ -277,7 +305,7 @@ function visibleTextOnly(html: string): string {
     .replace(/<!--[\s\S]*?-->/g, " ");
 }
 
-function checkPhone(html: string): PhoneFinding {
+export function checkPhone(html: string): PhoneFinding {
   // tel: links live in markup attributes, not script/style content, so the
   // full HTML is fine here — and they're the reliable signal (an actual
   // clickable phone link), so they're checked before the noisy fallback.
