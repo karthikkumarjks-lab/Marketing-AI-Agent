@@ -23,6 +23,10 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "Deal specifics (optional — leave blank for a reusable template)",
     placeholder: "e.g. Prospect: Acme Co. Scope: 3-seat annual plan. Timeline: wants to start next month.",
   },
+  "image-generation": {
+    label: "What image do you need? (optional — leave blank for a generic on-brand image)",
+    placeholder: "e.g. A clean product shot of our reusable water bottle on a wooden table, soft natural light, minimalist background",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {

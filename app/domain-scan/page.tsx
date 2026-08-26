@@ -37,10 +37,11 @@ export default function DomainScanPage() {
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Domain Scan</div>
         <h1 className="text-2xl font-semibold text-ink">Check a domain&apos;s real digital footprint</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl leading-relaxed">
-          Real, live checks — DNS, website reachability, mobile-friendliness signal, social links,
-          chatbot widget, and phone number — read directly from the domain, not inferred by an LLM.
-          Ad activity across Meta/Google/LinkedIn isn&apos;t automatable for free anywhere right now
-          (see the note in results), so that shows up as one-click links instead.
+          Real, live checks — DNS, registration (WHOIS/RDAP), website reachability,
+          mobile-friendliness signal, social links, chatbot widget, and phone number — read directly
+          from the domain, not inferred by an LLM. Ad activity across Meta/Google/LinkedIn isn&apos;t
+          automatable for free anywhere right now (see the note in results), so that shows up as
+          one-click links instead.
         </p>
       </div>
 
@@ -118,6 +119,32 @@ function ScanResults({ result }: { result: DomainScanResult }) {
             <DnsField label="NS" values={result.dns.ns} />
             <DnsField label="TXT" values={result.dns.txt.map((t) => t.join(""))} />
           </div>
+        </Section>
+      )}
+
+      {result.domainExists && (
+        <Section title="Registration (WHOIS / RDAP)">
+          {result.whois ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <WhoisField label="Registrar" value={result.whois.registrar} />
+              <WhoisField
+                label="Domain age"
+                value={result.whois.domainAgeYears != null ? `${result.whois.domainAgeYears} years` : null}
+              />
+              <WhoisField label="Registered" value={formatWhoisDate(result.whois.registeredDate)} />
+              <WhoisField label="Expires" value={formatWhoisDate(result.whois.expirationDate)} />
+              <WhoisField label="Last changed" value={formatWhoisDate(result.whois.lastChangedDate)} />
+              <WhoisField label="Status" value={result.whois.status.length > 0 ? result.whois.status.join(", ") : null} />
+            </div>
+          ) : (
+            <p className="text-sm text-ink-faint">
+              Registration lookup returned nothing for this domain — see the note below.
+            </p>
+          )}
+          <p className="text-[11px] text-ink-faint mt-2.5">
+            Registrant name/email/address are never shown — every registry redacts that under
+            GDPR/ICANN privacy rules today, same as real WHOIS.
+          </p>
         </Section>
       )}
 
@@ -215,6 +242,21 @@ function ScanResults({ result }: { result: DomainScanResult }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function formatWhoisDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function WhoisField({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div>
+      <div className="text-[11px] font-mono text-ink-faint mb-1">{label}</div>
+      <div className="text-xs text-ink-soft">{value ?? "not available"}</div>
     </div>
   );
 }

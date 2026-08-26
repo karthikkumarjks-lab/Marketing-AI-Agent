@@ -14,6 +14,7 @@
 // heuristic instead, which is honest about being a signal, not a photo).
 
 import { promises as dns } from "node:dns";
+import { lookupWhois, type WhoisInfo } from "./whois-lookup";
 
 export interface DnsRecords {
   a: string[];
@@ -63,6 +64,7 @@ export interface DomainScanResult {
   scannedAt: string;
   domainExists: boolean;
   dns: DnsRecords;
+  whois: WhoisInfo | null;
   website: WebsiteCheck;
   mobile: MobileSignal | null;
   social: SocialLink[];
@@ -336,8 +338,12 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
   ];
   const adLibraryLinks = buildAdLibraryLinks(domain);
 
-  const dnsRecords = await fetchDns(domain);
+  const [dnsRecords, whois] = await Promise.all([fetchDns(domain), lookupWhois(domain)]);
   const domainExists = dnsRecords.a.length > 0 || dnsRecords.ns.length > 0 || dnsRecords.mx.length > 0;
+
+  if (!whois) {
+    notes.push("Registration (WHOIS/RDAP) lookup returned nothing — the registry for this domain's TLD may not run public RDAP, or the lookup failed.");
+  }
 
   if (!domainExists) {
     notes.push("DNS found no A, NS, or MX records — this domain may not be registered or may not be resolving right now.");
@@ -346,6 +352,7 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       scannedAt: new Date().toISOString(),
       domainExists: false,
       dns: dnsRecords,
+      whois,
       website: { reachable: false, url: null, statusCode: null, https: false, loadTimeMs: null, error: "Domain does not resolve" },
       mobile: null,
       social: [],
@@ -371,6 +378,7 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       scannedAt: new Date().toISOString(),
       domainExists: true,
       dns: dnsRecords,
+      whois,
       website,
       mobile: null,
       social: [],
@@ -397,6 +405,7 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     scannedAt: new Date().toISOString(),
     domainExists: true,
     dns: dnsRecords,
+    whois,
     website,
     mobile: checkMobile(html),
     social: checkSocial(html),

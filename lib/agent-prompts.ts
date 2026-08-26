@@ -80,6 +80,7 @@ export const BRAND_DNA_AGENTS = new Set([
   "social-media",
   "youtube-ads",
   "retargeting",
+  "image-generation",
 ]);
 
 export function buildBrandDNAPrompt(brand: BrandDNAInput | null): string {
@@ -236,8 +237,9 @@ Output format (GitHub-flavored markdown):
 Your task: analyze the likely competitive landscape for this client — website, SEO, ads, content, pricing, and positioning — and find exploitable gaps.
 
 Hard rules:
-- You do not have live competitor data feeds. Reason from category knowledge and mark every specific claim about a named competitor's tactics "(validate)" unless it's a well-known industry pattern.
-- Focus on categories/archetypes of competitors (e.g. "established multi-location chains", "solo practitioners with no digital presence") rather than inventing specific company names.
+- Check for a "Live Competitor Scan" section in your context first. If present with real data, ground your website/tech-stack findings in it explicitly — don't reason around real data that's sitting right there. If it says no URL was provided or the scan failed, fall back to category-knowledge reasoning and say so plainly.
+- Beyond the live scan (which only covers tech stack and site structure), you still do not have live SEO ranking, ad-library, or pricing feeds — mark every specific claim about a named competitor's SEO/ads/pricing tactics "(validate)" unless it's a well-known industry pattern.
+- Focus on categories/archetypes of competitors (e.g. "established multi-location chains", "solo practitioners with no digital presence") rather than inventing specific company names, UNLESS a real competitor URL was scanned — then you may reference that specific site's real detected tech/pages directly.
 - Every finding must end in an implication: so what should THIS client do differently.
 - Regional context: if a country/region is stated, reflect local vs national/global player dynamics for that market; if not, keep this general.
 
@@ -247,6 +249,8 @@ Output format (GitHub-flavored markdown):
 Where competitors sit (pick the axis that matters for this category) and where this client can occupy space.
 ## Channel & Tactic Teardown
 Markdown table: competitor archetype, likely primary channel, apparent strength, exploitable weakness.
+## Live Competitor Scan Findings
+Only include this section if real scan data was provided — summarize what the tech stack/site structure reveals about that competitor's setup and maturity. Omit this section entirely if no competitor URL was scanned.
 ## Where We're Losing (or Would Lose)
 ## Recommended Wedge`,
 
@@ -1128,6 +1132,28 @@ Output format (GitHub-flavored markdown):
 ## Color Palette
 With rationale per color.
 ## Typography System`,
+
+  "image-generation": `You are the Image Generation Agent. Unlike every other agent in this system, your job isn't advice — you produce the exact text prompt that gets sent to a real image-generation model, and a real image comes back from it.
+
+Hard rules:
+- Check the "User-Provided Input" section for a real image brief. If present, base the image on it directly — don't ignore specifics (subject, setting, mood) in favor of something generic.
+- If no brief was provided, fall back to a generic on-brand image (e.g. a hero/social visual representing the brand) grounded in Brand DNA — state plainly that this is a generic fallback, not a response to a specific brief.
+- Ground every visual choice (color, mood, style) in Brand DNA when it's set — never contradict stated brand colors or personality.
+- The generation prompt must be a single, dense, comma-separated description a text-to-image model can use directly: subject, setting, composition, lighting, color palette, style/medium. No instructions to an AI, no meta-commentary, no negative-space filler words — just the visual description itself.
+- Never mention people's real names, real brand logos, or copyrighted characters in the generation prompt — describe generic subjects instead.
+- The prompt must go in its own fenced code block under "## Generation Prompt" and nowhere else in the output, exactly as shown in the output format below — this exact block gets extracted programmatically and sent to the image model, so any deviation from this format breaks image generation for this run.
+
+Output format (GitHub-flavored markdown):
+## Fit Check
+State whether this used a real brief or the generic on-brand fallback.
+## Brief Interpretation
+What you're generating and why it fits the brand.
+## Generation Prompt
+\`\`\`
+<the single dense image-generation prompt, and nothing else, on one or a few lines>
+\`\`\`
+## Usage Notes
+Where this image could be used, and what it is NOT a substitute for (a professional photoshoot, licensed stock, or exact legally-cleared brand assets).`,
 
   "creative-director": `You are the Creative Director Agent. You define the single creative concept a campaign should execute — the unifying idea Design then produces assets against.
 
@@ -2026,6 +2052,24 @@ export const RUNTIME_CONTEXT_AGENTS = new Set([
 // extraContext. See lib/tech-stack-detect.ts and lib/sitemap-discover.ts.
 export const LIVE_WEBSITE_AUDIT_AGENTS = new Set(["website-technology-structure"]);
 
+// Same real fetch/detect infrastructure as LIVE_WEBSITE_AUDIT_AGENTS, applied
+// to a COMPETITOR's site (entered per-run — there's no Company DNA field for
+// it) rather than the client's own. See buildCompetitorAuditContext.
+export const LIVE_COMPETITOR_AUDIT_AGENTS = new Set(["competitive-intelligence"]);
+
+// Agents whose LLM output includes a "## Generation Prompt" fenced block that
+// the API route extracts and sends to a real image-generation model (see
+// lib/image-generate.ts), appending the resulting image back into the run's
+// markdown. The only agent(s) in this system that produce media, not advice.
+export const IMAGE_GENERATION_AGENTS = new Set(["image-generation"]);
+
+const GENERATION_PROMPT_RE = /## Generation Prompt\s*```\s*([\s\S]*?)```/;
+
+export function extractGenerationPrompt(markdown: string): string | null {
+  const match = markdown.match(GENERATION_PROMPT_RE);
+  return match ? match[1].trim() : null;
+}
+
 export interface NeedsSnapshotItem {
   agentName: string;
   status: "active" | "idle";
@@ -2066,16 +2110,18 @@ ${activeLines}
 ${runLines}`;
 }
 
-export function buildWebsiteAuditContext(
-  websiteUrl: string | null,
+function buildLiveScanContext(
+  heading: string,
+  subjectUrl: string | null,
+  noUrlLine: string,
   tech: { category: string; name: string }[] | null,
   sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
 ): string {
-  if (!websiteUrl) {
-    return `\n\n# Live Website Scan\nNo website URL is on record for this workspace — nothing was scanned. Do not invent a technology stack or page list.`;
+  if (!subjectUrl) {
+    return `\n\n# ${heading}\n${noUrlLine}`;
   }
   if (!tech || !sitemap) {
-    return `\n\n# Live Website Scan\nAttempted to scan ${websiteUrl} but it did not respond or returned no readable content. Do not invent a technology stack or page list — report this as a reachability finding instead.`;
+    return `\n\n# ${heading}\nAttempted to scan ${subjectUrl} but it did not respond or returned no readable content. Do not invent a technology stack or page list — report this as a reachability finding instead.`;
   }
 
   const byCategory = new Map<string, string[]>();
@@ -2095,13 +2141,41 @@ export function buildWebsiteAuditContext(
 
   return `
 
-# Live Website Scan (real data — ${websiteUrl})
+# ${heading} (real data — ${subjectUrl})
 
 ## Detected technology (signature match, not exhaustive)
 ${techLines}
 
 ## Discovered subpages (source: ${sitemap.source}${sitemap.isSitemapIndex ? ", this is a sitemap INDEX — entries point to other sitemaps, not final pages" : ""}${sitemap.truncated ? ", truncated to first 50" : ""})
 ${pageLines}`;
+}
+
+export function buildWebsiteAuditContext(
+  websiteUrl: string | null,
+  tech: { category: string; name: string }[] | null,
+  sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
+): string {
+  return buildLiveScanContext(
+    "Live Website Scan",
+    websiteUrl,
+    "No website URL is on record for this workspace — nothing was scanned. Do not invent a technology stack or page list.",
+    tech,
+    sitemap,
+  );
+}
+
+export function buildCompetitorAuditContext(
+  competitorUrl: string | null,
+  tech: { category: string; name: string }[] | null,
+  sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
+): string {
+  return buildLiveScanContext(
+    "Live Competitor Scan",
+    competitorUrl,
+    "No competitor URL was provided for this run — nothing was scanned. Reason from category knowledge instead, and say plainly that this is not based on a live crawl.",
+    tech,
+    sitemap,
+  );
 }
 
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {

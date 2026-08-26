@@ -2,8 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// react-markdown's default URL sanitizer strips `data:` URIs (a reasonable
+// default against unknown/user-authored markdown), but the Image Generation
+// Agent legitimately embeds a real generated image as a data URI — allow
+// only that one safe case through, everything else still goes through the
+// default sanitizer.
+function urlTransform(url: string): string {
+  if (url.startsWith("data:image/")) return url;
+  return defaultUrlTransform(url);
+}
 
 interface RunLite {
   id: string;
@@ -22,6 +32,7 @@ export default function AgentRunner({
   isWired,
   uploadType,
   websiteUrlField,
+  competitorUrlField,
   textInputField,
   runs,
 }: {
@@ -31,6 +42,8 @@ export default function AgentRunner({
   uploadType: "excel" | "screenshot" | null;
   /** Non-null for agents that scan a real website — prefilled from Company DNA, but overridable per run. */
   websiteUrlField: string | null;
+  /** True for agents that scan a real COMPETITOR site — no Company DNA field to prefill from, entered fresh per run. */
+  competitorUrlField: boolean;
   /** Non-null for agents that need real per-run free text (a transcript, deal outcomes) with no Company DNA field. */
   textInputField: { label: string; placeholder: string } | null;
   runs: RunLite[];
@@ -38,6 +51,7 @@ export default function AgentRunner({
   const router = useRouter();
   const [predictedOutcome, setPredictedOutcome] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState(websiteUrlField ?? "");
+  const [competitorUrl, setCompetitorUrl] = useState("");
   const [runNote, setRunNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [running, setRunning] = useState(false);
@@ -52,6 +66,7 @@ export default function AgentRunner({
       form.set("agentKey", agentKey);
       if (predictedOutcome) form.set("predictedOutcome", predictedOutcome);
       if (websiteUrlField !== null && websiteUrl) form.set("websiteUrlOverride", websiteUrl);
+      if (competitorUrlField && competitorUrl) form.set("competitorUrlOverride", competitorUrl);
       if (textInputField && runNote) form.set("runNote", runNote);
       if (file) form.set("file", file);
 
@@ -63,6 +78,7 @@ export default function AgentRunner({
       setPredictedOutcome("");
       setFile(null);
       setRunNote("");
+      setCompetitorUrl("");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Run failed.");
@@ -89,6 +105,21 @@ export default function AgentRunner({
                 {websiteUrlField
                   ? "Prefilled from this workspace's Company DNA — change it to scan a different site for this run only."
                   : "No website is on record for this workspace yet — enter one here to scan it for this run only."}
+              </p>
+            </div>
+          )}
+          {competitorUrlField && (
+            <div className="mb-3">
+              <label className="text-sm font-medium text-ink mb-1 block">Competitor URL to scan (optional)</label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+                placeholder="e.g. competitor.com"
+                value={competitorUrl}
+                onChange={(e) => setCompetitorUrl(e.target.value)}
+              />
+              <p className="text-[11px] text-ink-faint mt-1">
+                Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead.
               </p>
             </div>
           )}
@@ -197,7 +228,7 @@ function RunCard({ run }: { run: RunLite }) {
       </div>
 
       <div className="prose-agent">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{run.outputMarkdown}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform}>{run.outputMarkdown}</ReactMarkdown>
       </div>
 
       {run.predictedOutcome && (

@@ -326,6 +326,14 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       ? { status: "active", reason: "Channels are active — organic social posting should be planned deliberately, not ad hoc." }
       : { status: "idle", reason: "No channels yet to plan a social calendar around." },
 
+    // Free real image generation is useful from day one regardless of
+    // channel/content maturity — unlike content-creation (needs a calendar
+    // first) this is a standalone utility, not a step in a sequence.
+    "image-generation": {
+      status: "active",
+      reason: "Real visuals are useful from day one for any channel — social posts, ads, or a placeholder before real photography exists.",
+    },
+
     // Digital Experience
     "funnel-intelligence": website && hasChannels
       ? { status: "active", reason: "Traffic and a website exist — the funnel should be measured before CRO tries to fix it blind." }

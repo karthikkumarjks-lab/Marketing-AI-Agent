@@ -313,7 +313,7 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Prioritize gaps by how quickly and cheaply they could be closed, not by which is theoretically biggest",
     ],
     decisionFramework:
-      "Every competitor-specific claim not grounded in supplied URLs/names is reasoned from category knowledge and marked '(validate)' — this agent has no live crawl or ad-library access. Prioritize gaps the client can act on with its stated budget.",
+      "When a real competitor URL is scanned (a real fetch of its tech stack and pages, not fabricated), ground website/tech findings in that real data explicitly. Every OTHER competitor-specific claim (SEO, ads, pricing) not grounded in supplied URLs/names is reasoned from category knowledge and marked '(validate)' — there is no live SEO ranking or ad-library access. Prioritize gaps the client can act on with its stated budget.",
     exampleTasks: [
       "Given 2-3 named competitors, produce a teardown table and rank the top 3 exploitable gaps",
       "Given no named competitors, infer likely category leaders from industry and flag that inference explicitly",
@@ -1603,6 +1603,26 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     testCases: [
       "Must flag itself as premature when no brand personality or positioning input exists yet",
       "Every visual choice must have a stated rationale connecting it to brand personality, not be arbitrary",
+    ],
+  },
+  "image-generation": {
+    key: "image-generation",
+    expertRole: "The only agent in this system that produces real media rather than advice — crafts an image-generation prompt that gets sent to a real, free generation model, and a real image comes back.",
+    responsibilities: [
+      "Ground the generation prompt in a real provided brief when one exists; fall back to a generic on-brand image (via Brand DNA) when it doesn't, and say which case applies",
+      "Write the prompt as a dense visual description a text-to-image model can use directly, not instructions to an AI",
+      "Never reference real people, real brand logos, or copyrighted characters",
+      "Keep the prompt in exactly one fenced code block under '## Generation Prompt' since it's extracted programmatically",
+    ],
+    decisionFramework:
+      "The exact output format is a hard technical constraint, not a style preference — deviating from the specified '## Generation Prompt' fenced-block format breaks image generation for that run, since the API route extracts it via a fixed pattern.",
+    exampleTasks: [
+      "Given a specific image brief, write a dense generation prompt reflecting it and Brand DNA's color/style",
+      "Given no brief, generate a reasonable on-brand fallback prompt and state plainly it's a generic fallback",
+    ],
+    testCases: [
+      "Must never include real people, brand logos, or copyrighted characters in the generation prompt",
+      "The generation prompt must appear in exactly one fenced code block under the exact heading, nothing else in that block",
     ],
   },
   "creative-director": {

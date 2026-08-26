@@ -6,6 +6,10 @@ import {
   buildRuntimeSnapshot,
   LIVE_WEBSITE_AUDIT_AGENTS,
   buildWebsiteAuditContext,
+  LIVE_COMPETITOR_AUDIT_AGENTS,
+  buildCompetitorAuditContext,
+  IMAGE_GENERATION_AGENTS,
+  extractGenerationPrompt,
 } from "@/lib/agent-prompts";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
@@ -14,6 +18,7 @@ import { getTextInputSpec } from "@/lib/agent-text-input";
 import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
+import { generateImage } from "@/lib/image-generate";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -23,12 +28,47 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const EXCEL_EXTENSIONS = [".xlsx", ".xls", ".csv"];
 const IMAGE_MIME_PREFIXES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
+// Shared by LIVE_WEBSITE_AUDIT_AGENTS and LIVE_COMPETITOR_AUDIT_AGENTS — same
+// real fetch + signature detection + sitemap discovery, just aimed at a
+// different URL (the client's own site vs. a competitor's).
+async function scanWebsite(
+  url: string,
+): Promise<{ tech: ReturnType<typeof detectTechStack>; sitemap: Awaited<ReturnType<typeof discoverSubpages>> } | null> {
+  const domain = url.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  let html: string | null = null;
+  let headers: Headers | null = null;
+  for (const scheme of ["https", "http"]) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${scheme}://${domain}`, {
+        signal: controller.signal,
+        headers: { "user-agent": SCAN_USER_AGENT },
+      });
+      if (res.ok) {
+        html = await res.text();
+        headers = res.headers;
+        break;
+      }
+    } catch {
+      // try next scheme
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  if (!html || !headers) return null;
+  const tech = detectTechStack(html, headers);
+  const sitemap = await discoverSubpages(domain, html);
+  return { tech, sitemap };
+}
+
 export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
   let workspaceId: string | null = null;
   let agentKey: string | null = null;
   let predictedOutcome: string | null = null;
   let websiteUrlOverride: string | null = null;
+  let competitorUrlOverride: string | null = null;
   let runNote: string | null = null;
   let file: File | null = null;
 
@@ -38,6 +78,7 @@ export async function POST(req: NextRequest) {
     agentKey = (form.get("agentKey") as string) || null;
     predictedOutcome = (form.get("predictedOutcome") as string) || null;
     websiteUrlOverride = (form.get("websiteUrlOverride") as string) || null;
+    competitorUrlOverride = (form.get("competitorUrlOverride") as string) || null;
     runNote = (form.get("runNote") as string) || null;
     const uploaded = form.get("file");
     if (uploaded instanceof File && uploaded.size > 0) file = uploaded;
@@ -47,6 +88,7 @@ export async function POST(req: NextRequest) {
     agentKey = body.agentKey ?? null;
     predictedOutcome = body.predictedOutcome ?? null;
     websiteUrlOverride = body.websiteUrlOverride ?? null;
+    competitorUrlOverride = body.competitorUrlOverride ?? null;
     runNote = body.runNote ?? null;
   }
 
@@ -132,36 +174,20 @@ export async function POST(req: NextRequest) {
     if (!websiteUrl) {
       extraContext = (extraContext ?? "") + buildWebsiteAuditContext(null, null, null);
     } else {
-      const domain = websiteUrl.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-      let html: string | null = null;
-      let headers: Headers | null = null;
-      for (const scheme of ["https", "http"]) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
-        try {
-          const res = await fetch(`${scheme}://${domain}`, {
-            signal: controller.signal,
-            headers: { "user-agent": SCAN_USER_AGENT },
-          });
-          if (res.ok) {
-            html = await res.text();
-            headers = res.headers;
-            break;
-          }
-        } catch {
-          // try next scheme
-        } finally {
-          clearTimeout(timeout);
-        }
-      }
+      const scan = await scanWebsite(websiteUrl);
+      extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, scan?.tech ?? null, scan?.sitemap ?? null);
+    }
+  }
 
-      if (!html || !headers) {
-        extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, null, null);
-      } else {
-        const tech = detectTechStack(html, headers);
-        const sitemap = await discoverSubpages(domain, html);
-        extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, tech, sitemap);
-      }
+  // Live competitor scan: same real fetch/detect infrastructure, aimed at a
+  // competitor's site — there's no Company DNA field for this, it's entered
+  // fresh per run.
+  if (LIVE_COMPETITOR_AUDIT_AGENTS.has(agentKey)) {
+    if (!competitorUrlOverride) {
+      extraContext = (extraContext ?? "") + buildCompetitorAuditContext(null, null, null);
+    } else {
+      const scan = await scanWebsite(competitorUrlOverride);
+      extraContext = (extraContext ?? "") + buildCompetitorAuditContext(competitorUrlOverride, scan?.tech ?? null, scan?.sitemap ?? null);
     }
   }
 
@@ -245,6 +271,22 @@ export async function POST(req: NextRequest) {
       { error: err instanceof Error ? err.message : "Agent run failed." },
       { status: 502 },
     );
+  }
+
+  // Real image generation: the LLM only crafts the prompt (in a fenced block
+  // this extraction depends on, see the agent's system prompt) — the actual
+  // image comes from a real call to a free generation model, never invented.
+  if (IMAGE_GENERATION_AGENTS.has(agentKey) && !result.isDemo) {
+    const prompt = extractGenerationPrompt(result.markdown);
+    if (prompt) {
+      const generated = await generateImage(prompt);
+      result = {
+        ...result,
+        markdown: generated
+          ? `${result.markdown}\n\n## Generated Image\n![Generated image](${generated.dataUri})`
+          : `${result.markdown}\n\n## Generated Image\nImage generation failed or timed out — the prompt above is still valid to try again or use elsewhere.`,
+      };
+    }
   }
 
   const run = await prisma.agentRun.create({

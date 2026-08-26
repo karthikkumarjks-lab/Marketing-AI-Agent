@@ -838,6 +838,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 24,
   },
+  {
+    key: "image-generation",
+    name: "Image Generation Agent",
+    category: "Content & Creative",
+    mission: "Actually generates a real image from a brief — the first agent in this system that produces media, not just advice — using a free, unlimited generation model, distinct from Design Agent's advisory visual-direction guidance.",
+    inputs: ["Image brief (optional — falls back to a generic on-brand image)", "Brand DNA", "ICP/personas"],
+    outputs: ["Engineered generation prompt", "Generated image"],
+    wired: true,
+    sortOrder: 25,
+  },
   // Digital Experience
   {
     key: "website-builder",
