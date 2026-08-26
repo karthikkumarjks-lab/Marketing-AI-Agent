@@ -49,8 +49,9 @@ export default function Sidebar({
       <nav className="px-3 py-3 border-b border-line flex flex-col gap-0.5">
         <div className="text-[11px] font-mono uppercase tracking-wider text-ink-faint px-3 mb-1">Tools</div>
         <NavLink href="/domain-scan" label="Domain Scan" active={pathname === "/domain-scan"} />
-        <NavLink href="/pricing" label="Build Your Plan" active={pathname === "/pricing"} />
-        <NavLink href="/pricing/manage" label="Pricing (Admin)" active={pathname === "/pricing/manage"} />
+        {/* Pricing/selling tabs hidden per request (2026-08-26) — not ready
+            to show this yet. Data and pages are untouched; re-add these two
+            links (routes: /pricing, /pricing/manage) when it's needed again. */}
       </nav>
 
       {activeWorkspaceId && (
