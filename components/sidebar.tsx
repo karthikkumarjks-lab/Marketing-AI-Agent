@@ -35,6 +35,10 @@ export default function Sidebar({
   const match = pathname.match(/^\/workspaces\/([^/]+)/);
   const matchedId = match?.[1];
   const activeWorkspaceId = matchedId && matchedId !== "new" ? matchedId : undefined;
+  // Tools stay visible everywhere (e.g. while on Domain Scan, with no
+  // workspace in the URL) by falling back to the first workspace so the
+  // links are still clickable — not just shown only inside a workspace.
+  const toolsWorkspaceId = activeWorkspaceId ?? workspaces[0]?.id;
 
   return (
     <aside className="w-64 shrink-0 border-r border-line bg-surface flex flex-col h-screen sticky top-0">
@@ -52,30 +56,30 @@ export default function Sidebar({
         {/* Pricing/selling tabs hidden per request (2026-08-26) — not ready
             to show this yet. Data and pages are untouched; re-add these two
             links (routes: /pricing, /pricing/manage) when it's needed again. */}
-        {activeWorkspaceId && (
+        {toolsWorkspaceId && (
           <>
             <NavLink
-              href={`/workspaces/${activeWorkspaceId}/needs`}
+              href={`/workspaces/${toolsWorkspaceId}/needs`}
               label="Needs Analyzer"
               active={pathname.endsWith("/needs")}
             />
             <NavLink
-              href={`/workspaces/${activeWorkspaceId}/agents`}
+              href={`/workspaces/${toolsWorkspaceId}/agents`}
               label="Agent Hub"
               active={pathname.includes("/agents")}
             />
             <NavLink
-              href={`/workspaces/${activeWorkspaceId}/orchestrator`}
+              href={`/workspaces/${toolsWorkspaceId}/orchestrator`}
               label="Orchestrator"
               active={pathname.endsWith("/orchestrator")}
             />
             <NavLink
-              href={`/workspaces/${activeWorkspaceId}/scorecard`}
+              href={`/workspaces/${toolsWorkspaceId}/scorecard`}
               label="Scorecard"
               active={pathname.endsWith("/scorecard")}
             />
             <NavLink
-              href={`/workspaces/${activeWorkspaceId}/integrations`}
+              href={`/workspaces/${toolsWorkspaceId}/integrations`}
               label="Integrations"
               active={pathname.endsWith("/integrations")}
             />
