@@ -52,42 +52,36 @@ export default function Sidebar({
         {/* Pricing/selling tabs hidden per request (2026-08-26) — not ready
             to show this yet. Data and pages are untouched; re-add these two
             links (routes: /pricing, /pricing/manage) when it's needed again. */}
+        {activeWorkspaceId && (
+          <>
+            <NavLink
+              href={`/workspaces/${activeWorkspaceId}/needs`}
+              label="Needs Analyzer"
+              active={pathname.endsWith("/needs")}
+            />
+            <NavLink
+              href={`/workspaces/${activeWorkspaceId}/agents`}
+              label="Agent Hub"
+              active={pathname.includes("/agents")}
+            />
+            <NavLink
+              href={`/workspaces/${activeWorkspaceId}/orchestrator`}
+              label="Orchestrator"
+              active={pathname.endsWith("/orchestrator")}
+            />
+            <NavLink
+              href={`/workspaces/${activeWorkspaceId}/scorecard`}
+              label="Scorecard"
+              active={pathname.endsWith("/scorecard")}
+            />
+            <NavLink
+              href={`/workspaces/${activeWorkspaceId}/integrations`}
+              label="Integrations"
+              active={pathname.endsWith("/integrations")}
+            />
+          </>
+        )}
       </nav>
-
-      {activeWorkspaceId && (
-        <nav className="px-3 py-3 border-b border-line flex flex-col gap-0.5">
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}`}
-            label="Overview"
-            active={pathname === `/workspaces/${activeWorkspaceId}`}
-          />
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}/needs`}
-            label="Needs Analyzer"
-            active={pathname.endsWith("/needs")}
-          />
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}/agents`}
-            label="Agent Hub"
-            active={pathname.includes("/agents")}
-          />
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}/orchestrator`}
-            label="Orchestrator"
-            active={pathname.endsWith("/orchestrator")}
-          />
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}/scorecard`}
-            label="Scorecard"
-            active={pathname.endsWith("/scorecard")}
-          />
-          <NavLink
-            href={`/workspaces/${activeWorkspaceId}/integrations`}
-            label="Integrations"
-            active={pathname.endsWith("/integrations")}
-          />
-        </nav>
-      )}
 
       <div className="px-3 py-3 flex-1 overflow-y-auto">
         <div className="text-[11px] font-mono uppercase tracking-wider text-ink-faint px-3 mb-1.5">
