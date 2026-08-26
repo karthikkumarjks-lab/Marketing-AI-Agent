@@ -33,6 +33,32 @@ describe("checkChatbot", () => {
     const html = `<html><body><h1>Hello</h1></body></html>`;
     expect(checkChatbot(html)).toEqual({ detected: false, providers: [] });
   });
+
+  it("detects a NopaperForms chatbot (real online.christuniversity.in markup)", () => {
+    // Found via user report: this scanner said "not detected" on a real site
+    // that clearly has a chatbot. NopaperForms (a common Indian higher-ed
+    // admissions CRM) serves its chatbot from a `chatbot.` subdomain,
+    // distinct from the `widgets.` subdomain it uses for ordinary lead forms.
+    const html = `<script src="https://chatbot.in6.nopaperforms.com/en-gb/backend/bots/niaachtbtscpt.js/abc/def"></script>`;
+    const result = checkChatbot(html);
+    expect(result.detected).toBe(true);
+    expect(result.providers).toContain("NopaperForms Chatbot");
+  });
+
+  it("does not false-positive on a NopaperForms LEAD FORM with no chatbot present", () => {
+    // Regression guard for the needle chosen above: a site can use
+    // NopaperForms purely for enquiry/lead-capture forms (the `widgets.`
+    // subdomain) with no chatbot at all — must not match that case.
+    const html = `<script src="https://widgets.in6.nopaperforms.com/js/widget/npfwpopup.js"></script>`;
+    expect(checkChatbot(html).detected).toBe(false);
+  });
+
+  it("detects a Vachak.ai voice widget (real online.christuniversity.in markup)", () => {
+    const html = `<script>(function(w,d,s,o,f,js){})(window,document,'script','vw','https://vachak.ai/widget/embed.js'); vw('init','wgt_abc');</script>`;
+    const result = checkChatbot(html);
+    expect(result.detected).toBe(true);
+    expect(result.providers).toContain("Vachak.ai Voice Widget");
+  });
 });
 
 describe("checkPhone", () => {

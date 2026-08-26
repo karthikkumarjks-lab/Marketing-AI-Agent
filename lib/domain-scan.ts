@@ -255,6 +255,16 @@ const CHATBOT_SIGNATURES: { provider: string; needle: string }[] = [
   { provider: "LiveChat", needle: "cdn.livechatinc.com" },
   { provider: "Freshchat", needle: "wchat.freshchat.com" },
   { provider: "WhatsApp Click-to-Chat", needle: "wa.me/" },
+  // Found via a real site (online.christuniversity.in, 2026-08-26) that this
+  // scanner wrongly reported as "not detected" despite a real chatbot being
+  // present — a genuine missing-vendor gap, not the already-known
+  // JS-injection limitation. NopaperForms is a common Indian higher-ed
+  // admissions CRM; its dedicated chatbot backend script lives on a distinct
+  // `chatbot.` subdomain from the `widgets.` one it uses for ordinary lead
+  // forms, so this needle only matches the real chatbot, not every site that
+  // merely uses NopaperForms for lead capture.
+  { provider: "NopaperForms Chatbot", needle: "chatbot.in6.nopaperforms.com" },
+  { provider: "Vachak.ai Voice Widget", needle: "vachak.ai/widget" },
 ];
 
 // Catches custom-built, first-party AI chat assistants that no vendor
