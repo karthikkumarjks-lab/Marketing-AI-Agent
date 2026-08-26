@@ -1253,18 +1253,21 @@ Each variant: structural approach, what differs from master, why it's worth test
 Hard rules:
 - Only discuss technology and pages that appear in the real scan data provided. If the scan found nothing in a category (e.g. no analytics detected), say so plainly as a real finding — a likely tracking gap — don't invent a plausible-sounding stack.
 - The provided detection list is signature-based and real but not exhaustive — it recognizes a fixed set of common tools, not every tool in existence. Frame an empty category as "nothing recognized was found," which could mean truly absent or could mean an unrecognized/custom tool — don't overstate certainty either way.
-- List every discovered subpage URL exactly as provided, in full — this is real, verifiable data the reader may want to click through or hand to another tool, not something to summarize away. Group them under short category headings if that helps readability, but every URL from the scan data must appear somewhere in the list, not just a representative few.
-- Beyond the raw list, also read the actual discovered URL patterns for structural insight (e.g. no dedicated pricing page, no blog, thin product catalog) — the list and the insight are both required, neither replaces the other.
+- Do NOT reproduce the full discovered-page list yourself — a separate, guaranteed-complete raw list is appended automatically after your output by the system, from the same real scan data. Your job is classification and insight over that data, not transcription. Reproducing the full list yourself wastes your output budget and risks silent truncation on a large site.
+- Classify the discovered URLs into two groups, based on real naming-pattern inference, not invention: **Landing Pages** (a dedicated page per program/product/service/campaign — e.g. one page per course, one per plan, one per city/location, following a repeated naming pattern like "online-mba-<specialization>" or "/services/<service-name>") vs. **Site Structure Pages** (navigational/informational pages that exist once, not per-offering — about, contact, placements, blog, careers, FAQ, privacy policy). Apply the SAME rule to both groups: if a group has more than ~15 URLs, give the real count, 2-3 representative examples, and the naming/grouping pattern — do not assume site structure pages are always few, a real site can have dozens (e.g. one info/eligibility page per sub-program). Only list a group in full when it's genuinely small. State the signal that led to each classification rather than asserting it with no rationale. If a URL's type genuinely isn't clear from the path alone, say so rather than forcing a guess.
+- Beyond the classification, also read the actual discovered URL patterns for structural insight (e.g. no dedicated pricing page, no blog, thin product catalog) — the classification and the insight are both required, neither replaces the other.
 - Cross-reference detected tools against what Marketing Tracking & Integration and Integration Management would care about — flag a detected CMS/analytics gap as a concrete, actionable finding, not a generic checklist.
 
 Output format (GitHub-flavored markdown):
 ## Detected Technology Stack
 By category, from the real scan data provided.
 ## What's Missing or Unrecognized
-## Discovered Subpages
-The full list of real URLs from the scan data, grouped under short category headings.
+## Landing Page Groups
+Real count of landing-page-type URLs found, broken into groups by offering type (e.g. "34 Online MBA programs, e.g. /online-mba-hr, /online-mba-finance, ... — pattern: online-mba-<specialization>"). Do not list every URL — that's covered by the raw list appended after your output.
+## Site Structure Pages
+The navigational/informational pages found (about, contact, blog, etc.) — list in full only if there are few; if there are many (e.g. many per-sub-program info pages), summarize by count and pattern the same way as Landing Page Groups.
 ## Site Structure Insight
-What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing.
+What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing. Note if the landing-page count suggests the sitemap/scan was truncated (check the scan data's own truncation note) rather than presenting a capped count as the true total.
 ## Marketing Stack Gaps & Opportunities`,
 
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
@@ -2301,12 +2304,28 @@ This is a structural sample of what this agent will produce once a Gemini or Ope
 // current free options if this one starts erroring or rate-limiting.
 const DEFAULT_MODEL = "minimax/minimax-m3:free";
 
+// Bounded well below what a free-tier account could actually afford across
+// most models, deliberately — see the comment on the max_tokens field below.
+const DEFAULT_MAX_OUTPUT_TOKENS = 4000;
+
+// Agents whose real-data output can genuinely exceed the default cap — e.g.
+// Website Technology & Structure and Competitive Intelligence, which are
+// required to list every discovered URL in full (a client with 100+ real
+// pages needs real room, not a truncated list). Found necessary via a real
+// run against onlinemanipal.com (144 real pages) that got cut off mid-list
+// at the default 4000-token cap. Kept as a narrow allowlist rather than
+// raising the global default, to protect OpenRouter's free-tier budget for
+// every other agent that doesn't need this much output.
+const LARGE_OUTPUT_AGENTS = new Set(["website-technology-structure", "competitive-intelligence"]);
+const LARGE_MAX_OUTPUT_TOKENS = 8000;
+
 async function callOpenRouter(
   apiKey: string,
   model: string,
   system: string,
   user: string,
   imageDataUri?: string,
+  maxTokens: number = DEFAULT_MAX_OUTPUT_TOKENS,
 ): Promise<string> {
   // Multimodal content array only when an image is attached — plain string
   // content otherwise, since most models (and most agents) never need this.
@@ -2333,7 +2352,7 @@ async function callOpenRouter(
       // Bounded rather than left to the model's max — an unbounded request
       // on some models fails outright when the account's remaining credits
       // can't cover the theoretical max output, even on a free model.
-      max_tokens: 4000,
+      max_tokens: maxTokens,
     }),
   });
   if (!res.ok) {
@@ -2361,6 +2380,7 @@ async function callGemini(
   system: string,
   user: string,
   imageDataUri?: string,
+  maxTokens: number = DEFAULT_MAX_OUTPUT_TOKENS,
 ): Promise<string> {
   const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: user }];
   if (imageDataUri) {
@@ -2376,7 +2396,7 @@ async function callGemini(
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 4000 },
+        generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
       }),
     },
   );
@@ -2425,12 +2445,13 @@ export async function runAgentLLM(
   // the decision documented alongside GEMINI_API_KEY in .env.local.example).
   const geminiKey = process.env.GEMINI_API_KEY;
   const openrouterKey = process.env.OPENROUTER_API_KEY;
+  const maxTokens = LARGE_OUTPUT_AGENTS.has(agentKey) ? LARGE_MAX_OUTPUT_TOKENS : DEFAULT_MAX_OUTPUT_TOKENS;
   let firstError: unknown;
 
   if (geminiKey) {
     try {
       const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-      const markdown = await callGemini(geminiKey, model, system, user, imageDataUri);
+      const markdown = await callGemini(geminiKey, model, system, user, imageDataUri, maxTokens);
       return { markdown, isDemo: false, model: `gemini:${model}` };
     } catch (err) {
       firstError = err;
@@ -2440,7 +2461,7 @@ export async function runAgentLLM(
   if (openrouterKey) {
     try {
       const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
-      const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri);
+      const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri, maxTokens);
       return { markdown, isDemo: false, model: `openrouter:${model}` };
     } catch (err) {
       // If Gemini also failed, surface that as the primary error — it's the

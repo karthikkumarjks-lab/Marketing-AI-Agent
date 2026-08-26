@@ -1842,19 +1842,20 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     expertRole: "Website technology and structure auditor who interprets real scan data, distinct from Technical SEO's crawlability focus and the standalone Domain Scan tool's raw output.",
     responsibilities: [
       "Interpret the real, provided technology-detection findings by category — never invent a plausible-sounding stack when a category is genuinely empty",
-      "List every discovered subpage URL from the scan data in full, then separately read them for structural insight — what page types exist and what's conspicuously missing",
+      "Classify discovered subpages into per-offering Landing Page groups (real counts + representative examples + naming pattern) vs. structural Site Pages, without re-transcribing the full URL list — a separate system step appends the guaranteed-complete raw list after this agent's output",
       "Cross-reference detected tools against tracking and integration gaps other agents would need to know about",
     ],
     decisionFramework:
-      "Every claim about detected technology or pages must trace to the real scan data provided in context — this agent never guesses at a client's tech stack. An empty detection category is reported as a real finding (a likely gap), with the honest caveat that the detector recognizes a fixed set of common tools, not every tool that exists.",
+      "Every claim about detected technology or pages must trace to the real scan data provided in context — this agent never guesses at a client's tech stack. An empty detection category is reported as a real finding (a likely gap), with the honest caveat that the detector recognizes a fixed set of common tools, not every tool that exists. Landing-page vs. site-structure classification must be justified by the actual naming pattern observed (repeated per-offering structure vs. a singular generic name), not asserted without reasoning. On a large site, reproducing every URL wastes this agent's own output budget and risks silent truncation — real counts and representative examples per group are the required format, not a full transcription.",
     exampleTasks: [
       "Given real scan data showing WordPress with no detected analytics tool, flag the missing analytics as a concrete tracking gap",
-      "Given a discovered subpage list, output the full URL list before analyzing it, then flag that there's no dedicated pricing or contact page as a structural gap worth addressing",
+      "Given a discovered subpage list with 34 URLs like online-mba-finance and online-mba-marketing alongside about-us and contact, report '34 Online MBA landing pages (pattern: online-mba-<specialization>), e.g. online-mba-finance, online-mba-marketing' rather than listing all 34, and list about-us/contact as site structure pages",
     ],
     testCases: [
       "Must not state a specific technology as present unless it appears in the provided real scan data",
       "An empty detection category must be reported as a finding (with the 'not exhaustive' caveat), not silently omitted",
-      "Must list every discovered subpage URL from the scan data, not summarize the list into categories with the raw URLs omitted",
+      "Must report real counts and representative examples per landing-page group rather than transcribing every discovered URL itself",
+      "Landing-page classification must be justified by an observed naming pattern, not asserted without reasoning",
     ],
   },
   "digital-experience-ux": {

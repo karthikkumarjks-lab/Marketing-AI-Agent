@@ -169,6 +169,15 @@ export async function POST(req: NextRequest) {
   // Live website scan: real fetch + signature-based tech detection + real
   // subpage discovery for the one agent that needs it — never fabricated,
   // and clearly labeled as real data in the prompt (buildWebsiteAuditContext).
+  // The discovered page list is captured separately (discoveredPages below)
+  // so the FULL list can be appended to the output verbatim by this route
+  // after the LLM call — a real site can have 100+ pages, and asking the
+  // LLM to reproduce every one itself hits its output-token cap and
+  // silently truncates the list (found via a real 144-page site,
+  // onlinemanipal.com, 2026-08-26). The LLM's job is classification and
+  // insight; completeness of the raw list is this route's job, not the
+  // LLM's, since the data is already fully known before the LLM ever runs.
+  let discoveredPages: string[] | null = null;
   if (LIVE_WEBSITE_AUDIT_AGENTS.has(agentKey)) {
     // A per-run override (typed directly on the agent's page) always wins
     // over whatever's stored in Company DNA — lets a client-facing agent
@@ -179,6 +188,7 @@ export async function POST(req: NextRequest) {
     } else {
       const scan = await scanWebsite(websiteUrl);
       extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, scan?.tech ?? null, scan?.sitemap ?? null);
+      discoveredPages = scan?.sitemap?.pages ?? null;
     }
   }
 
@@ -313,6 +323,19 @@ export async function POST(req: NextRequest) {
           : `${result.markdown}\n\n## Generated Image\nImage generation failed or timed out — the prompt above is still valid to try again or use elsewhere.`,
       };
     }
+  }
+
+  // Append the FULL raw discovered-page list verbatim — deterministic, real
+  // data this route already has in full, never subject to the LLM's own
+  // output-token limit the way asking it to reproduce the list itself would
+  // be. The LLM's own output above covers classification/insight; this is
+  // the guaranteed-complete reference list underneath it.
+  if (discoveredPages && discoveredPages.length > 0) {
+    const rawList = discoveredPages.map((p) => `- ${p}`).join("\n");
+    result = {
+      ...result,
+      markdown: `${result.markdown}\n\n## Full Discovered Page List (raw scan data, ${discoveredPages.length} pages)\n${rawList}`,
+    };
   }
 
   const run = await prisma.agentRun.create({
