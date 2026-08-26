@@ -57,16 +57,24 @@ model Workspace {
 // label a human enters after connecting manually. See lib/integrations.ts
 // for the provider registry and what real OAuth wiring would still need.
 model Integration {
-  id           String    @id @default(cuid())
-  workspaceId  String
-  provider     String // matches a key in lib/integrations.ts's INTEGRATION_PROVIDERS
-  status       String    @default("not_connected") // "not_connected" | "connected"
-  accountLabel String? // free text, e.g. "Acme Co — 123-456-7890" — entered by hand, not fetched
-  connectedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  workspaceId       String
+  provider          String // matches a key in lib/integrations.ts's INTEGRATION_PROVIDERS
+  status            String    @default("not_connected") // "not_connected" | "connected"
+  accountLabel      String? // free text, e.g. "Acme Co — 123-456-7890" — entered by hand, not fetched
+  connectedAt       DateTime?
+  // Real OAuth fields — only populated for providers with a live connection
+  // wired (Meta Ads first). Stored in plaintext in the local SQLite file,
+  // matching this app's existing security model (no auth system, API keys
+  // already live in plaintext .env.local) — acceptable for a local
+  // single-user tool, revisit before any multi-user/hosted deployment.
+  accessToken       String? // long-lived Meta user access token
+  tokenExpiresAt    DateTime?
+  externalAccountId String? // e.g. Meta ad account id "act_123456789", chosen by the user post-connect
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, provider])
 }

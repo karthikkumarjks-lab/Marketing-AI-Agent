@@ -10,6 +10,8 @@ import {
   buildCompetitorAuditContext,
   IMAGE_GENERATION_AGENTS,
   extractGenerationPrompt,
+  META_ADS_LIVE_AGENTS,
+  buildMetaAdsLiveContext,
 } from "@/lib/agent-prompts";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
@@ -19,6 +21,7 @@ import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
 import { generateImage } from "@/lib/image-generate";
+import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -188,6 +191,29 @@ export async function POST(req: NextRequest) {
     } else {
       const scan = await scanWebsite(competitorUrlOverride);
       extraContext = (extraContext ?? "") + buildCompetitorAuditContext(competitorUrlOverride, scan?.tech ?? null, scan?.sitemap ?? null);
+    }
+  }
+
+  // Real Meta Ads data: only when this workspace has a genuine OAuth
+  // connection (see app/api/integrations/meta/*) with an ad account chosen —
+  // never fabricated, and the prompt is instructed to disclose plainly when
+  // it's absent or the live fetch fails.
+  if (META_ADS_LIVE_AGENTS.has(agentKey)) {
+    const metaIntegration = await prisma.integration.findUnique({
+      where: { workspaceId_provider: { workspaceId, provider: "meta_ads" } },
+    });
+    const connected = metaIntegration?.status === "connected" && !!metaIntegration.accessToken;
+    if (!connected) {
+      extraContext = (extraContext ?? "") + buildMetaAdsLiveContext(false, null);
+    } else if (!metaIntegration.externalAccountId) {
+      extraContext = (extraContext ?? "") + buildMetaAdsLiveContext(true, null, "no ad account selected yet — pick one on the Integrations page");
+    } else {
+      try {
+        const insights = await fetchAdAccountInsights(metaIntegration.accessToken!, metaIntegration.externalAccountId);
+        extraContext = (extraContext ?? "") + buildMetaAdsLiveContext(true, insights);
+      } catch (err) {
+        extraContext = (extraContext ?? "") + buildMetaAdsLiveContext(true, null, err instanceof Error ? err.message : "fetch failed");
+      }
     }
   }
 

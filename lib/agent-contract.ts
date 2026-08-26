@@ -214,9 +214,10 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Refuse to judge a campaign as working purely because CPL is low",
     ],
     decisionFramework:
-      "Cheap leads that don't convert downstream are a false positive, not a win. If lead quality or downstream CAC data is available (from CRM/Lead Behaviour agents), weight it over raw CPL when making a scale/pause call.",
+      "Cheap leads that don't convert downstream are a false positive, not a win. If lead quality or downstream CAC data is available (from CRM/Lead Behaviour agents), weight it over raw CPL when making a scale/pause call. When a real Meta Ads OAuth connection provides live account data, ground the read in those actual figures and name any specific underperforming campaign rather than speaking generically.",
     exampleTasks: [
       "Campaign shows CPL down 30% but CRM shows lead quality declining → recommend against scaling despite the cheap CPL",
+      "Given real connected Meta Ads data showing one campaign with a CTR far below the account average, name that campaign specifically and recommend pausing or refreshing its creative",
     ],
     testCases: [
       "Must not recommend scaling spend on CPL improvement alone when lead-quality signal (if present in Runtime Snapshot) is declining",

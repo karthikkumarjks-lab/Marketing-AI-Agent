@@ -338,12 +338,16 @@ Ad groups by intent, with 5-8 example keywords each and match type.
   "meta-ads": `You are the Meta Ads Agent. You run Meta (Facebook/Instagram) campaigns for SMBs across markets, activated only once Performance Marketing Strategy has approved a paid social budget.
 
 Hard rules:
-- Use the client's stated currency consistently.
+- Check for a "Live Meta Ads Data" section in your context first. If present with real numbers, ground your read in it explicitly — cite the actual spend/CTR/CPC/conversion figures, don't reason around real data that's sitting right there. If it says the account isn't connected, reason from category knowledge as usual and say so plainly.
+- Use the client's stated currency consistently for anything NOT covered by real Meta data (which reports in the ad account's own currency — state that distinction if both appear together).
 - Sequence audiences correctly: broad/Advantage+ for volume, interest-based for testing new angles, retargeting/lookalikes only once there's a pixel with real signal — say explicitly if this client doesn't have that yet.
 - Creative-first: lead with creative angles, not targeting minutiae.
 - Funnel awareness: cold audiences need a different offer/message than warm retargeting audiences.
+- If real data shows a specific campaign underperforming (low CTR, high cost-per-conversion relative to the others), name it specifically and say what to do about it — don't give generic advice when a specific culprit is visible in the data.
 
 Output format (GitHub-flavored markdown):
+## Live Account Read
+Only include this section if real Meta data was provided — summarize actual spend/performance over the last 30 days and flag any specific underperforming campaign by name. Omit entirely if no account is connected.
 ## Funnel Structure
 ## Audience Plan
 ## Creative Angles
@@ -2056,6 +2060,60 @@ export const LIVE_WEBSITE_AUDIT_AGENTS = new Set(["website-technology-structure"
 // to a COMPETITOR's site (entered per-run — there's no Company DNA field for
 // it) rather than the client's own. See buildCompetitorAuditContext.
 export const LIVE_COMPETITOR_AUDIT_AGENTS = new Set(["competitive-intelligence"]);
+
+// Agents that get real Meta Ads account data (spend, CTR, CPC, conversions,
+// per-campaign breakdown) injected as extraContext when the workspace has a
+// real Meta OAuth connection (see lib/meta-ads-client.ts and
+// app/api/integrations/meta/*) with an ad account selected. Falls back to
+// category-knowledge reasoning, honestly disclosed, when not connected.
+export const META_ADS_LIVE_AGENTS = new Set(["meta-ads"]);
+
+export function buildMetaAdsLiveContext(
+  connected: boolean,
+  insights: {
+    dateRangeLabel: string;
+    spend: number;
+    currency: string;
+    impressions: number;
+    clicks: number;
+    ctr: number | null;
+    cpc: number | null;
+    conversions: number | null;
+    costPerConversion: number | null;
+    campaigns: { name: string; spend: number; impressions: number; clicks: number }[];
+  } | null,
+  errorMessage?: string,
+): string {
+  if (!connected) {
+    return `\n\n# Live Meta Ads Data\nNo Meta Ads account is connected for this workspace — reason from category knowledge instead, and say plainly that this isn't based on real account data.`;
+  }
+  if (!insights) {
+    return `\n\n# Live Meta Ads Data\nMeta Ads is connected but the real data fetch failed${errorMessage ? ` (${errorMessage})` : ""} — reason from category knowledge instead, and report this as a live-data reachability issue, not a missing connection.`;
+  }
+
+  const campaignLines =
+    insights.campaigns.length > 0
+      ? insights.campaigns
+          .map((c) => `- **${c.name}**: spend ${c.spend.toFixed(2)}, ${c.impressions.toLocaleString()} impressions, ${c.clicks.toLocaleString()} clicks`)
+          .join("\n")
+      : "(no campaign-level data returned for this period)";
+
+  return `
+
+# Live Meta Ads Data (real data — ${insights.dateRangeLabel})
+
+## Account Totals
+- Spend: ${insights.spend.toFixed(2)} (account currency)
+- Impressions: ${insights.impressions.toLocaleString()}
+- Clicks: ${insights.clicks.toLocaleString()}
+- CTR: ${insights.ctr != null ? `${insights.ctr.toFixed(2)}%` : "not reported"}
+- CPC: ${insights.cpc != null ? insights.cpc.toFixed(2) : "not reported"}
+- Conversions (leads): ${insights.conversions != null ? insights.conversions : "not reported"}
+- Cost per conversion: ${insights.costPerConversion != null ? insights.costPerConversion.toFixed(2) : "not reported"}
+
+## Per-Campaign Breakdown
+${campaignLines}`;
+}
 
 // Agents whose LLM output includes a "## Generation Prompt" fenced block that
 // the API route extracts and sends to a real image-generation model (see
