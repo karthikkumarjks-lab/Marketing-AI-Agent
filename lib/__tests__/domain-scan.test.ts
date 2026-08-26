@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkChatbot, checkPhone } from "../domain-scan";
+import { checkChatbot, checkPhone, checkSocial } from "../domain-scan";
 
 describe("checkChatbot", () => {
   it("detects a known vendor script", () => {
@@ -58,6 +58,48 @@ describe("checkChatbot", () => {
     const result = checkChatbot(html);
     expect(result.detected).toBe(true);
     expect(result.providers).toContain("Vachak.ai Voice Widget");
+  });
+
+  it("detects the full api.whatsapp.com/send URL, not just the wa.me short link (real amityonline.com markup)", () => {
+    // Found via user report: this scanner only recognized "wa.me/" and
+    // missed the equally common full-URL form of the same click-to-chat
+    // button.
+    const html = `<a href="https://api.whatsapp.com/send/?phone=919818795446&text=Hi">Chat</a>`;
+    const result = checkChatbot(html);
+    expect(result.detected).toBe(true);
+    expect(result.providers).toContain("WhatsApp Click-to-Chat");
+  });
+});
+
+describe("checkSocial", () => {
+  it("detects a LinkedIn /school/ page for an educational institution (real amityonline.com markup)", () => {
+    // Found via user report: this scanner only recognized /company/, /in/,
+    // /showcase/ — missing LinkedIn's distinct URL segment for schools and
+    // universities.
+    const html = `<a href="https://www.linkedin.com/school/amityonline">LinkedIn</a>`;
+    const result = checkSocial(html);
+    expect(result.some((s) => s.platform === "LinkedIn")).toBe(true);
+  });
+
+  it("detects a bare legacy YouTube vanity URL with no /channel/, /c/, or /@ prefix (real amityonline.com markup)", () => {
+    const html = `<a href="https://www.youtube.com/amityuniversityonline">YouTube</a>`;
+    const result = checkSocial(html);
+    expect(result.some((s) => s.platform === "YouTube")).toBe(true);
+  });
+
+  it("still detects the modern YouTube @handle format", () => {
+    const html = `<a href="https://www.youtube.com/@somechannel">YouTube</a>`;
+    const result = checkSocial(html);
+    expect(result.some((s) => s.platform === "YouTube")).toBe(true);
+  });
+
+  it("does not mistake an embedded YouTube video link for a channel link", () => {
+    // Regression guard for the bare-vanity-URL branch: a page can legitimately
+    // link to a specific video (watch/embed/playlist) without that being the
+    // channel's own page.
+    const html = `<a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Video</a>`;
+    const result = checkSocial(html);
+    expect(result.some((s) => s.platform === "YouTube")).toBe(false);
   });
 });
 

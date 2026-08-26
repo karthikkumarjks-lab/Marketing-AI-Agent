@@ -104,13 +104,18 @@ function buildAdLibraryLinks(domain: string): AdLibraryLink[] {
   ];
 }
 
-const FETCH_TIMEOUT_MS = 15000;
-// Real pages routinely exceed the old 500KB cap this started at — a real
-// bug, not a theoretical one: found by scanning an actual site whose tel:
-// link and chat-widget script both sat past 500KB, well into the footer,
-// so this scanner reported "not found" for things that were genuinely on
-// the page. 3MB comfortably covers the large majority of real-world pages.
-const MAX_HTML_BYTES = 3_000_000;
+const FETCH_TIMEOUT_MS = 25000;
+// This cap has already been raised once (500KB -> 3MB) after a real site's
+// tel:/chat-widget content sat past the old cutoff. It happened AGAIN at
+// 3MB: amityonline.com is a 3.9MB page (heavy client-side hydration state
+// inlined into the HTML — common on modern Next.js/Nuxt sites) whose
+// WhatsApp click-to-chat link sits at byte ~3.26MB, just past the old cap.
+// Raised further this time (8MB, matching MAX_IMAGE_BYTES's threshold
+// elsewhere in this codebase) specifically to reduce how often this exact
+// bug class recurs as real pages keep growing — timeout raised alongside it
+// (15s -> 25s) so reading up to 8MB doesn't get aborted mid-read on a normal
+// connection.
+const MAX_HTML_BYTES = 8_000_000;
 
 function normalizeDomain(input: string): string {
   let d = input.trim().toLowerCase();
@@ -229,13 +234,27 @@ function checkMobile(html: string): MobileSignal {
 const SOCIAL_PATTERNS: { platform: string; re: RegExp }[] = [
   { platform: "Instagram", re: /https?:\/\/(www\.)?instagram\.com\/[^\s"'<>]+/i },
   { platform: "Facebook", re: /https?:\/\/(www\.)?facebook\.com\/[^\s"'<>]+/i },
-  { platform: "LinkedIn", re: /https?:\/\/(www\.)?linkedin\.com\/(company|in|showcase)\/[^\s"'<>]+/i },
+  // Includes /school/ for educational institutions — found missing via a
+  // real site (amityonline.com, 2026-08-26) whose real page is
+  // linkedin.com/school/amityonline; LinkedIn uses a distinct URL segment
+  // for schools/universities that /company/, /in/, /showcase/ don't cover.
+  { platform: "LinkedIn", re: /https?:\/\/(www\.)?linkedin\.com\/(company|in|showcase|school)\/[^\s"'<>]+/i },
   { platform: "X / Twitter", re: /https?:\/\/(www\.)?(x|twitter)\.com\/[^\s"'<>]+/i },
-  { platform: "YouTube", re: /https?:\/\/(www\.)?youtube\.com\/(channel|c|@)[^\s"'<>]+/i },
+  // Covers both the modern prefixed formats (/channel/, /c/, /@handle,
+  // /user/) and older bare vanity URLs (youtube.com/Name, no prefix at all)
+  // still used by long-established channels — found missing via a real site
+  // (amityonline.com, 2026-08-26) whose real channel is
+  // youtube.com/amityuniversityonline with no prefix. The bare-URL branch
+  // excludes common non-channel paths (watch, embed, playlist, etc.) so it
+  // doesn't misfire on an embedded video link.
+  {
+    platform: "YouTube",
+    re: /https?:\/\/(www\.)?youtube\.com\/(?:(?:channel|c|user)\/[^\s"'<>]+|@[^\s"'<>]+|(?!watch\b|embed\b|playlist\b|results\b|shorts\b|live\b|feed\b|hashtag\b)[a-zA-Z0-9_.-]+)/i,
+  },
   { platform: "TikTok", re: /https?:\/\/(www\.)?tiktok\.com\/@[^\s"'<>]+/i },
 ];
 
-function checkSocial(html: string): SocialLink[] {
+export function checkSocial(html: string): SocialLink[] {
   const found: SocialLink[] = [];
   for (const { platform, re } of SOCIAL_PATTERNS) {
     const match = html.match(re);
@@ -244,17 +263,21 @@ function checkSocial(html: string): SocialLink[] {
   return found;
 }
 
-const CHATBOT_SIGNATURES: { provider: string; needle: string }[] = [
-  { provider: "Intercom", needle: "widget.intercom.io" },
-  { provider: "Drift", needle: "js.driftt.com" },
-  { provider: "Tidio", needle: "code.tidio.co" },
-  { provider: "Tawk.to", needle: "embed.tawk.to" },
-  { provider: "HubSpot Chat", needle: "js.hs-scripts.com" },
-  { provider: "Crisp", needle: "client.crisp.chat" },
-  { provider: "Zendesk Chat", needle: "static.zdassets.com" },
-  { provider: "LiveChat", needle: "cdn.livechatinc.com" },
-  { provider: "Freshchat", needle: "wchat.freshchat.com" },
-  { provider: "WhatsApp Click-to-Chat", needle: "wa.me/" },
+const CHATBOT_SIGNATURES: { provider: string; needles: string[] }[] = [
+  { provider: "Intercom", needles: ["widget.intercom.io"] },
+  { provider: "Drift", needles: ["js.driftt.com"] },
+  { provider: "Tidio", needles: ["code.tidio.co"] },
+  { provider: "Tawk.to", needles: ["embed.tawk.to"] },
+  { provider: "HubSpot Chat", needles: ["js.hs-scripts.com"] },
+  { provider: "Crisp", needles: ["client.crisp.chat"] },
+  { provider: "Zendesk Chat", needles: ["static.zdassets.com"] },
+  { provider: "LiveChat", needles: ["cdn.livechatinc.com"] },
+  { provider: "Freshchat", needles: ["wchat.freshchat.com"] },
+  // Two URL formats for the same click-to-chat button — "wa.me/" is the
+  // short-link form, "api.whatsapp.com/send" is the full form. Found missing
+  // via a real site (amityonline.com, 2026-08-26) that only used the full
+  // form, which this scanner didn't recognize as WhatsApp at all.
+  { provider: "WhatsApp Click-to-Chat", needles: ["wa.me/", "api.whatsapp.com/send"] },
   // Found via a real site (online.christuniversity.in, 2026-08-26) that this
   // scanner wrongly reported as "not detected" despite a real chatbot being
   // present — a genuine missing-vendor gap, not the already-known
@@ -263,8 +286,8 @@ const CHATBOT_SIGNATURES: { provider: string; needle: string }[] = [
   // `chatbot.` subdomain from the `widgets.` one it uses for ordinary lead
   // forms, so this needle only matches the real chatbot, not every site that
   // merely uses NopaperForms for lead capture.
-  { provider: "NopaperForms Chatbot", needle: "chatbot.in6.nopaperforms.com" },
-  { provider: "Vachak.ai Voice Widget", needle: "vachak.ai/widget" },
+  { provider: "NopaperForms Chatbot", needles: ["chatbot.in6.nopaperforms.com"] },
+  { provider: "Vachak.ai Voice Widget", needles: ["vachak.ai/widget"] },
 ];
 
 // Catches custom-built, first-party AI chat assistants that no vendor
@@ -288,7 +311,9 @@ const CUSTOM_CHAT_HEURISTICS: RegExp[] = [/aria-label=["'][^"']*\bask\s+\w+/i];
 
 export function checkChatbot(html: string): ChatbotDetection {
   const lower = html.toLowerCase();
-  const vendorProviders = CHATBOT_SIGNATURES.filter((s) => lower.includes(s.needle.toLowerCase())).map((s) => s.provider);
+  const vendorProviders = CHATBOT_SIGNATURES.filter((s) => s.needles.some((n) => lower.includes(n.toLowerCase()))).map(
+    (s) => s.provider,
+  );
   if (vendorProviders.length > 0) {
     return { detected: true, providers: vendorProviders };
   }
