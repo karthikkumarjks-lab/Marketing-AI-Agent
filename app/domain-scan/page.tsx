@@ -37,10 +37,11 @@ export default function DomainScanPage() {
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Domain Scan</div>
         <h1 className="text-2xl font-semibold text-ink">Check a domain&apos;s real digital footprint</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl leading-relaxed">
-          Real, live checks — DNS, registration (WHOIS/RDAP), website reachability,
-          mobile-friendliness signal, social links, chatbot widget, and phone number — read directly
-          from the domain, not inferred by an LLM. Ad activity across Meta/Google/LinkedIn isn&apos;t
-          automatable for free anywhere right now (see the note in results), so that shows up as
+          Real, live checks — DNS, registration (WHOIS/RDAP), SSL certificate, email
+          authentication (SPF/DMARC), website reachability, mobile-friendliness signal, social
+          links, chatbot widget, and phone number — read directly from the domain, not inferred by
+          an LLM. Ad activity across Meta/Google/LinkedIn and blacklist status aren&apos;t
+          automatable for free anywhere right now (see the notes in results), so those show up as
           one-click links instead.
         </p>
       </div>
@@ -111,6 +112,8 @@ function ScanResults({ result }: { result: DomainScanResult }) {
         {result.website.error && <p className="text-xs text-ink-faint mt-2">{result.website.error}</p>}
       </Section>
 
+      <HealthScoreCard healthScore={result.healthScore} />
+
       {result.domainExists && (
         <Section title="DNS Records">
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -147,6 +150,56 @@ function ScanResults({ result }: { result: DomainScanResult }) {
           </p>
         </Section>
       )}
+
+      {result.ssl && (
+        <Section title="SSL Certificate">
+          {result.ssl.error ? (
+            <p className="text-sm text-ink-faint">Could not check: {result.ssl.error}</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="col-span-2 flex items-center gap-2">
+                <Pill ok={result.ssl.valid} label={result.ssl.valid ? "Valid" : "Invalid or untrusted"} />
+                {result.ssl.daysUntilExpiry != null && result.ssl.daysUntilExpiry < 30 && result.ssl.daysUntilExpiry >= 0 && (
+                  <Pill ok={false} label={`Expires in ${result.ssl.daysUntilExpiry} days`} />
+                )}
+              </div>
+              <WhoisField label="Issuer" value={result.ssl.issuer} />
+              <WhoisField label="Expires" value={formatWhoisDate(result.ssl.validTo)} />
+            </div>
+          )}
+        </Section>
+      )}
+
+      {result.emailAuth && (
+        <Section title="Email Authentication">
+          <div className="flex items-center gap-2">
+            <Pill ok={result.emailAuth.spf.present} label={result.emailAuth.spf.present ? "SPF present" : "No SPF"} />
+            <Pill ok={result.emailAuth.dmarc.present} label={result.emailAuth.dmarc.present ? "DMARC present" : "No DMARC"} />
+            {result.emailAuth.dmarc.policy && (
+              <span className="text-[11px] text-ink-faint">policy: {result.emailAuth.dmarc.policy}</span>
+            )}
+          </div>
+          <p className="text-[11px] text-ink-faint mt-2 leading-relaxed">
+            These protect this domain&apos;s email from being spoofed — unrelated to how the
+            website itself is built, but a real part of overall domain health.
+          </p>
+        </Section>
+      )}
+
+      <Section title="Blacklist Status">
+        <a
+          href={result.blacklistCheckLink}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2 hover:bg-bg transition-colors"
+        >
+          <div>
+            <div className="text-sm font-medium text-ink">Check on MXToolbox</div>
+            <div className="text-[11px] text-ink-faint">Free, no signup — opens pre-filled with this domain</div>
+          </div>
+          <span className="text-accent text-sm">Open →</span>
+        </a>
+      </Section>
 
       {result.mobile && (
         <Section title="Mobile-Friendliness Signal">
@@ -242,6 +295,48 @@ function ScanResults({ result }: { result: DomainScanResult }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function HealthScoreCard({ healthScore }: { healthScore: DomainScanResult["healthScore"] }) {
+  const pct = healthScore.maxScore > 0 ? Math.round((healthScore.score / healthScore.maxScore) * 100) : 0;
+  const tone = pct >= 80 ? "accent" : pct >= 50 ? "warn" : "danger";
+  const toneClasses = {
+    accent: "text-accent-ink bg-accent-soft border-accent/30",
+    warn: "text-warn bg-warn-soft border-warn/30",
+    danger: "text-danger bg-danger-soft border-danger/30",
+  }[tone];
+
+  return (
+    <div className={`rounded-lg border p-4 mb-4 ${toneClasses}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs font-mono uppercase tracking-wide opacity-80">Domain Health Score</div>
+        <div className="text-2xl font-semibold tabular-nums">
+          {healthScore.score}
+          <span className="text-sm opacity-70">/{healthScore.maxScore}</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {healthScore.factors.map((f) => (
+          <div key={f.label} className="flex items-start justify-between gap-3 text-xs">
+            <div className="flex items-start gap-1.5">
+              <span className={f.passed ? "opacity-100" : "opacity-50"}>{f.passed ? "✓" : "✗"}</span>
+              <div>
+                <span className="font-medium">{f.label}</span>
+                <span className="opacity-70"> — {f.detail}</span>
+              </div>
+            </div>
+            <span className="tabular-nums opacity-70 whitespace-nowrap">
+              {f.points}/{f.maxPoints}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] opacity-70 mt-2.5 leading-relaxed">
+        A transparent composite of the real checks below — every point ties to a specific,
+        disclosed check, not a hidden formula.
+      </p>
     </div>
   );
 }

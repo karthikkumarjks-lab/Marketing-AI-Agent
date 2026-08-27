@@ -15,6 +15,15 @@
 
 import { promises as dns } from "node:dns";
 import { lookupWhois, type WhoisInfo } from "./whois-lookup";
+import {
+  checkSsl,
+  checkEmailAuth,
+  buildBlacklistCheckLink,
+  computeHealthScore,
+  type SslInfo,
+  type EmailAuthInfo,
+  type HealthScoreResult,
+} from "./domain-health";
 
 export interface DnsRecords {
   a: string[];
@@ -71,6 +80,10 @@ export interface DomainScanResult {
   chatbot: ChatbotDetection | null;
   phone: PhoneFinding | null;
   adLibraryLinks: AdLibraryLink[];
+  ssl: SslInfo | null;
+  emailAuth: EmailAuthInfo | null;
+  blacklistCheckLink: string;
+  healthScore: HealthScoreResult;
   notes: string[];
 }
 
@@ -380,8 +393,24 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     notes.push("Registration (WHOIS/RDAP) lookup returned nothing — the registry for this domain's TLD may not run public RDAP, or the lookup failed.");
   }
 
+  const blacklistCheckLink = buildBlacklistCheckLink(domain);
+  notes.push(
+    "Blacklist status isn't checked automatically — no genuinely free, reliable API exists for this (verified directly: raw DNSBL lookups get corrupted by some corporate/ISP DNS resolvers, and every free reputation API found restricts free use to non-commercial purposes or provides zero free quota for this specific check). The link below opens MXToolbox's own free checker, pre-filled with this domain, in one click.",
+  );
+
   if (!domainExists) {
     notes.push("DNS found no A, NS, or MX records — this domain may not be registered or may not be resolving right now.");
+    const healthScore = computeHealthScore({
+      domainExists: false,
+      websiteReachable: false,
+      hasHttps: false,
+      sslValid: null,
+      sslDaysUntilExpiry: null,
+      spfPresent: false,
+      dmarcPresent: false,
+      mobileResponsive: null,
+      domainAgeYears: whois?.domainAgeYears ?? null,
+    });
     return {
       domain,
       scannedAt: new Date().toISOString(),
@@ -394,20 +423,42 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       chatbot: null,
       phone: null,
       adLibraryLinks,
+      ssl: null,
+      emailAuth: null,
+      blacklistCheckLink,
+      healthScore,
       notes,
     };
   }
 
-  const { check: website, html, htmlTruncated } = await checkWebsite(domain);
+  const [{ check: website, html, htmlTruncated }, ssl, emailAuth] = await Promise.all([
+    checkWebsite(domain),
+    checkSsl(domain),
+    checkEmailAuth(domain),
+  ]);
   if (htmlTruncated) {
     notes.push(
       `This page is larger than ${(MAX_HTML_BYTES / 1_000_000).toFixed(0)}MB — only the first part was read. A tel: link, social link, or chat widget positioned further down the page (common in a large footer or a page with heavy inline scripts) could be missed.`,
     );
   }
+  if (!emailAuth.spf.present) notes.push("No SPF record found — email sent from this domain is easier to spoof.");
+  if (!emailAuth.dmarc.present) notes.push("No DMARC record found — no policy exists for handling spoofed mail claiming to be from this domain.");
+  if (ssl.error) notes.push(`SSL certificate check: ${ssl.error}.`);
 
   if (!html) {
     if (website.reachable) notes.push("Website responded but returned no readable HTML content.");
     else notes.push("Website did not respond — mobile, social, chatbot, and phone checks were skipped.");
+    const healthScore = computeHealthScore({
+      domainExists: true,
+      websiteReachable: website.reachable,
+      hasHttps: website.https,
+      sslValid: ssl.valid,
+      sslDaysUntilExpiry: ssl.daysUntilExpiry,
+      spfPresent: emailAuth.spf.present,
+      dmarcPresent: emailAuth.dmarc.present,
+      mobileResponsive: null,
+      domainAgeYears: whois?.domainAgeYears ?? null,
+    });
     return {
       domain,
       scannedAt: new Date().toISOString(),
@@ -420,6 +471,10 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       chatbot: null,
       phone: null,
       adLibraryLinks,
+      ssl,
+      emailAuth,
+      blacklistCheckLink,
+      healthScore,
       notes,
     };
   }
@@ -434,6 +489,19 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
   if (phone.numbers.length === 0) {
     notes.push("No phone number found on this page — it may only be on a different page, behind a click-to-call button rendered by JavaScript, or genuinely not published.");
   }
+  const mobile = checkMobile(html);
+
+  const healthScore = computeHealthScore({
+    domainExists: true,
+    websiteReachable: website.reachable,
+    hasHttps: website.https,
+    sslValid: ssl.valid,
+    sslDaysUntilExpiry: ssl.daysUntilExpiry,
+    spfPresent: emailAuth.spf.present,
+    dmarcPresent: emailAuth.dmarc.present,
+    mobileResponsive: mobile.likelyResponsive,
+    domainAgeYears: whois?.domainAgeYears ?? null,
+  });
 
   return {
     domain,
@@ -442,11 +510,15 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     dns: dnsRecords,
     whois,
     website,
-    mobile: checkMobile(html),
+    mobile,
     social: checkSocial(html),
     chatbot,
     phone,
     adLibraryLinks,
+    ssl,
+    emailAuth,
+    blacklistCheckLink,
+    healthScore,
     notes,
   };
 }
