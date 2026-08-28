@@ -46,12 +46,7 @@ export default function LoginForm() {
         />
       </div>
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs text-ink-faint">Password</label>
-          <Link href="/forgot-password" className="text-xs text-accent hover:underline">
-            Forgot password?
-          </Link>
-        </div>
+        <label className="block text-xs text-ink-faint mb-1">Password</label>
         <input
           type="password"
           value={password}
@@ -59,6 +54,9 @@ export default function LoginForm() {
           required
           className={inputClass}
         />
+        <Link href="/forgot-password" className="block text-xs text-accent hover:underline mt-1.5">
+          Forgot password?
+        </Link>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
       <button
