@@ -14,7 +14,7 @@ const { auth } = NextAuth(authConfig);
 // login/signup pages, NextAuth's own API routes) and static assets stay
 // public; every other request without a valid session bounces to /login
 // with a callbackUrl so the user lands back where they were headed.
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

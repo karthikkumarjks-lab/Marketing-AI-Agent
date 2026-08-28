@@ -21,6 +21,21 @@ model User {
   createdAt    DateTime    @default(now())
 
   workspaces   Workspace[]
+  resetTokens  PasswordResetToken[]
+}
+
+// The emailed reset link carries the raw token; only its SHA-256 hash is
+// stored here — a stolen database row alone can't be used to reset a
+// password, only a stolen (unexpired, unused) email link can.
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Workspace {
