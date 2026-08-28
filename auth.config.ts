@@ -14,6 +14,13 @@ import type { NextAuthConfig } from "next-auth";
 export const authConfig: NextAuthConfig = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  // NextAuth only auto-trusts the incoming Host header on Vercel; anywhere
+  // else in production (Netlify included) it refuses by default as an
+  // anti-host-header-injection safeguard, surfacing as a generic "There is
+  // a problem with the server configuration" page with no clearer message.
+  // Safe to set here since APP_BASE_URL/the real deploy URL is the only
+  // host this app is ever served from.
+  trustHost: true,
   providers: [],
   callbacks: {
     async jwt({ token, user }) {
