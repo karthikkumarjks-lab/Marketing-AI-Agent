@@ -7,13 +7,12 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# NextAuth's CSRF double-submit cookie was breaking with a "MissingCSRF"
-# login error — the response for GET /api/auth/csrf came back with TWO
-# different Set-Cookie headers for the same csrf-token cookie name (a
-# duplicate/racing origin execution, evidence pointed at Netlify's durable
-# caching layer even though the route already sends Cache-Control: no-store
-# itself — that header alone wasn't enough to opt out). Force Netlify's own
-# CDN-level header to explicitly refuse to cache/duplicate every auth route.
+# Defensive: explicitly refuse CDN caching on NextAuth's own routes. Kept
+# even though it turned out NOT to be the actual fix for the MissingCSRF
+# bug hit on 2026-08-28 (that was a duplicate-Set-Cookie issue caused by
+# proxy.ts's middleware matcher wrapping these routes — fixed by excluding
+# api/auth from that matcher entirely, see proxy.ts). Still correct hygiene
+# to keep regardless.
 [[headers]]
   for = "/api/auth/*"
   [headers.values]
