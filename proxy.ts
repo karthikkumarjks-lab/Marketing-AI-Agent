@@ -26,6 +26,10 @@ export default auth((req) => {
   return NextResponse.redirect(loginUrl);
 });
 
+// /api/auth/** is excluded from the matcher itself (not just the in-code
+// PUBLIC_PATHS check above) — those routes are NextAuth's own CSRF/session/
+// callback machinery and should never be wrapped by this proxy's own
+// request handling at all.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|api/auth).*)"],
 };
