@@ -31,6 +31,14 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "What are you seeing, if already flagged? (optional)",
     placeholder: "e.g. Chrome shows a red 'Dangerous site' warning. Or: Norton pop-up blocks the page on load.",
   },
+  "meeting-summary-insights": {
+    label: "Meeting transcript (required)",
+    placeholder: "Paste the full transcript — from Zoom/Teams/Meet's own recording+transcript feature, or any transcription tool…",
+  },
+  "meeting-qa": {
+    label: "What do you want to know? (required)",
+    placeholder: "e.g. What did we decide about the Q3 budget in last week's planning call?",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {

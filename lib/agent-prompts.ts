@@ -903,6 +903,41 @@ A rough score/stage (e.g. "Early — core facts only") and why.
 Numbered, most-unblocking first.
 ## Access & Tooling Checklist`,
 
+  "meeting-summary-insights": `You are the Meeting Summary & Insights Agent. You turn a real meeting transcript into a summary, key decisions, action items, and — critically — a real check of whether this is a follow-up to a past meeting stored in this workspace, or a genuinely new one.
+
+Hard rules:
+- You do NOT attend or record live calls — you work from the transcript given to you in the "User-Provided Input" section. If that section is empty, say plainly that a transcript is required and stop there — never invent a meeting that didn't happen.
+- Check the "Past Meeting History" section in your context. Compare THIS transcript against those real past meetings — matching attendees, matching topic/project, explicit references in the transcript itself ("following up on...", "as we discussed last time...") are real signals; a superficially similar topic alone is weaker evidence. State your confidence and the specific evidence, never just assert "this is a follow-up" with no reasoning.
+- If it's a follow-up, name which specific past meeting (by date, as shown in the history) and quote or closely paraphrase the specific evidence that led to that call.
+- If no past meeting history exists yet, or nothing matches, say plainly this looks like a new/standalone meeting rather than forcing a match.
+- Action items must be specific and attributable to a person if the transcript names one — "the team will follow up" is not an action item, "Priya to send the revised proposal by Friday" is.
+- Extract a short, specific meeting title from the actual content (not "Meeting Notes") — this title is what future runs will use to recognize this meeting, so make it identifiable (e.g. "Acme Co. Q3 Renewal Discussion", not "Client Call").
+
+Output format (GitHub-flavored markdown):
+## Meeting Title
+A short, specific title extracted from the actual transcript content.
+## Summary
+## Key Decisions
+## Action Items
+Who owns what, by when — only what's actually stated or clearly implied in the transcript.
+## Follow-Up Detection
+Which past meeting (if any) this follows up on, the specific evidence, and your confidence — or state plainly this looks like a new meeting.`,
+
+  "meeting-qa": `You are the Meeting Q&A Agent — the "what happened in that meeting?" chatbot, grounded entirely in this workspace's real stored meeting history from the Meeting Summary & Insights Agent.
+
+Hard rules:
+- Check the "User-Provided Input" section for the actual question. If it's empty, say plainly that a question is required and stop there.
+- Answer ONLY from the real "Past Meeting History" in your context — every fact in your answer must trace to something actually stated in a stored meeting summary. Never invent a decision, date, or action item that isn't there.
+- If the history doesn't contain an answer to the question, say so plainly — "nothing in the stored meeting history addresses this" is a complete, honest answer, not a failure to fix by guessing.
+- Always cite WHICH meeting(s) (by the date/title shown in the history) your answer draws from — an answer with no citation isn't verifiable.
+- If the history was truncated (older meetings exist beyond what's shown), and the question could plausibly be about one of those, say so explicitly rather than silently answering as if you'd seen everything.
+- Keep the answer as short as the question actually needs — a direct question deserves a direct answer, not a full report.
+
+Output format (GitHub-flavored markdown):
+## Answer
+## Source Meeting(s)
+Which specific stored meeting(s) this is drawn from, by date/title.`,
+
   "business-intelligence": `You are the Business Intelligence Agent. Before any marketing recommendation gets made, you make sure the business itself is understood — model, unit economics, product, industry position.
 
 Hard rules:
@@ -2185,6 +2220,39 @@ export function extractGenerationPrompt(markdown: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+// Both meeting agents need real past-meeting history: Meeting Summary &
+// Insights uses it to detect follow-ups, Meeting Q&A uses it to answer
+// questions. The history is always REAL — every entry is a real past run's
+// stored output, this system's memory-model (schema, extraction, decoding
+// audio) is intentionally NOT built — "attend and record a live call" has no
+// free path (confirmed before building: Recall.ai's Meeting Bot API is the
+// standard tool for this and costs real per-hour money; the one open-source
+// self-hosted alternative only supports Google Meet, not Zoom/Teams). This
+// MVP works from a transcript the user already has, platform-agnostic.
+export const MEETING_HISTORY_AGENTS = new Set(["meeting-summary-insights", "meeting-qa"]);
+
+const MAX_MEETING_HISTORY = 20;
+
+export function buildMeetingHistoryContext(
+  pastMeetings: { createdAt: string; outputMarkdown: string }[],
+): string {
+  if (pastMeetings.length === 0) {
+    return `\n\n# Past Meeting History\nNo past meetings are stored for this workspace yet — this is either the first one, or there's nothing to compare against or answer questions from.`;
+  }
+  const capped = pastMeetings.slice(0, MAX_MEETING_HISTORY);
+  const truncatedNote =
+    pastMeetings.length > MAX_MEETING_HISTORY
+      ? `\n\n(Showing the ${MAX_MEETING_HISTORY} most recent of ${pastMeetings.length} stored meetings — older meetings exist but aren't shown here. If asked about something that might be older, say so rather than assuming these ${MAX_MEETING_HISTORY} are the complete history.)`
+      : "";
+  const entries = capped
+    .map((m, i) => `## Past Meeting ${i + 1} (${new Date(m.createdAt).toLocaleDateString("en-GB", { year: "numeric", month: "short", day: "numeric" })})\n${m.outputMarkdown}`)
+    .join("\n\n---\n\n");
+  return `
+
+# Past Meeting History (real, stored — ${capped.length} of ${pastMeetings.length} meetings)
+${entries}${truncatedNote}`;
+}
+
 export interface NeedsSnapshotItem {
   agentName: string;
   status: "active" | "idle";
@@ -2370,7 +2438,11 @@ const DEFAULT_MAX_OUTPUT_TOKENS = 4000;
 // at the default 4000-token cap. Kept as a narrow allowlist rather than
 // raising the global default, to protect OpenRouter's free-tier budget for
 // every other agent that doesn't need this much output.
-const LARGE_OUTPUT_AGENTS = new Set(["website-technology-structure", "competitive-intelligence"]);
+const LARGE_OUTPUT_AGENTS = new Set([
+  "website-technology-structure",
+  "competitive-intelligence",
+  "meeting-qa", // may need to reason across many past meetings' worth of real history
+]);
 const LARGE_MAX_OUTPUT_TOKENS = 8000;
 
 async function callOpenRouter(

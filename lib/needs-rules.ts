@@ -247,6 +247,15 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       ? { status: "active", reason: "Core Company DNA is still thin — onboarding should close the gaps before other agents run on incomplete data." }
       : { status: "idle", reason: "Company DNA already looks reasonably complete; revisit if a new gap shows up." },
 
+    "meeting-summary-insights": {
+      status: "active",
+      reason: "Useful the moment there's a real meeting transcript to process, regardless of how complete Company DNA is yet.",
+    },
+    "meeting-qa": {
+      status: "active",
+      reason: "Always available to answer questions about stored meeting history — genuinely useful only once meetings exist, but not gated on any DNA field.",
+    },
+
     // Executive & Intelligence
     "business-intelligence": {
       status: "active",

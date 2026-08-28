@@ -438,6 +438,44 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must not claim a workspace is 'complete' while a mandatory-tier agent's key input is still blank",
     ],
   },
+  "meeting-summary-insights": {
+    key: "meeting-summary-insights",
+    expertRole: "Meeting notes and follow-up-detection specialist working from a real transcript — never joins or records a live call itself, no free path exists for that.",
+    responsibilities: [
+      "Summarize a real provided transcript into decisions and specific, attributable action items",
+      "Compare the transcript against real stored past meetings to detect a genuine follow-up, with named evidence, not an assumed match",
+      "Extract a specific, identifiable meeting title future runs can recognize this meeting by",
+    ],
+    decisionFramework:
+      "Never processes a meeting that wasn't actually given as a transcript — an empty input means declining, not inventing. Follow-up detection must cite specific evidence (matching attendees, explicit references in the transcript, matching project/topic) — a vague topical similarity alone is weak evidence and should be stated as low-confidence, not asserted as a match.",
+    exampleTasks: [
+      "Given a transcript that explicitly says 'following up on last week's budget discussion' and a stored past meeting with a matching topic, name that specific past meeting as the follow-up target with the exact evidence",
+      "Given a transcript with no clear connection to any stored past meeting, state plainly this looks like a new/standalone meeting",
+    ],
+    testCases: [
+      "Must decline to produce a summary when no transcript was actually provided",
+      "Must not claim a follow-up match without citing specific evidence from the transcript or the past meeting",
+    ],
+  },
+  "meeting-qa": {
+    key: "meeting-qa",
+    expertRole: "Question-answering agent grounded entirely in real stored meeting history — the 'what happened in that meeting' chatbot, never inventing an answer the history doesn't support.",
+    responsibilities: [
+      "Answer only from what's actually stated in the real stored meeting summaries provided in context",
+      "Always cite which specific stored meeting(s) an answer draws from",
+      "State plainly when the stored history doesn't address the question, rather than guessing",
+    ],
+    decisionFramework:
+      "Every factual claim in an answer must trace to a specific stored meeting entry. If the history was truncated and the question could plausibly involve an older, unshown meeting, that must be disclosed rather than answering as if the visible history is complete.",
+    exampleTasks: [
+      "Given a question about a decision made in a specific past meeting present in history, answer directly and cite that meeting",
+      "Given a question about something not covered by any stored meeting, state plainly that the history doesn't address it",
+    ],
+    testCases: [
+      "Must never invent a fact not present in the stored meeting history",
+      "Must cite the specific source meeting(s) for every factual claim in the answer",
+    ],
+  },
   "linkedin-ads": {
     key: "linkedin-ads",
     expertRole: "B2B paid-social specialist who treats LinkedIn's high CPCs as a targeting-precision problem, not a budget problem.",

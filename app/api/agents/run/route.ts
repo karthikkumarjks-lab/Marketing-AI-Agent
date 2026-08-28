@@ -14,6 +14,8 @@ import {
   buildMetaAdsLiveContext,
   SECURITY_REPUTATION_AGENTS,
   buildReputationContext,
+  MEETING_HISTORY_AGENTS,
+  buildMeetingHistoryContext,
 } from "@/lib/agent-prompts";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
@@ -204,6 +206,21 @@ export async function POST(req: NextRequest) {
     const links = cleanDomain ? buildReputationCheckLinks(cleanDomain) : [];
     const webFilterLinks = cleanDomain ? buildWebFilterCategoryLinks(cleanDomain) : [];
     extraContext = (extraContext ?? "") + buildReputationContext(url, links, webFilterLinks);
+  }
+
+  // Real past-meeting history for both meeting agents — every entry is a
+  // real prior run's stored output, never invented. Scoped to this one
+  // sibling agent's runs specifically (not all agents' history, unlike
+  // RUNTIME_CONTEXT_AGENTS above), since that's the actual meeting record.
+  if (MEETING_HISTORY_AGENTS.has(agentKey)) {
+    const pastMeetings = await prisma.agentRun.findMany({
+      where: { workspaceId, agent: { key: "meeting-summary-insights" } },
+      orderBy: { createdAt: "desc" },
+      select: { createdAt: true, outputMarkdown: true },
+    });
+    extraContext =
+      (extraContext ?? "") +
+      buildMeetingHistoryContext(pastMeetings.map((m) => ({ createdAt: m.createdAt.toISOString(), outputMarkdown: m.outputMarkdown })));
   }
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a

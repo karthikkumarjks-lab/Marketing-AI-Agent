@@ -64,6 +64,26 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 2,
   },
+  {
+    key: "meeting-summary-insights",
+    name: "Meeting Summary & Insights Agent",
+    category: "Front Office",
+    mission: "Turns a real meeting transcript (from Zoom/Teams/Meet's own recording+transcript feature, or any transcription tool — platform-agnostic since it works from text, not a live call join) into a summary, key decisions, and action items, and auto-detects whether this is a follow-up to a past meeting stored in this workspace's history, naming which one and why. Does not join or record live calls itself — no free path exists to do that without real per-meeting infrastructure cost, confirmed before building.",
+    inputs: ["Meeting transcript (required)", "Past meeting history in this workspace (automatic)"],
+    outputs: ["Meeting summary", "Key decisions & action items", "Follow-up detection (which past meeting, if any, and why)"],
+    wired: true,
+    sortOrder: 3,
+  },
+  {
+    key: "meeting-qa",
+    name: "Meeting Q&A Agent",
+    category: "Front Office",
+    mission: "Answers a question about what happened across this workspace's past meetings — the \"chatbot\" experience over meeting history, built from real stored summaries (via Meeting Summary & Insights Agent), never invented. Distinct from that agent: this one answers questions about the past, it doesn't process a new transcript.",
+    inputs: ["A question about past meetings", "Past meeting history in this workspace (automatic)"],
+    outputs: ["An answer grounded in real stored meeting summaries", "Which specific meeting(s) it's drawn from"],
+    wired: true,
+    sortOrder: 4,
+  },
   // Executive & Intelligence
   {
     key: "marketing-strategy",
