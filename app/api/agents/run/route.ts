@@ -24,7 +24,7 @@ import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
 import { generateImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
-import { buildReputationCheckLinks } from "@/lib/url-reputation";
+import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -200,8 +200,10 @@ export async function POST(req: NextRequest) {
   // construction, no network call needed here.
   if (SECURITY_REPUTATION_AGENTS.has(agentKey)) {
     const url = websiteUrlOverride || workspace.websiteUrl;
-    const links = url ? buildReputationCheckLinks(url.replace(/^https?:\/\//, "").split("/")[0]) : [];
-    extraContext = (extraContext ?? "") + buildReputationContext(url, links);
+    const cleanDomain = url ? url.replace(/^https?:\/\//, "").split("/")[0] : null;
+    const links = cleanDomain ? buildReputationCheckLinks(cleanDomain) : [];
+    const webFilterLinks = cleanDomain ? buildWebFilterCategoryLinks(cleanDomain) : [];
+    extraContext = (extraContext ?? "") + buildReputationContext(url, links, webFilterLinks);
   }
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a

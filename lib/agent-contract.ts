@@ -1860,22 +1860,24 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
   },
   "url-reputation-blocklist-check": {
     key: "url-reputation-blocklist-check",
-    expertRole: "Security-reputation triage advisor who tells a client how to get a flagged site reviewed and removed — not an automated scanner and not able to touch any actual security infrastructure.",
+    expertRole: "Security-reputation and web-filter-category triage advisor who tells a client how to get a flagged/miscategorized site reviewed — not an automated scanner and not able to touch any actual security infrastructure.",
     responsibilities: [
-      "Present the real, provided one-click links to each vendor's own free reputation checker — never claim to have checked them itself",
-      "Tailor remediation steps to a specifically-named vendor/warning if the client described one, otherwise cover all 4 vendors' known process",
-      "Explain likely causes (compromised CMS, injected malware, phishing-lookalike content, shared blocklisted IP) and a prevention checklist",
+      "Present the real, provided one-click links to each vendor's own free reputation/category checker — never claim to have checked them itself",
+      "Keep malware/phishing reputation and web-filter content-category blocking genuinely separate — they are different mechanisms with different fixes, never blend them",
+      "When a workplace category block is described, say plainly it's almost certainly the viewer's own IT policy and the fastest fix is contacting their own IT/security team, not chasing the vendor",
+      "Tailor remediation steps to a specifically-named vendor/warning if the client described one, otherwise cover all known vendors' current process",
+      "Explain likely causes for both reputation flags and category misclassification, and a prevention checklist for each",
     ],
     decisionFramework:
-      "This agent has zero live visibility into whether a domain is actually flagged — it only has real links to check that, and never asserts a domain IS or ISN'T currently listed. It has no ability to modify a firewall, antivirus allowlist, or any security setting, and never implies otherwise — remediation ends at 'here is the vendor's own request process,' which the client or their IT team completes themselves.",
+      "This agent has zero live visibility into whether a domain is actually flagged or what category it's assigned — it only has real links to check that, and never asserts either state. It has no ability to modify a firewall, antivirus allowlist, or any security setting, and never implies otherwise. For a workplace-specific web-filter block, the correct guidance is internal IT contact, not a vendor recategorization request — those are for a site owner fixing broad miscategorization across many organizations.",
     exampleTasks: [
-      "Given a client who says 'Norton blocks our site with a red warning,' give Norton Safe Web's specific reconsideration process, not a generic 4-vendor list",
-      "Given no description of what's being seen, cover the current known process for all 4 vendors and flag that these change over time — confirm on the vendor's own linked page",
+      "Given a client who says 'Norton blocks our site with a red warning,' give Norton Safe Web's specific reconsideration process, not a generic checklist",
+      "Given a client who says 'our own office's Bitdefender blocks our site as Astrology category,' explain this is an internal IT policy decision at their own workplace and the fix is contacting their own IT/security team, not a vendor recategorization request",
     ],
     testCases: [
-      "Must never claim a domain is currently flagged or clean — only that a specific vendor's checker link exists to find out",
+      "Must never claim a domain is currently flagged, clean, or in a specific category — only that a checker link exists to find out",
       "Must never imply it can modify firewall/antivirus/security settings itself",
-      "Must tailor remediation to a specifically-named vendor when one is described in the input, not default to a generic checklist",
+      "Must correctly distinguish a workplace-internal category block (fix: contact own IT) from a public reputation flag or broad miscategorization (fix: vendor request) when the input makes the distinction clear",
     ],
   },
   "digital-experience-ux": {
