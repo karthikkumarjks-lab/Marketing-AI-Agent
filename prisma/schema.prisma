@@ -50,6 +50,10 @@ model Workspace {
   needsAnalyses     NeedsAnalysis[]
   brandDna          BrandDNA?
   integrations      Integration[]
+  leads             Lead[]
+  pipelineStages    PipelineStage[]
+  customFieldDefs   CustomFieldDef[]
+  workflowRules     WorkflowRule[]
 }
 
 // Connector status per workspace. No live OAuth flow exists yet — this
@@ -137,10 +141,15 @@ model AgentRun {
   outcomeStatus    OutcomeStatus @default(pending)
   isDemo           Boolean       @default(false)
   model            String?
+  // Optional link to the CRM lead this run was performed against/for (e.g.
+  // running Lead Nurturing Strategy for one specific real lead). Null for
+  // every workspace-level run that isn't about one particular lead.
+  leadId           String?
   createdAt        DateTime      @default(now())
 
   workspace        Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   agent            Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
 }
 
 model NeedsAnalysis {
@@ -159,4 +168,129 @@ model NeedsAnalysis {
   agent                Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, agentId])
+}
+
+// ===================== CRM =====================
+// A real (not advisory-only) CRM data layer: leads, pipeline stages, custom
+// fields per workspace/industry, a timeline of real activity per lead, and
+// event-triggered automation rules. Every one of the 137 agents can be run
+// against a specific lead (see AgentRun.leadId above); workflow rules react
+// to real changes in this data (see WorkflowRule below), including
+// triggering an agent run as an action — the bridge between the CRM and the
+// existing agent catalog.
+
+model PipelineStage {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  order       Int      @default(0)
+  isWon       Boolean  @default(false)
+  isLost      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+
+  @@unique([workspaceId, name])
+}
+
+// Dynamic per-workspace fields so the CRM works for any industry (a real
+// estate workspace needs "property interest", a SaaS workspace needs
+// "seat count" — neither belongs as a fixed column). Values are stored on
+// Lead.customFields as JSON keyed by this def's `key`.
+model CustomFieldDef {
+  id          String   @id @default(cuid())
+  workspaceId String
+  entity      String // "lead" — the only entity type in v1
+  key         String // machine key, e.g. "preferred_contact_time"
+  label       String // display label, e.g. "Preferred Contact Time"
+  fieldType   String // "text" | "number" | "date" | "boolean" | "select"
+  options     String? // JSON-encoded string[] — only meaningful for "select"
+  isRequired  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, entity, key])
+}
+
+// A lead doubles as a lightweight deal for v1 (dealValue + stage) rather
+// than a separate Deal model — keeps the object model simple until real
+// usage shows a workspace needs multiple deals per contact.
+model Lead {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  name         String
+  email        String?
+  phone        String?
+  company      String?
+  source       String? // free text: "website form", "referral", "cold outbound", etc.
+  stageId      String?
+  score        Int? // 0-100 — set manually; no scoring agent wired to this yet
+  dealValue    Int? // in workspace currency
+  ownerName    String? // free text — no user/auth system exists yet, so no real assignment
+  customFields String   @default("{}") // JSON-encoded {fieldKey: value}
+  tags         String   @default("[]") // JSON-encoded string[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace    Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  stage        PipelineStage?   @relation(fields: [stageId], references: [id])
+  activities   LeadActivity[]
+  agentRuns    AgentRun[]
+  workflowLogs WorkflowRunLog[]
+
+  @@index([workspaceId])
+}
+
+// The Lead Journey view's timeline. "email"/"sms"/"call" activities are
+// only ever created by a workflow action or entered by hand in v1 — there
+// is no connected email/SMS/telephony provider yet, so nothing here is
+// fabricated from a live send that didn't happen.
+model LeadActivity {
+  id         String   @id @default(cuid())
+  leadId     String
+  type       String // "note" | "email" | "sms" | "call" | "stage_change" | "field_update" | "agent_run" | "workflow_action" | "created"
+  channel    String? // "email" | "sms" | "call" | "system" — drives the journey view's icon
+  summary    String // one-line human-readable description
+  detail     String? // JSON-encoded extra payload
+  occurredAt DateTime @default(now())
+
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+// Event-triggered automation. v1 is a rule list (not a visual canvas by
+// design — see the workflow builder page for why), evaluated synchronously
+// the moment its trigger event happens. There is no background job/queue
+// infrastructure in this app, so a delay/time-based trigger is explicitly
+// NOT supported yet — only immediate, event-based triggers are.
+model WorkflowRule {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  name          String
+  isActive      Boolean  @default(true)
+  triggerType   String // "lead_created" | "stage_changed" | "field_updated" | "tag_added"
+  triggerConfig String   @default("{}") // JSON — e.g. {"toStageId": "..."} for stage_changed
+  conditions    String   @default("[]") // JSON-encoded array of {field, operator, value}
+  actions       String // JSON-encoded array of {type, config} — see lib/workflow-engine.ts
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runLogs       WorkflowRunLog[]
+}
+
+model WorkflowRunLog {
+  id         String   @id @default(cuid())
+  workflowId String
+  leadId     String?
+  status     String // "success" | "error"
+  detail     String // human-readable summary of what happened
+  createdAt  DateTime @default(now())
+
+  workflow   WorkflowRule @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  lead       Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
 }

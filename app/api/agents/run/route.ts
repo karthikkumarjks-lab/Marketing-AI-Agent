@@ -27,6 +27,7 @@ import { discoverSubpages } from "@/lib/sitemap-discover";
 import { generateImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
+import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -78,6 +79,7 @@ export async function POST(req: NextRequest) {
   let websiteUrlOverride: string | null = null;
   let competitorUrlOverride: string | null = null;
   let runNote: string | null = null;
+  let leadId: string | null = null;
   let file: File | null = null;
 
   if (contentType.includes("multipart/form-data")) {
@@ -88,6 +90,7 @@ export async function POST(req: NextRequest) {
     websiteUrlOverride = (form.get("websiteUrlOverride") as string) || null;
     competitorUrlOverride = (form.get("competitorUrlOverride") as string) || null;
     runNote = (form.get("runNote") as string) || null;
+    leadId = (form.get("leadId") as string) || null;
     const uploaded = form.get("file");
     if (uploaded instanceof File && uploaded.size > 0) file = uploaded;
   } else {
@@ -98,6 +101,7 @@ export async function POST(req: NextRequest) {
     websiteUrlOverride = body.websiteUrlOverride ?? null;
     competitorUrlOverride = body.competitorUrlOverride ?? null;
     runNote = body.runNote ?? null;
+    leadId = body.leadId ?? null;
   }
 
   if (!workspaceId || !agentKey) {
@@ -144,7 +148,27 @@ export async function POST(req: NextRequest) {
     maturityStage: workspace.maturityStage,
   };
 
+  // Real CRM lead context: when a run is kicked off from a lead's page (the
+  // Lead Journey view's "Run agent for this lead" action), inject that
+  // lead's actual stored data so the agent reasons about this one real
+  // person/company instead of generic workspace-level Company DNA.
   let extraContext: string | undefined;
+  if (leadId) {
+    const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { stage: true } });
+    if (lead && lead.workspaceId === workspaceId) {
+      const leadLite = {
+        ...lead,
+        customFields: parseCustomFields(lead.customFields),
+        tags: parseTags(lead.tags),
+        createdAt: lead.createdAt.toISOString(),
+        updatedAt: lead.updatedAt.toISOString(),
+      };
+      extraContext = (extraContext ?? "") + buildLeadContext(leadLite, lead.stage?.name ?? null);
+    } else {
+      leadId = null; // ignore a leadId that doesn't belong to this workspace
+    }
+  }
+
   if (RUNTIME_CONTEXT_AGENTS.has(agentKey)) {
     const [needs, runs] = await Promise.all([
       prisma.needsAnalysis.findMany({ where: { workspaceId }, include: { agent: true } }),
@@ -373,6 +397,7 @@ export async function POST(req: NextRequest) {
     data: {
       workspaceId,
       agentId: agent.id,
+      leadId: leadId || null,
       inputContext: JSON.stringify(dna),
       outputMarkdown: result.markdown,
       predictedOutcome: predictedOutcome || null,
@@ -380,6 +405,17 @@ export async function POST(req: NextRequest) {
       model: result.model,
     },
   });
+
+  if (leadId) {
+    await prisma.leadActivity.create({
+      data: {
+        leadId,
+        type: "agent_run",
+        channel: "system",
+        summary: `Ran "${agent.name}"${result.isDemo ? " (demo output — no API key set)" : ""}`,
+      },
+    });
+  }
 
   return NextResponse.json(run);
 }
