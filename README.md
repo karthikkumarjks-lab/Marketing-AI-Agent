@@ -25,7 +25,8 @@ state and what's still planned.
 
 ```bash
 npm install
-npm run seed   # seeds all 25 agents into the local SQLite database
+# Set DATABASE_URL in .env to a Postgres connection string (e.g. a free Neon project)
+npm run seed   # seeds the agent catalog into the database
 npm run dev
 ```
 
@@ -45,12 +46,9 @@ the UI and flow work end to end. To get real reasoning:
 
 ## Data storage
 
-Uses a local SQLite file (`dev.db`, via Prisma) — zero external accounts needed to get started.
-**This file is gitignored and lives only on this machine.** The code, schema, and agent logic
-are backed up to GitHub (see below); the workspaces and run history you create locally are not,
-unless you back up `dev.db` yourself. If/when this needs to be used from more than one machine
-or by more than one person, swap the Prisma datasource to a hosted Postgres (e.g. Supabase's
-free tier) — the schema in `prisma/schema.prisma` carries over directly.
+Uses hosted Postgres via Prisma (e.g. Neon's free tier) — set `DATABASE_URL` in `.env`/`.env.local`
+or your deploy host's environment variables. **`.env`/`.env.local` are gitignored**; the connection
+string lives only where you put it, never in the repo.
 
 ## Project structure
 
@@ -58,7 +56,7 @@ free tier) — the schema in `prisma/schema.prisma` carries over directly.
 lib/agent-catalog.ts      # the 25-agent spec: name, category, mission, inputs/outputs, wired?
 lib/agent-prompts.ts      # system prompts for the 6 wired agents + the OpenRouter call
 lib/needs-rules.ts        # rule-based Needs Analyzer logic
-lib/prisma.ts             # Prisma client (SQLite via better-sqlite3 driver adapter)
+lib/prisma.ts             # Prisma client (Postgres via @prisma/adapter-pg)
 prisma/schema.prisma      # Workspace, Agent, AgentRun, NeedsAnalysis models
 app/workspaces/           # all the UI screens
 app/api/                  # workspace creation, needs overrides, agent runs, outcome scoring

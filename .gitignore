@@ -46,3 +46,6 @@ next-env.d.ts
 # local SQLite data (not backed up to GitHub — see README)
 *.db
 *.db-journal
+
+# Local Netlify folder
+.netlify
