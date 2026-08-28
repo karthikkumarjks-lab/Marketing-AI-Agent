@@ -1,20 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f5f3;
+  /* Refreshed 2026-08-28: warmer, more saturated palette than the original
+     muted forest-teal instrument-panel tones — same "fixed heading,
+     autonomous course" idea, but reads as upbeat rather than austere.
+     Warm ivory ground (not cool grey), a vivid emerald accent, golden warn,
+     and a softer coral danger instead of brick. */
+  --bg: #f8f6f0;
   --surface: #ffffff;
-  --ink: #14181c;
-  --ink-soft: #545c57;
-  --ink-faint: #8a9089;
-  --accent: #1f6f5c;
-  --accent-ink: #0f3f33;
-  --accent-soft: #dceae4;
-  --warn: #a64a17;
-  --warn-soft: #f3e3d6;
-  --danger: #a6331f;
-  --danger-soft: #f4ddd7;
-  --line: #dde1dc;
-  --line-strong: #c3cac4;
+  --ink: #1e2420;
+  --ink-soft: #5c645c;
+  --ink-faint: #93998f;
+  --accent: #129768;
+  --accent-ink: #0b5c3f;
+  --accent-soft: #ddf5ea;
+  --warn: #d6890f;
+  --warn-soft: #fcf0d6;
+  --danger: #d1483f;
+  --danger-soft: #fbe6e2;
+  --line: #e7e2d6;
+  --line-strong: #d3cbba;
 }
 
 @theme inline {
