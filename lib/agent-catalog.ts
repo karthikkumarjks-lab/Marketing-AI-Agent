@@ -949,6 +949,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 29,
   },
+  {
+    key: "url-reputation-blocklist-check",
+    name: "URL Security & Reputation Agent",
+    category: "Digital Experience",
+    mission: "Checks whether a URL is being flagged by antivirus/browser security vendors (which shows visitors a warning page instead of the site) and gives vendor-specific steps to request a review or removal — real one-click links to each vendor's own free checker, since no free automated cross-vendor API exists without violating that vendor's own terms of service. Advisory on remediation, not an automated firewall/antivirus configuration change — this system has no access to modify security infrastructure, and never would.",
+    inputs: ["Website/landing page URL", "What you're seeing if already flagged (optional)"],
+    outputs: ["Real one-click reputation-check links (Google Safe Browsing, Norton Safe Web, VirusTotal)", "Vendor-specific remediation/reconsideration steps", "Prevention checklist"],
+    wired: true,
+    sortOrder: 30,
+  },
   // Retention & Lifecycle
   {
     key: "email-marketing",

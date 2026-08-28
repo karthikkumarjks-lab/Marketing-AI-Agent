@@ -600,6 +600,12 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "website-technology-structure": website
       ? { status: "active", reason: "A website exists — worth auditing its real technology stack and structure before recommending integrations or flagging tracking gaps." }
       : { status: "idle", reason: "No website on record yet to scan." },
+
+    // Same website-exists trigger — a reputation check is only meaningful
+    // once there's a real URL to check.
+    "url-reputation-blocklist-check": website
+      ? { status: "active", reason: "A website exists — worth checking whether it's flagged by any security vendor before it silently costs conversions." }
+      : { status: "idle", reason: "No website on record yet to check." },
   };
 
   return agentKeys.map((key) => {

@@ -1270,6 +1270,26 @@ The navigational/informational pages found (about, contact, blog, etc.) — list
 What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing. Note if the landing-page count suggests the sitemap/scan was truncated (check the scan data's own truncation note) rather than presenting a capped count as the true total.
 ## Marketing Stack Gaps & Opportunities`,
 
+  "url-reputation-blocklist-check": `You are the URL Security & Reputation Agent. You help a client find out whether their website is being flagged by antivirus/browser security vendors — which shows visitors a scary warning page instead of the site, killing conversion — and tell them exactly how to get it reviewed and removed.
+
+Hard rules:
+- You do NOT perform an automated cross-vendor check yourself — check the "Reputation Check Links" section in your context for real, working one-click links to each vendor's own free checker (Google Safe Browsing, Norton Safe Web, VirusTotal, McAfee). Present these as the way to actually SEE current status; you cannot see it yourself.
+- You have NO ability to modify a firewall, antivirus allowlist, or any security infrastructure — and never claim otherwise. Your job ends at "here's how to request a review from the vendor," a step the client or their IT team takes themselves through that vendor's own process.
+- If the client describes what they're seeing (a specific browser warning, a specific antivirus product's popup), tailor your remediation steps to THAT vendor specifically — don't give a generic multi-vendor checklist when one is clearly named.
+- If nothing is described, give the current known remediation/reconsideration process for each of the 4 vendors, and flag explicitly that these processes change over time — the reader should confirm the exact current steps on the vendor's own page linked above before following them.
+- Cover WHY sites get flagged (compromised CMS/plugins, injected malware/redirect scripts, phishing-lookalike content, a shared IP with other blocklisted sites) and a prevention checklist — most clients asking this question are trying to avoid it recurring, not just fix it once.
+- Never claim a domain IS or ISN'T currently flagged — you have no live data confirming either state, only the links to go check.
+
+Output format (GitHub-flavored markdown):
+## Reputation Check Links
+The real links from your context, with what each one covers.
+## What You Reported (if anything)
+State plainly if nothing was described.
+## Remediation Steps by Vendor
+Vendor-specific reconsideration/removal request process, tailored to what was reported if anything was.
+## Why Sites Get Flagged
+## Prevention Checklist`,
+
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
 
 Hard rules:
@@ -2123,6 +2143,26 @@ ${campaignLines}`;
 // lib/image-generate.ts), appending the resulting image back into the run's
 // markdown. The only agent(s) in this system that produce media, not advice.
 export const IMAGE_GENERATION_AGENTS = new Set(["image-generation"]);
+
+// Agents that get real one-click reputation-checker links (see
+// lib/url-reputation.ts) injected as extraContext — no automated cross-vendor
+// check, since every free option carries a non-commercial ToS restriction.
+export const SECURITY_REPUTATION_AGENTS = new Set(["url-reputation-blocklist-check"]);
+
+export function buildReputationContext(
+  url: string | null,
+  links: { platform: string; url: string; covers: string }[],
+): string {
+  if (!url) {
+    return `\n\n# Reputation Check Links\nNo URL was provided for this run — nothing to build links for.`;
+  }
+  const linkLines = links.map((l) => `- **${l.platform}**: ${l.url} — ${l.covers}`).join("\n");
+  return `
+
+# Reputation Check Links (real, verified working URLs — ${url})
+
+${linkLines}`;
+}
 
 const GENERATION_PROMPT_RE = /## Generation Prompt\s*```\s*([\s\S]*?)```/;
 

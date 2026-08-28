@@ -12,6 +12,8 @@ import {
   extractGenerationPrompt,
   META_ADS_LIVE_AGENTS,
   buildMetaAdsLiveContext,
+  SECURITY_REPUTATION_AGENTS,
+  buildReputationContext,
 } from "@/lib/agent-prompts";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
@@ -22,6 +24,7 @@ import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
 import { generateImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
+import { buildReputationCheckLinks } from "@/lib/url-reputation";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -190,6 +193,15 @@ export async function POST(req: NextRequest) {
       extraContext = (extraContext ?? "") + buildWebsiteAuditContext(websiteUrl, scan?.tech ?? null, scan?.sitemap ?? null);
       discoveredPages = scan?.sitemap?.pages ?? null;
     }
+  }
+
+  // Real one-click reputation-check links — never an automated cross-vendor
+  // check (see lib/url-reputation.ts for why). Just deterministic URL
+  // construction, no network call needed here.
+  if (SECURITY_REPUTATION_AGENTS.has(agentKey)) {
+    const url = websiteUrlOverride || workspace.websiteUrl;
+    const links = url ? buildReputationCheckLinks(url.replace(/^https?:\/\//, "").split("/")[0]) : [];
+    extraContext = (extraContext ?? "") + buildReputationContext(url, links);
   }
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a

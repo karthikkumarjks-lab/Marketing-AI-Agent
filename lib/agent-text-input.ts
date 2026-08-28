@@ -27,6 +27,10 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "What image do you need? (optional — leave blank for a generic on-brand image)",
     placeholder: "e.g. A clean product shot of our reusable water bottle on a wooden table, soft natural light, minimalist background",
   },
+  "url-reputation-blocklist-check": {
+    label: "What are you seeing, if already flagged? (optional)",
+    placeholder: "e.g. Chrome shows a red 'Dangerous site' warning. Or: Norton pop-up blocks the page on load.",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {
