@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureDefaultStages } from "@/lib/crm-server";
 import { runWorkflowsForEvent } from "@/lib/workflow-engine";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   await ensureDefaultStages(workspaceId);
   const leads = await prisma.lead.findMany({
     where: { workspaceId },
@@ -16,6 +21,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
   if (!body.name || typeof body.name !== "string") {
     return NextResponse.json({ error: "Lead name is required." }, { status: 400 });

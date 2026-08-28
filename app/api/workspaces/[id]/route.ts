@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeNeeds } from "@/lib/needs-rules";
 import { CURRENCIES } from "@/lib/currency";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 const STRING_FIELDS = [
   "name",
@@ -38,6 +39,10 @@ const FLOAT_FIELDS = ["roasTarget"] as const;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(id, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
 
   if (body.currency != null && !CURRENCIES.some((c) => c.code === body.currency)) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import LogoMark from "./logo-mark";
 
 interface WorkspaceLite {
@@ -27,9 +28,11 @@ function NavLink({ href, label, active }: { href: string; label: string; active:
 export default function Sidebar({
   workspaces,
   agentCount,
+  userEmail,
 }: {
   workspaces: WorkspaceLite[];
   agentCount: number;
+  userEmail: string | null;
 }) {
   const pathname = usePathname();
   const match = pathname.match(/^\/workspaces\/([^/]+)/);
@@ -120,6 +123,20 @@ export default function Sidebar({
           + New Workspace
         </Link>
       </div>
+
+      {userEmail && (
+        <div className="px-3 py-2.5 border-t border-line flex items-center justify-between gap-2">
+          <span className="text-xs text-ink-faint truncate" title={userEmail}>
+            {userEmail}
+          </span>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="text-xs text-ink-faint hover:text-danger shrink-0"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

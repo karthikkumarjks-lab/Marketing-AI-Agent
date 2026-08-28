@@ -28,6 +28,7 @@ import { generateImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
 import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
+import { getSessionUserId } from "@/lib/authz";
 
 const SCAN_TIMEOUT_MS = 10000;
 const SCAN_USER_AGENT = "Mozilla/5.0 (compatible; MarketingAutopilotDomainScan/1.0)";
@@ -108,12 +109,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "workspaceId and agentKey are required." }, { status: 400 });
   }
 
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
   const [workspace, agent, brandDna] = await Promise.all([
     prisma.workspace.findUnique({ where: { id: workspaceId } }),
     prisma.agent.findUnique({ where: { key: agentKey } }),
     prisma.brandDNA.findUnique({ where: { workspaceId } }),
   ]);
-  if (!workspace) return NextResponse.json({ error: "Workspace not found." }, { status: 404 });
+  if (!workspace || workspace.userId !== userId) return NextResponse.json({ error: "Workspace not found." }, { status: 404 });
   if (!agent) return NextResponse.json({ error: "Agent not found." }, { status: 404 });
   if (!agent.isWired) {
     return NextResponse.json({ error: "This agent is not wired to execution yet." }, { status: 400 });

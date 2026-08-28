@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getIntegrationProvider } from "@/lib/integrations";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 // For most providers, no live OAuth flow exists yet (see lib/integrations.ts)
 // — this route lets a human record that they've connected an account
@@ -10,6 +11,10 @@ import { getIntegrationProvider } from "@/lib/integrations";
 // which ad account to use when the account has more than one.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(id, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
   const { provider, status, accountLabel, externalAccountId } = body as {
     provider?: string;

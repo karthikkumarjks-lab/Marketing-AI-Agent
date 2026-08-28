@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 const VALID_TRIGGERS = ["lead_created", "stage_changed", "field_updated", "tag_added"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const rules = await prisma.workflowRule.findMany({
     where: { workspaceId },
     orderBy: { createdAt: "desc" },
@@ -15,6 +20,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
   if (!body.name || typeof body.name !== "string") {
     return NextResponse.json({ error: "Rule name is required." }, { status: 400 });

@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeNeeds } from "@/lib/needs-rules";
 import { CURRENCIES, DEFAULT_CURRENCY } from "@/lib/currency";
+import { getSessionUserId } from "@/lib/authz";
 
 export async function POST(req: NextRequest) {
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+
   const body = await req.json();
   const {
     name,
@@ -26,6 +30,7 @@ export async function POST(req: NextRequest) {
 
   const workspace = await prisma.workspace.create({
     data: {
+      userId,
       name: name.trim(),
       industry: industry || null,
       objective: objective || null,

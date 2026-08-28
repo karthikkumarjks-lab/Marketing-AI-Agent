@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Overpass, Public_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import Sidebar from "@/components/sidebar";
 
 // Overpass: originally drawn for US highway signage — real wayfinding
@@ -21,8 +22,23 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const session = await auth();
+
+  // Logged-out visitors only ever reach /login or /signup (middleware
+  // redirects everything else) — render those without the app's sidebar
+  // shell, since a "137 agents · + New Workspace" chrome around a login
+  // form would be confusing, not reassuring.
+  if (!session?.user?.id) {
+    return (
+      <html lang="en" className={`h-full antialiased ${overpass.variable} ${publicSans.variable} ${plexMono.variable}`}>
+        <body className="min-h-full bg-bg text-ink">{children}</body>
+      </html>
+    );
+  }
+
   const [workspaces, agentCount] = await Promise.all([
     prisma.workspace.findMany({
+      where: { userId: session.user.id },
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true },
     }),
@@ -32,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`h-full antialiased ${overpass.variable} ${publicSans.variable} ${plexMono.variable}`}>
       <body className="min-h-full flex bg-bg text-ink">
-        <Sidebar workspaces={workspaces} agentCount={agentCount} />
+        <Sidebar workspaces={workspaces} agentCount={agentCount} userEmail={session.user.email ?? null} />
         <div className="flex-1 min-w-0">{children}</div>
       </body>
     </html>

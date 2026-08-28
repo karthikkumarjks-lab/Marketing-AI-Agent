@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { analyzeNeeds } from "@/lib/needs-rules";
+import { auth } from "@/auth";
 import CurrencySelect from "@/components/currency-select";
 
 export default async function WorkspaceLayout({
@@ -8,7 +9,17 @@ export default async function WorkspaceLayout({
   params,
 }: LayoutProps<"/workspaces/[id]">) {
   const { id } = await params;
-  const workspace = await prisma.workspace.findUnique({ where: { id } });
+  const session = await auth();
+  // The real access-control boundary for every page under a workspace: a
+  // shared layout's notFound() stops the whole segment (and every nested
+  // page) from rendering, so this one check is what actually keeps one
+  // user's leads/runs/DNA out of another user's browser — not just a UI
+  // nicety. API routes under /api/workspaces/[id]/** still need their own
+  // check (see lib/authz.ts) since they're hit directly, not through this
+  // layout.
+  const workspace = session?.user?.id
+    ? await prisma.workspace.findFirst({ where: { id, userId: session.user.id } })
+    : null;
   if (!workspace) notFound();
 
   // Backfill: agents added to the catalog after this workspace was created

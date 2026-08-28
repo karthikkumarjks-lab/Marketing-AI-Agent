@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const fields = await prisma.customFieldDef.findMany({
     where: { workspaceId, entity: "lead" },
     orderBy: { sortOrder: "asc" },
@@ -14,6 +19,10 @@ const VALID_TYPES = ["text", "number", "date", "boolean", "select"];
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
   if (!body.label || typeof body.label !== "string") {
     return NextResponse.json({ error: "Field label is required." }, { status: 400 });

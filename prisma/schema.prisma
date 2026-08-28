@@ -10,8 +10,26 @@ datasource db {
   provider = "postgresql"
 }
 
+// A real account — email + bcrypt password hash, real login required to see
+// or touch any workspace. No email verification / password reset flow yet
+// (v1); disclosed as a known gap, not silently missing.
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime    @default(now())
+
+  workspaces   Workspace[]
+}
+
 model Workspace {
   id                String   @id @default(cuid())
+  // Nullable only because workspaces created before accounts existed have no
+  // owner — the first real account created adopts every unowned workspace
+  // (see app/api/auth/signup/route.ts) so nothing pre-existing is orphaned.
+  // Every workspace created from that point on always has a real owner.
+  userId            String?
   name              String
   industry          String?
   objective         String?
@@ -46,6 +64,7 @@ model Workspace {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  owner             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   agentRuns         AgentRun[]
   needsAnalyses     NeedsAnalysis[]
   brandDna          BrandDNA?

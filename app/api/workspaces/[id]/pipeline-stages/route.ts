@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureDefaultStages } from "@/lib/crm-server";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const stages = await ensureDefaultStages(workspaceId);
   return NextResponse.json(stages);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: workspaceId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
   if (!body.name || typeof body.name !== "string") {
     return NextResponse.json({ error: "Stage name is required." }, { status: 400 });

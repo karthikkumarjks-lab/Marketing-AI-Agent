@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseTags } from "@/lib/crm";
 import { runWorkflowsForEvent } from "@/lib/workflow-engine";
+import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string; leadId: string }> }) {
-  const { leadId } = await params;
+  const { id: workspaceId, leadId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
     include: {
@@ -13,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       agentRuns: { include: { agent: true }, orderBy: { createdAt: "desc" } },
     },
   });
-  if (!lead) return NextResponse.json({ error: "Lead not found." }, { status: 404 });
+  if (!lead || lead.workspaceId !== workspaceId) return NextResponse.json({ error: "Lead not found." }, { status: 404 });
   return NextResponse.json(lead);
 }
 
@@ -21,10 +26,14 @@ const DIRECT_FIELDS = ["name", "email", "phone", "company", "source", "ownerName
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string; leadId: string }> }) {
   const { id: workspaceId, leadId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
   const body = await req.json();
 
   const existing = await prisma.lead.findUnique({ where: { id: leadId } });
-  if (!existing) return NextResponse.json({ error: "Lead not found." }, { status: 404 });
+  if (!existing || existing.workspaceId !== workspaceId) return NextResponse.json({ error: "Lead not found." }, { status: 404 });
 
   const data: Record<string, unknown> = {};
   for (const field of DIRECT_FIELDS) {
@@ -82,7 +91,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string; leadId: string }> }) {
-  const { leadId } = await params;
+  const { id: workspaceId, leadId } = await params;
+  const userId = await getSessionUserId();
+  if (!userId || !(await userOwnsWorkspace(workspaceId, userId))) {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+  const existing = await prisma.lead.findUnique({ where: { id: leadId }, select: { workspaceId: true } });
+  if (!existing || existing.workspaceId !== workspaceId) return NextResponse.json({ error: "Lead not found." }, { status: 404 });
   await prisma.lead.delete({ where: { id: leadId } });
   return NextResponse.json({ ok: true });
 }
