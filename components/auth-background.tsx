@@ -1,10 +1,9 @@
-// A very quiet decorative backdrop for the login/signup/reset pages —
-// line-art pictograms for the channels this platform actually runs
-// (content, image/video, email, chat/WhatsApp, SMS, automation, marketing)
-// scattered at low opacity in the accent blue. Same restraint as the
-// sidebar's .instrument-header texture: reads as atmosphere, not clutter,
-// and never competes with the actual form. Generic pictograms, not any
-// real brand's logo (WhatsApp's actual mark, for instance, is never used).
+// A visible decorative backdrop for the login/signup/reset pages — line-art
+// pictograms for the channels this platform actually runs (content, image/
+// video, email, chat/WhatsApp, SMS, automation, marketing), each sitting in
+// a soft accent-tinted badge so they read clearly at a glance instead of
+// disappearing into the page. Generic pictograms, not any real brand's logo
+// (WhatsApp's actual mark, for instance, is never used).
 const ICONS = [
   // Megaphone — marketing
   <path key="megaphone" d="M3 11v6l4 1v-8l-4 1zm4-1 12-5v18L7 18" />,
@@ -57,42 +56,46 @@ interface Placement {
 // Fixed layout (not random per render) so the page doesn't visually shift
 // between server and client renders.
 const PLACEMENTS: Placement[] = [
-  { x: 6, y: 12, size: 40, rotate: -8, icon: 0 },
-  { x: 88, y: 8, size: 34, rotate: 10, icon: 4 },
-  { x: 16, y: 78, size: 30, rotate: 6, icon: 5 },
-  { x: 92, y: 70, size: 38, rotate: -6, icon: 1 },
-  { x: 50, y: 6, size: 26, rotate: 4, icon: 6 },
-  { x: 6, y: 46, size: 28, rotate: -4, icon: 2 },
-  { x: 94, y: 40, size: 24, rotate: 8, icon: 7 },
-  { x: 46, y: 92, size: 32, rotate: -5, icon: 3 },
-  { x: 78, y: 92, size: 22, rotate: 12, icon: 0 },
-  { x: 22, y: 22, size: 20, rotate: -10, icon: 4 },
+  { x: 8, y: 14, size: 64, rotate: -8, icon: 0 },
+  { x: 88, y: 12, size: 58, rotate: 10, icon: 4 },
+  { x: 14, y: 82, size: 54, rotate: 6, icon: 5 },
+  { x: 90, y: 78, size: 62, rotate: -6, icon: 1 },
+  { x: 50, y: 8, size: 48, rotate: 4, icon: 6 },
+  { x: 5, y: 48, size: 50, rotate: -4, icon: 2 },
+  { x: 95, y: 46, size: 46, rotate: 8, icon: 7 },
+  { x: 44, y: 94, size: 56, rotate: -5, icon: 3 },
+  { x: 76, y: 92, size: 40, rotate: 12, icon: 0 },
+  { x: 22, y: 26, size: 38, rotate: -10, icon: 4 },
 ];
 
 export default function AuthBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
       {PLACEMENTS.map((p, i) => (
-        <svg
+        <div
           key={i}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="absolute text-[var(--accent)]"
+          className="absolute rounded-full flex items-center justify-center"
           style={{
             left: `${p.x}%`,
             top: `${p.y}%`,
             width: p.size,
             height: p.size,
             transform: `translate(-50%, -50%) rotate(${p.rotate}deg)`,
-            opacity: 0.08,
+            background: "var(--accent-soft)",
           }}
         >
-          {ICONS[p.icon]}
-        </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ width: p.size * 0.52, height: p.size * 0.52 }}
+          >
+            {ICONS[p.icon]}
+          </svg>
+        </div>
       ))}
     </div>
   );
