@@ -1,25 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  /* Refreshed 2026-08-28: warmer, more saturated palette than the original
-     muted forest-teal instrument-panel tones — same "fixed heading,
-     autonomous course" idea, but reads as upbeat rather than austere.
-     Warm ivory ground (not cool grey), a vivid emerald accent, golden warn,
-     and a softer coral danger instead of brick. */
-  --bg: #f8f6f0;
+  /* Refreshed again 2026-08-28: a lively cobalt blue — the user's own
+     favorite — replacing the emerald accent. Genuinely on-theme, not just
+     a preference swap: this is an "autopilot" product built around a
+     compass-needle mark, and blue is the actual color of flight
+     instruments and compass needles, not an arbitrary brand choice.
+     Neutrals shifted from warm ivory to a cool, faint-blue-tinted white so
+     the whole page reads as one considered palette instead of a green
+     backdrop with a blue accent dropped on top. Warn/danger kept warm
+     (amber/coral) deliberately — they need to read as a different
+     temperature from the cool accent so they still register as alerts,
+     not just "more blue." */
+  --bg: #f4f7fc;
   --surface: #ffffff;
-  --ink: #1e2420;
-  --ink-soft: #5c645c;
-  --ink-faint: #93998f;
-  --accent: #129768;
-  --accent-ink: #0b5c3f;
-  --accent-soft: #ddf5ea;
-  --warn: #d6890f;
-  --warn-soft: #fcf0d6;
+  --ink: #16202e;
+  --ink-soft: #52627a;
+  --ink-faint: #8a97ab;
+  --accent: #2f6fed;
+  --accent-ink: #1a4fc4;
+  --accent-soft: #e1ebfe;
+  --warn: #e0900a;
+  --warn-soft: #fdf1d9;
   --danger: #d1483f;
   --danger-soft: #fbe6e2;
-  --line: #e7e2d6;
-  --line-strong: #d3cbba;
+  --line: #e1e6ef;
+  --line-strong: #ccd4e3;
 }
 
 @theme inline {
