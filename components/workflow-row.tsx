@@ -21,20 +21,46 @@ interface RuleLite {
 }
 
 const TRIGGER_LABELS: Record<string, string> = {
-  lead_created: "a lead is created",
-  stage_changed: "a lead's stage changes",
-  field_updated: "a lead's custom fields are updated",
-  tag_added: "a tag is added",
+  lead_created: "Lead created",
+  stage_changed: "Stage changed",
+  field_updated: "Fields updated",
+  tag_added: "Tag added",
 };
 
+const ACTION_LABELS: Record<string, string> = {
+  change_stage: "Change stage",
+  add_tag: "Add tag",
+  set_field: "Set field",
+  create_note: "Add note",
+  log_email: "Log email",
+  log_sms: "Log SMS",
+  webhook: "Webhook",
+  run_agent: "Run agent",
+};
+
+interface ParsedAction {
+  type: string;
+}
+
+// ROUTING — the only tab drawn as a circuit rather than a list or table.
+// Every rule renders as connected nodes (trigger → conditions → actions)
+// with the indigo crm-workflow accent, because that's literally what a
+// workflow rule *is*: a routing path, not a row of data.
 export default function WorkflowRow({ rule, workspaceId }: { rule: RuleLite; workspaceId: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
 
-  const actionCount = (() => {
+  const actions: ParsedAction[] = (() => {
     try {
-      return (JSON.parse(rule.actions) as unknown[]).length;
+      return JSON.parse(rule.actions);
+    } catch {
+      return [];
+    }
+  })();
+  const conditionCount = (() => {
+    try {
+      return (JSON.parse(rule.conditions) as unknown[]).length;
     } catch {
       return 0;
     }
@@ -60,26 +86,18 @@ export default function WorkflowRow({ rule, workspaceId }: { rule: RuleLite; wor
   }
 
   return (
-    <div className="bg-surface border border-line rounded-lg p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-medium text-ink">{rule.name}</div>
-          <div className="text-xs text-ink-faint mt-0.5">
-            When {TRIGGER_LABELS[rule.triggerType] ?? rule.triggerType} → {actionCount} action{actionCount === 1 ? "" : "s"}
-          </div>
-        </div>
+    <div className={`bg-surface border rounded-lg p-4 ${rule.isActive ? "border-line" : "border-line opacity-60"}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm font-medium text-ink">{rule.name}</div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowLogs(!showLogs)}
-            className="text-xs text-ink-faint hover:text-accent"
-          >
+          <button onClick={() => setShowLogs(!showLogs)} className="text-xs text-ink-faint hover:text-crm-workflow">
             {rule.runLogs.length} run{rule.runLogs.length === 1 ? "" : "s"}
           </button>
           <button
             onClick={toggleActive}
             disabled={pending}
             className={`text-xs rounded-full px-2.5 py-0.5 font-medium ${
-              rule.isActive ? "bg-accent-soft text-accent-ink" : "bg-line text-ink-faint"
+              rule.isActive ? "bg-crm-workflow-soft text-crm-workflow" : "bg-line text-ink-faint"
             }`}
           >
             {rule.isActive ? "Active" : "Paused"}
@@ -89,6 +107,30 @@ export default function WorkflowRow({ rule, workspaceId }: { rule: RuleLite; wor
           </button>
         </div>
       </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-mono px-2.5 py-1 rounded border border-crm-workflow/30 bg-crm-workflow-soft text-crm-workflow whitespace-nowrap">
+          {TRIGGER_LABELS[rule.triggerType] ?? rule.triggerType}
+        </span>
+        {conditionCount > 0 && (
+          <>
+            <span className="text-line-strong">╌╌▸</span>
+            <span className="text-xs font-mono px-2.5 py-1 rounded border border-line-strong bg-bg text-ink-soft whitespace-nowrap">
+              if {conditionCount} condition{conditionCount === 1 ? "" : "s"}
+            </span>
+          </>
+        )}
+        <span className="text-crm-workflow">━▸</span>
+        {actions.map((a, i) => (
+          <span
+            key={i}
+            className="text-xs font-mono px-2.5 py-1 rounded border border-line-strong bg-bg text-ink whitespace-nowrap"
+          >
+            {ACTION_LABELS[a.type] ?? a.type}
+          </span>
+        ))}
+      </div>
+
       {showLogs && (
         <div className="mt-3 pt-3 border-t border-line space-y-1.5">
           {rule.runLogs.length === 0 ? (

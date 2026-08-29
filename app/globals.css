@@ -26,6 +26,18 @@
   --danger-soft: #fbe6e2;
   --line: #e1e6ef;
   --line-strong: #ccd4e3;
+
+  /* CRM instrument-panel accents (2026-08-30) — one tab, one instrument.
+     Never used for buttons/links/focus (the primary --accent owns those
+     everywhere, for coherence) — only for that tab's own data: timeline
+     nodes, flow cards, chart lines. Keeps six tabs feeling like six gauges
+     on the same panel, not six different apps. */
+  --crm-journey: #d6890f;
+  --crm-journey-soft: #fdf1d9;
+  --crm-workflow: #6d5ce8;
+  --crm-workflow-soft: #ece9fc;
+  --crm-report: #0f9b8e;
+  --crm-report-soft: #dcf3f1;
 }
 
 @theme inline {
@@ -43,6 +55,12 @@
   --color-danger-soft: var(--danger-soft);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
+  --color-crm-journey: var(--crm-journey);
+  --color-crm-journey-soft: var(--crm-journey-soft);
+  --color-crm-workflow: var(--crm-workflow);
+  --color-crm-workflow-soft: var(--crm-workflow-soft);
+  --color-crm-report: var(--crm-report);
+  --color-crm-report-soft: var(--crm-report-soft);
 
   /* Wired to next/font's CSS variables set in app/layout.tsx — every
      `font-mono` utility already used across this app for eyebrows, category

@@ -28,10 +28,11 @@ export default async function LeadDetailPage({ params }: PageProps<"/workspaces/
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <Link href={`/workspaces/${id}/crm/leads`} className="text-xs text-ink-faint hover:text-accent">
           ← All leads
         </Link>
+        <span className="text-[10px] font-mono uppercase tracking-widest text-crm-journey">Flight Log</span>
       </div>
 
       <div className="grid grid-cols-3 gap-6">

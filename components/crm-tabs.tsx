@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Each tab is a different instrument on the same panel, not a different
+// app — the label is the one thing making that literal. "OVERVIEW" for the
+// dashboard, "MANIFEST" for the lead list, etc. — see app/globals.css for
+// the matching per-tab accent tokens this same idea drives.
 const TABS = [
-  { slug: "", label: "Dashboard" },
-  { slug: "leads", label: "Leads" },
-  { slug: "workflows", label: "Workflows" },
-  { slug: "reports", label: "Reports" },
-  { slug: "settings", label: "Settings" },
+  { slug: "", label: "Dashboard", instrument: "OVERVIEW" },
+  { slug: "leads", label: "Leads", instrument: "MANIFEST" },
+  { slug: "workflows", label: "Workflows", instrument: "ROUTING" },
+  { slug: "reports", label: "Reports", instrument: "TELEMETRY" },
+  { slug: "settings", label: "Settings", instrument: "MAINTENANCE" },
 ];
 
 export default function CrmTabs({ workspaceId }: { workspaceId: string }) {
@@ -24,13 +28,20 @@ export default function CrmTabs({ workspaceId }: { workspaceId: string }) {
           <Link
             key={tab.slug}
             href={href}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-              active
-                ? "border-accent text-ink font-medium"
-                : "border-transparent text-ink-faint hover:text-ink"
+            className={`group px-3 py-2 border-b-2 -mb-px transition-colors ${
+              active ? "border-accent" : "border-transparent"
             }`}
           >
-            {tab.label}
+            <div className={`text-sm ${active ? "text-ink font-medium" : "text-ink-faint group-hover:text-ink"}`}>
+              {tab.label}
+            </div>
+            <div
+              className={`text-[9px] font-mono tracking-widest transition-opacity ${
+                active ? "text-accent opacity-100" : "opacity-0 group-hover:opacity-60"
+              }`}
+            >
+              {tab.instrument}
+            </div>
           </Link>
         );
       })}

@@ -15,6 +15,9 @@ const eslintConfig = defineConfig([
     // Netlify CLI's local build output (created by `netlify deploy --build`) —
     // generated/minified artifacts, not source.
     ".netlify/**",
+    // Third-party skill bundles (superpowers, ponytail, etc.) — their own
+    // helper scripts, not this app's source.
+    ".claude/skills/**",
   ]),
 ]);
 
