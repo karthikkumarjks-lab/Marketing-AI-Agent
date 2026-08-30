@@ -21,6 +21,11 @@ const SAMPLE_NOTES: Record<string, string> = {
   "meeting-summary-insights":
     "AGENT: Thanks for joining, Priya. Let's talk through what you're looking for. PRIYA: We want a 3-bedroom house in Austin, budget around $450k, ideally move in within 2 months. AGENT: Got it, I'll send over 3 listings by Friday that match. Also, can we get your pre-approval letter from the lender? PRIYA: Yes, I'll get that to you by Wednesday. AGENT: Perfect, let's reconnect next Monday to review the listings together.",
   "meeting-qa": "What did Priya say her budget and timeline were?",
+  "support-ticket-triage":
+    "Hi, I paid the deposit for the 3-bed listing tour twice by mistake yesterday. Can someone refund the duplicate charge? It's been 24 hours and I'm getting a little worried.",
+  "knowledge-base-help-center":
+    "Customer keeps asking: 'How do I reschedule my property viewing appointment?' We get this question multiple times a week.",
+  "international-expansion-localization": "Considering expanding to Toronto, Canada and Dubai, UAE.",
 };
 
 const COMPETITOR_URL = "https://www.remax.com";
@@ -104,11 +109,18 @@ async function main() {
   });
 
   // meeting-summary-insights must run before meeting-qa so meeting-qa has
-  // real history to answer from — reorder just those two to the front.
-  const order = [...AGENT_CATALOG].sort((a, b) => {
-    const rank = (k: string) => (k === "meeting-summary-insights" ? 0 : k === "meeting-qa" ? 1 : 2);
-    return rank(a.key) - rank(b.key);
-  });
+  // real history to answer from. voice-of-customer-intelligence depends on
+  // nps-csat-survey + customer-experience-reputation + support-ticket-triage
+  // having real run history to synthesize from — same reasoning.
+  const FRONT: Record<string, number> = {
+    "meeting-summary-insights": 0,
+    "nps-csat-survey": 1,
+    "customer-experience-reputation": 1,
+    "support-ticket-triage": 1,
+    "meeting-qa": 2,
+    "voice-of-customer-intelligence": 3,
+  };
+  const order = [...AGENT_CATALOG].sort((a, b) => (FRONT[a.key] ?? 4) - (FRONT[b.key] ?? 4));
 
   const results: SweepResult[] = [];
   for (const agent of order) {
@@ -116,7 +128,7 @@ async function main() {
     results.push(r);
     const flag = !r.ok ? "FAIL" : r.isDemo ? "DEMO" : r.outputLen < 50 ? "THIN" : "OK";
     console.log(`[${flag}] ${agent.key} (${agent.category}) status=${r.status} len=${r.outputLen} ${r.elapsedMs}ms${r.error ? " — " + r.error : ""}`);
-    await new Promise((res) => setTimeout(res, 1200));
+    await new Promise((res) => setTimeout(res, 2500)); // gentler pacing — Gemini quota is currently tight
   }
 
   fs.writeFileSync("sweep-results.json", JSON.stringify(results, null, 2));

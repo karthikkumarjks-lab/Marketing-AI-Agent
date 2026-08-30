@@ -355,6 +355,10 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "active",
       reason: "Real visuals are useful from day one for any channel — social posts, ads, or a placeholder before real photography exists.",
     },
+    "carousel-generation": {
+      status: "active",
+      reason: "Carousel posts are a standard format on Instagram/LinkedIn from day one — useful regardless of channel or content maturity, same as single-image generation.",
+    },
 
     // Digital Experience
     "funnel-intelligence": website && hasChannels
@@ -591,6 +595,9 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "payment-recovery-dunning": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
       ? { status: "active", reason: "SaaS/subscription signal noted — recurring billing means failed charges are a real, recoverable revenue leak from early on." }
       : { status: "idle", reason: "Not a subscription/recurring-billing business model based on what's known — no failed-charge event to recover." },
+    "product-led-growth-activation": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
+      ? { status: "active", reason: "SaaS/app signal noted — a trial/freemium motion needs a deliberate activation flow, not an accidental one." }
+      : { status: "idle", reason: "Not a SaaS/app business model based on what's known — no trial/freemium motion for a PLG activation flow to apply to." },
     "voice-of-customer-intelligence": hasChannels
       ? { status: "active", reason: "Customers are already flowing in — worth cross-referencing what survey, review, and support signal are each saying once more than one exists." }
       : { status: "idle", reason: "No customer base yet generating feedback to synthesize." },

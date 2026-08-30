@@ -10,6 +10,8 @@ import {
   buildCompetitorAuditContext,
   IMAGE_GENERATION_AGENTS,
   extractGenerationPrompt,
+  CAROUSEL_GENERATION_AGENTS,
+  extractCarouselPrompts,
   META_ADS_LIVE_AGENTS,
   buildMetaAdsLiveContext,
   SECURITY_REPUTATION_AGENTS,
@@ -24,7 +26,7 @@ import { getTextInputSpec } from "@/lib/agent-text-input";
 import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
-import { generateImage } from "@/lib/image-generate";
+import { generateImage, type GeneratedImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
 import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
@@ -381,6 +383,32 @@ export async function POST(req: NextRequest) {
           ? `${result.markdown}\n\n## Generated Image\n![Generated image](${generated.dataUri})`
           : `${result.markdown}\n\n## Generated Image\nImage generation failed or timed out — the prompt above is still valid to try again or use elsewhere.`,
       };
+    }
+  }
+
+  // Real multi-image carousel generation: same free model as single-image
+  // generation, called once per slide, every slide auto-built in this one
+  // run with no manual step between slides. Sequential, not parallel — the
+  // free Pollinations endpoint throttles concurrent requests from one caller
+  // (verified: 4 of 5 slides silently failed when fired in parallel).
+  if (CAROUSEL_GENERATION_AGENTS.has(agentKey) && !result.isDemo) {
+    const slides = extractCarouselPrompts(result.markdown);
+    if (slides.length > 0) {
+      const generated: (GeneratedImage | null)[] = [];
+      for (const s of slides) {
+        if (generated.length > 0) await new Promise((r) => setTimeout(r, 4000)); // ease burst pressure on the free endpoint
+        generated.push(await generateImage(s.prompt));
+      }
+      const slideBlocks = slides
+        .map((s, i) => {
+          const img = generated[i];
+          const caption = s.caption ? `\n${s.caption}` : "";
+          return img
+            ? `### Slide ${s.slide}${caption}\n![Slide ${s.slide}](${img.dataUri})`
+            : `### Slide ${s.slide}${caption}\nGeneration failed or timed out for this slide — its prompt above is still valid to try again.`;
+        })
+        .join("\n\n");
+      result = { ...result, markdown: `${result.markdown}\n\n## Generated Carousel\n${slideBlocks}` };
     }
   }
 

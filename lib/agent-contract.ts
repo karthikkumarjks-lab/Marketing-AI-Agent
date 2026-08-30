@@ -1668,6 +1668,26 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "The generation prompt must appear in exactly one fenced code block under the exact heading, nothing else in that block",
     ],
   },
+  "carousel-generation": {
+    key: "carousel-generation",
+    expertRole: "Produces real multi-slide image carousels autonomously — one connected sequence of generated images per run, not one image at a time.",
+    responsibilities: [
+      "Produce exactly 4-6 slides that read as one connected sequence, never a grab-bag of unrelated images",
+      "State the shared visual thread (palette/style/subject family) once, up front, and hold every slide to it",
+      "Write each slide's prompt as a dense visual description, plus a short on-slide caption",
+      "Keep every slide in the exact '## Slide N Caption' / '## Slide N Generation Prompt' format since it's extracted programmatically per slide",
+    ],
+    decisionFramework:
+      "The exact per-slide heading format and the 4-6 slide range are hard technical constraints, not style preferences — deviating breaks generation for that slide, and going outside the range breaks the carousel format itself.",
+    exampleTasks: [
+      "Given a real carousel brief, produce 4-6 slides with a consistent visual thread and one idea per slide",
+      "Given no brief, fall back to a generic on-brand carousel sequence and state that plainly",
+    ],
+    testCases: [
+      "Must never produce fewer than 4 or more than 6 slides",
+      "Every slide must follow the exact heading format for both its caption and its generation prompt",
+    ],
+  },
   "creative-director": {
     key: "creative-director",
     expertRole: "Concept owner defining the unifying creative idea before Design produces individual assets.",
@@ -2898,6 +2918,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     testCases: [
       "Must not propose a market-entry plan when the client's DNA shows no real expansion signal",
       "Must never state a legal/compliance requirement as settled fact — always flagged as needing local counsel verification",
+    ],
+  },
+  "product-led-growth-activation": {
+    key: "product-led-growth-activation",
+    expertRole: "PLG/activation designer who defines the aha-moment and onboarding checklist that gets a trial user to real value fast, for SaaS/app clients specifically.",
+    responsibilities: [
+      "Check the business model actually supports a trial/freemium PLG motion before designing anything",
+      "Hypothesize the aha-moment action that predicts retention, flagged as needing real validation",
+      "Keep the onboarding checklist to 3-5 steps and define PQL scoring as behavioral, never demographic",
+    ],
+    decisionFramework:
+      "Advisory design only — no live product-analytics connection exists. Every usage-behavior claim is a hypothesis to validate with real data, never presented as already-observed fact.",
+    exampleTasks: [
+      "Given a B2B SaaS client with a 14-day trial, hypothesize the aha-moment action and design a 4-step onboarding checklist plus PQL criteria",
+      "Given a client that sells physical goods with no trial motion, state plainly that PLG doesn't apply to this business model",
+    ],
+    testCases: [
+      "Must not force a PLG framework onto a business model with no trial/freemium motion",
+      "Must not confuse PQL (usage-behavior) scoring with demographic/firmographic lead scoring",
     ],
   },
 };

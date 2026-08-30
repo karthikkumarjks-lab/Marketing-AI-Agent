@@ -918,6 +918,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 25,
   },
+  {
+    key: "carousel-generation",
+    name: "Carousel Generation Agent",
+    category: "Content & Creative",
+    mission: "Actually generates a real multi-slide image carousel (for Instagram/LinkedIn-style carousel posts) from a brief — a connected sequence of images with a consistent visual thread and one idea per slide — using the same free generation model as Image Generation, extended to auto-produce every slide in one run rather than one image at a time.",
+    inputs: ["Carousel topic/brief (optional — falls back to a generic on-brand sequence)", "Brand DNA", "ICP/personas"],
+    outputs: ["Slide-by-slide generation prompts", "Generated image per slide (auto-built)", "Suggested on-slide caption per slide"],
+    wired: true,
+    sortOrder: 26,
+  },
   // Digital Experience
   {
     key: "website-builder",
@@ -1269,6 +1279,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     outputs: ["Unified theme synthesis", "Prioritized issues by frequency/impact", "Recommended owner per theme"],
     wired: true,
     sortOrder: 24,
+  },
+  {
+    key: "product-led-growth-activation",
+    name: "Product-Led Growth & Activation Agent",
+    category: "Retention & Lifecycle",
+    mission: "Defines the free-trial/freemium activation flow for SaaS/app clients — the 'aha moment,' in-product onboarding checklist, and product-qualified-lead (PQL) scoring from usage behavior — distinct from Lifecycle & Nurture's channel-agnostic messaging journey and Client Onboarding's onboarding of the agency's own client onto this platform, not the client's end-users into the client's product.",
+    inputs: ["Business model", "Industry", "Objective"],
+    outputs: ["Aha-moment definition", "In-product onboarding checklist", "PQL scoring criteria", "Trial-to-paid conversion triggers"],
+    wired: true,
+    sortOrder: 25,
   },
   // Marketing Operations
   {
