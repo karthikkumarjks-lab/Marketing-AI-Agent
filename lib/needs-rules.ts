@@ -213,6 +213,12 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "nps-csat-survey": hasChannels
       ? { status: "active", reason: "An existing customer base is forming — worth designing how satisfaction gets measured before it's an afterthought." }
       : { status: "idle", reason: "No customer base yet to survey." },
+    "support-ticketing-system-sla": hasChannels
+      ? { status: "active", reason: "Channels are already generating contacts — the ticketing rule set matters before request volume grows unmanaged." }
+      : { status: "idle", reason: "No customer flow yet to build a ticketing system around." },
+    "knowledge-base-help-center": hasChannels
+      ? { status: "active", reason: "Real customer questions are starting to come in — worth turning repeat ones into self-service articles." }
+      : { status: "idle", reason: "No customer flow yet generating repeat questions to document." },
     "sales-intelligence": hasChannels
       ? { status: "active", reason: "Leads are flowing — worth checking whether the bottleneck is generation or follow-up." }
       : { status: "idle", reason: "No lead flow yet to diagnose a sales bottleneck from." },
@@ -581,6 +587,12 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "renewal-management": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
       ? { status: "active", reason: "SaaS/subscription signal noted — the renewal motion matters for this business model from early on." }
       : { status: "idle", reason: "Not a subscription/recurring-revenue business model based on what's known — no renewal event to manage." },
+    "payment-recovery-dunning": mentions(dna.industry, APP_WORDS) || mentions(dna.objective, APP_WORDS)
+      ? { status: "active", reason: "SaaS/subscription signal noted — recurring billing means failed charges are a real, recoverable revenue leak from early on." }
+      : { status: "idle", reason: "Not a subscription/recurring-billing business model based on what's known — no failed-charge event to recover." },
+    "voice-of-customer-intelligence": hasChannels
+      ? { status: "active", reason: "Customers are already flowing in — worth cross-referencing what survey, review, and support signal are each saying once more than one exists." }
+      : { status: "idle", reason: "No customer base yet generating feedback to synthesize." },
     "sales-compensation-plan": {
       status: "idle",
       reason: "Needs a stated sales team beyond a solo operator to design compensation for — revisit once team size is known.",

@@ -85,6 +85,10 @@ export const AGENT_DEPENDENCIES: Record<string, AgentDependencies> = {
   "sales-intelligence": { dependsOn: ["crm-customer-data", "lead-routing-sla"], canCall: ["marketing-orchestrator"] },
   "revenue-pipeline": { dependsOn: ["crm-customer-data", "budget-investment"], canCall: [] },
   "marketing-orchestrator": { dependsOn: ["needs-analyzer"], canCall: [] },
+  "voice-of-customer-intelligence": {
+    dependsOn: ["nps-csat-survey", "customer-experience-reputation", "support-ticket-triage"],
+    canCall: [],
+  },
 };
 
 export function getAgentDependencies(key: string): AgentDependencies {
@@ -2799,6 +2803,82 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
     testCases: [
       "Must not invent verbatim quotes when no feedback text was provided",
       "Must flag a small response sample as not yet statistically meaningful rather than stating a confident promoter score",
+    ],
+  },
+  "support-ticketing-system-sla": {
+    key: "support-ticketing-system-sla",
+    expertRole: "Support operations designer who sets up the ticketing rule set once so every individual ticket gets triaged consistently after.",
+    responsibilities: [
+      "Design a category/priority taxonomy sized to this team, not a generic enterprise template",
+      "Set realistic SLA response/resolution targets given stated team size",
+      "Define an escalation matrix and a macro-library outline distinct from any one drafted reply",
+    ],
+    decisionFramework:
+      "Advisory system design only — no live helpdesk connection exists. Complexity must scale down for a solo operator or small team; an enterprise-grade 5-tier system is a failure for a business that can't staff it.",
+    exampleTasks: [
+      "Given a 2-person team, design a simple 3-category taxonomy with same-day response targets and one escalation rule",
+      "Given a stated multi-department team, design tiered SLAs and a fuller escalation matrix by department",
+    ],
+    testCases: [
+      "Must not propose an enterprise-scale taxonomy/SLA system for a solo operator or very small team",
+      "Must not draft full canned replies — only the outline of which categories need one",
+    ],
+  },
+  "knowledge-base-help-center": {
+    key: "knowledge-base-help-center",
+    expertRole: "Support documentation writer who turns one real resolved question into an article the next ten customers with the same question never have to ask about.",
+    responsibilities: [
+      "Turn a real ticket/question into a reusable, customer-agnostic help-center article",
+      "Draft a short FAQ-page/chatbot version of the same answer",
+      "Suggest only genuinely related follow-up articles, never padding",
+    ],
+    decisionFramework:
+      "Advisory content drafting only — no live helpdesk or CMS connection exists. Never invent a support scenario; missing ticket text is a blocker, not something to fill with a plausible example.",
+    exampleTasks: [
+      "Given a real ticket about how to reschedule an appointment, draft a help-center article and FAQ entry with the customer-specific details stripped out",
+      "Given a common billing question, draft the article and flag one genuinely related follow-up question if one exists",
+    ],
+    testCases: [
+      "Must not fabricate a support scenario when no ticket/question text was provided",
+      "Must strip customer-specific details (name, order number) so the article is genuinely reusable",
+    ],
+  },
+  "payment-recovery-dunning": {
+    key: "payment-recovery-dunning",
+    expertRole: "Billing recovery designer who treats a failed charge as a fixable accident, not a churn decision, and designs the retry/messaging flow accordingly.",
+    responsibilities: [
+      "Check this client's business model actually has recurring billing before designing anything",
+      "Design a realistic smart-retry cadence for failed payments",
+      "Define grace period and end-of-grace policy explicitly, with a friendly, non-accusatory message tone throughout",
+    ],
+    decisionFramework:
+      "Advisory flow design only — no live payment processor connection exists. Must fail gracefully (a plain fit-check statement) when the business model has no recurring billing to attach this to.",
+    exampleTasks: [
+      "Given a subscription SaaS business, design a 3-attempt smart-retry cadence over 7 days with an escalating-but-friendly message sequence",
+      "Given a one-time-purchase business, state plainly that there's no recurring billing for this flow to apply to",
+    ],
+    testCases: [
+      "Must not design a dunning flow for a business model with no recurring billing — must flag the mismatch instead",
+      "Must keep message tone non-accusatory across every retry attempt",
+    ],
+  },
+  "voice-of-customer-intelligence": {
+    key: "voice-of-customer-intelligence",
+    expertRole: "Customer intelligence synthesizer who reads across survey, review, and support signal for the same underlying themes, rather than treating each source in isolation.",
+    responsibilities: [
+      "Synthesize only from real prior agent output actually provided as context",
+      "Flag cross-referenced themes (appearing in more than one source) as the strongest signal",
+      "Prioritize by frequency and impact together, and assign an owner per theme",
+    ],
+    decisionFramework:
+      "Synthesis only from real handed-off context from NPS/CSAT Survey, Customer Experience & Reputation, and Support & Ticket Triage runs — never invents a customer theme when none of those three have real run history yet in this workspace.",
+    exampleTasks: [
+      "Given real run history from all three source agents, produce a unified prioritized theme report with cross-referenced issues called out",
+      "Given no source agent has run yet, state that plainly and explain what running each would unlock",
+    ],
+    testCases: [
+      "Must not invent customer themes when no source agent has real run history in this workspace",
+      "Must explicitly call out a theme that appears in more than one source rather than listing sources separately with no cross-reference",
     ],
   },
 };

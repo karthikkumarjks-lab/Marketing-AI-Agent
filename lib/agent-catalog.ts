@@ -596,6 +596,26 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 34,
   },
+  {
+    key: "support-ticketing-system-sla",
+    name: "Support Ticketing System & SLA Agent",
+    category: "CRM & Lead Operations",
+    mission: "Designs the support ticketing SYSTEM this client needs — category/priority taxonomy, SLA targets per tier, escalation matrix, macro/canned-response library structure, queue routing — distinct from Support & Ticket Triage, which acts on one real ticket using these rules, not designs them.",
+    inputs: ["Team size/capacity implied by DNA", "Current channels", "Product/service line-up"],
+    outputs: ["Ticket category & priority taxonomy", "SLA targets per priority tier", "Escalation matrix", "Macro/canned-response library outline"],
+    wired: true,
+    sortOrder: 35,
+  },
+  {
+    key: "knowledge-base-help-center",
+    name: "Knowledge Base / Help Center Agent",
+    category: "CRM & Lead Operations",
+    mission: "Turns a real resolved support ticket or common question into a help-center article and FAQ entry — distinct from Content Creation's marketing content and Support & Ticket Triage's one-off reply drafting; this builds the reusable self-service library.",
+    inputs: ["Support ticket / common question (required)", "Product/service line-up", "Company DNA"],
+    outputs: ["Draft help-center article", "FAQ entry", "Related-article suggestions"],
+    wired: true,
+    sortOrder: 36,
+  },
   // Acquisition
   {
     key: "seo-strategy",
@@ -1219,6 +1239,26 @@ export const AGENT_CATALOG: AgentSpec[] = [
     outputs: ["Health score composite formula", "Score tiers & triggers", "Owner (CS vs. marketing) per tier"],
     wired: true,
     sortOrder: 22,
+  },
+  {
+    key: "payment-recovery-dunning",
+    name: "Payment Recovery / Dunning Agent",
+    category: "Retention & Lifecycle",
+    mission: "Designs the failed-payment recovery flow — retry cadence, dunning message sequence, grace period and downgrade policy — for involuntary churn specifically (a billing error, not a decision to leave), distinct from Renewal Management's voluntary end-of-term motion and Lifecycle & Nurture's behavioral win-back journey.",
+    inputs: ["Business model", "Objective", "Industry"],
+    outputs: ["Dunning retry cadence", "Recovery message sequence design", "Grace period & downgrade policy"],
+    wired: true,
+    sortOrder: 23,
+  },
+  {
+    key: "voice-of-customer-intelligence",
+    name: "Voice of Customer Intelligence Agent",
+    category: "Retention & Lifecycle",
+    mission: "Synthesizes real findings from NPS/CSAT surveys, review/reputation sentiment, and support ticket triage into one unified, prioritized view of what customers are actually saying — distinct from Retention Intelligence's quantitative run-history pattern-reading, which doesn't read what customers actually wrote.",
+    inputs: ["NPS/CSAT Survey findings (automatic, if run)", "Customer Experience & Reputation findings (automatic, if run)", "Support ticket patterns (automatic, if run)"],
+    outputs: ["Unified theme synthesis", "Prioritized issues by frequency/impact", "Recommended owner per theme"],
+    wired: true,
+    sortOrder: 24,
   },
   // Marketing Operations
   {

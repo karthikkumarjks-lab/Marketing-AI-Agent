@@ -47,6 +47,10 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "Recent verbatim feedback (optional — leave blank for survey design only)",
     placeholder: "e.g. Paste 5-20 recent customer comments, one per line…",
   },
+  "knowledge-base-help-center": {
+    label: "Support ticket / common question (required)",
+    placeholder: "Paste the resolved ticket or the question customers keep asking…",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {
