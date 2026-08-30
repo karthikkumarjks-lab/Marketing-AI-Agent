@@ -275,6 +275,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 17,
   },
+  {
+    key: "international-expansion-localization",
+    name: "International Expansion & Localization Agent",
+    category: "Executive & Intelligence",
+    mission: "Scores candidate new markets to expand into and flags what changes on the way in — language, currency, payment methods, legal/compliance basics, cultural nuance — distinct from Market Research's analysis of the client's CURRENT market only.",
+    inputs: ["Current country/region", "Business model", "Objective", "Candidate target market(s) if named"],
+    outputs: ["Candidate market scoring", "Localization requirements checklist", "Market-entry sequencing"],
+    wired: true,
+    sortOrder: 20,
+  },
   // CRM & Lead Operations
   {
     key: "crm-customer-data",

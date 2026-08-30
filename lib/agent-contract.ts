@@ -2881,6 +2881,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must explicitly call out a theme that appears in more than one source rather than listing sources separately with no cross-reference",
     ],
   },
+  "international-expansion-localization": {
+    key: "international-expansion-localization",
+    expertRole: "Market-entry strategist who scores real candidate markets and separates genuine localization work from a cosmetic website translation.",
+    responsibilities: [
+      "Check for real expansion signal before proposing anything — never invent a market-entry plan for a client with no stated interest",
+      "Score named candidate markets, or propose plausible ones when expansion intent is real but no market was named",
+      "Cover the full localization surface — language, currency, payment methods, compliance basics, cultural nuance — not just translation",
+    ],
+    decisionFramework:
+      "Advisory scoring and checklist only — no live legal/regulatory database connection exists. Compliance items are always flagged as needing local counsel verification, never stated as settled fact.",
+    exampleTasks: [
+      "Given a client naming two candidate expansion countries, score both on demand, competition, and entry difficulty, and produce a localization checklist for each",
+      "Given a client with no expansion signal in their DNA, state plainly that this is premature rather than fabricating a market-entry plan",
+    ],
+    testCases: [
+      "Must not propose a market-entry plan when the client's DNA shows no real expansion signal",
+      "Must never state a legal/compliance requirement as settled fact — always flagged as needing local counsel verification",
+    ],
+  },
 };
 
 export function getAgentDefinition(key: string): AgentDefinition | undefined {

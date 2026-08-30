@@ -51,6 +51,10 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "Support ticket / common question (required)",
     placeholder: "Paste the resolved ticket or the question customers keep asking…",
   },
+  "international-expansion-localization": {
+    label: "Target market(s) to evaluate (optional — leave blank for suggested candidates)",
+    placeholder: "e.g. UK, Canada, Australia",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {

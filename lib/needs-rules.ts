@@ -60,6 +60,7 @@ const B2B_WORDS = ["b2b", "saas", "enterprise", "software", "agency", "consultin
 const MESSAGING_WORDS = ["whatsapp", "sms", "messaging", "chat", "booking", "appointment"];
 const LAUNCH_WORDS = ["launch", "new product", "new feature", "gtm", "go-to-market", "relaunch"];
 const APP_WORDS = ["app", "saas", "software", "platform", "mobile"];
+const EXPANSION_WORDS = ["expand", "expansion", "international", "new market", "new country", "global", "overseas", "cross-border"];
 const BOOKING_INDUSTRY_WORDS = ["clinic", "salon", "consult", "consulting", "studio", "spa", "dental"];
 
 export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecommendation[] {
@@ -615,6 +616,13 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "idle",
       reason: "Needs a stated reseller/channel partner motion — most businesses start direct-only; revisit once channel partnerships are being considered.",
     },
+
+    // Needs real expansion signal in the stated objective — most clients are
+    // focused on their current market, and a market-entry plan nobody asked
+    // for is noise, not help.
+    "international-expansion-localization": mentions(dna.objective, EXPANSION_WORDS)
+      ? { status: "active", reason: "Expansion language in the stated objective — worth scoring candidate markets and localization requirements now." }
+      : { status: "idle", reason: "No stated interest in expanding beyond the current market yet." },
 
     // Landing page split-testing needs the same paid-traffic foundation as
     // the Landing Page Agent itself — nothing to split-test without traffic
