@@ -39,6 +39,14 @@ export const TEXT_INPUT_AGENTS: Record<string, TextInputSpec> = {
     label: "What do you want to know? (required)",
     placeholder: "e.g. What did we decide about the Q3 budget in last week's planning call?",
   },
+  "support-ticket-triage": {
+    label: "Support ticket / customer message (required)",
+    placeholder: "Paste the actual customer message or support ticket text here…",
+  },
+  "nps-csat-survey": {
+    label: "Recent verbatim feedback (optional — leave blank for survey design only)",
+    placeholder: "e.g. Paste 5-20 recent customer comments, one per line…",
+  },
 };
 
 export function getTextInputSpec(agentKey: string): TextInputSpec | null {

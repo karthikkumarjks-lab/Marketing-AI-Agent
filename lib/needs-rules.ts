@@ -207,6 +207,12 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "lead-data-quality": hasChannels
       ? { status: "active", reason: "Multiple channels can create duplicate or messy records — worth setting rules before volume grows." }
       : { status: "idle", reason: "No lead flow yet to protect the accuracy of." },
+    "support-ticket-triage": hasChannels
+      ? { status: "active", reason: "Channels are already generating contacts — real customer requests need a triage process from the first one." }
+      : { status: "idle", reason: "No customer flow yet to generate support requests." },
+    "nps-csat-survey": hasChannels
+      ? { status: "active", reason: "An existing customer base is forming — worth designing how satisfaction gets measured before it's an afterthought." }
+      : { status: "idle", reason: "No customer base yet to survey." },
     "sales-intelligence": hasChannels
       ? { status: "active", reason: "Leads are flowing — worth checking whether the bottleneck is generation or follow-up." }
       : { status: "idle", reason: "No lead flow yet to diagnose a sales bottleneck from." },

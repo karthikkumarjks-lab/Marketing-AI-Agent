@@ -576,6 +576,26 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 30,
   },
+  {
+    key: "support-ticket-triage",
+    name: "Support & Ticket Triage Agent",
+    category: "CRM & Lead Operations",
+    mission: "Triages a real support request into urgency/category, drafts a first-response reply, and flags what should escalate — advisory drafting from the ticket text provided, not a live connection to any helpdesk (Zendesk, Freshdesk, Intercom, or otherwise).",
+    inputs: ["Support ticket / customer message (required)", "Company DNA", "Product/service line-up"],
+    outputs: ["Urgency & category classification", "Drafted first-response reply", "Escalation recommendation"],
+    wired: true,
+    sortOrder: 33,
+  },
+  {
+    key: "nps-csat-survey",
+    name: "NPS & CSAT Survey Agent",
+    category: "CRM & Lead Operations",
+    mission: "Designs the NPS/CSAT survey program — when to send, what to ask, how to score and segment respondents — and turns real verbatim feedback into themed, prioritized findings when provided. Advisory design and analysis, not a live survey-sending tool.",
+    inputs: ["Business model", "Customer lifecycle stage", "Recent verbatim feedback (optional)"],
+    outputs: ["Survey cadence & question design", "Scoring/segmentation rubric (promoter/passive/detractor)", "Themed findings from real feedback if provided"],
+    wired: true,
+    sortOrder: 34,
+  },
   // Acquisition
   {
     key: "seo-strategy",

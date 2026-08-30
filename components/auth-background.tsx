@@ -68,9 +68,13 @@ const PLACEMENTS: Placement[] = [
   { x: 22, y: 26, size: 38, rotate: -10, icon: 4 },
 ];
 
-export default function AuthBackground() {
+export default function AuthBackground({ subtle = false }: { subtle?: boolean } = {}) {
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+    <div
+      className="pointer-events-none fixed inset-0 overflow-hidden -z-10"
+      style={subtle ? { opacity: 0.4 } : undefined}
+      aria-hidden="true"
+    >
       {PLACEMENTS.map((p, i) => (
         <div
           key={i}

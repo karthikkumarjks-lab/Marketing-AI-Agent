@@ -4,6 +4,7 @@ import "./globals.css";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import Sidebar from "@/components/sidebar";
+import AuthBackground from "@/components/auth-background";
 
 // Overpass: originally drawn for US highway signage — real wayfinding
 // heritage, genuinely on-theme for a "fixed heading, autonomous course"
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`h-full antialiased ${overpass.variable} ${publicSans.variable} ${plexMono.variable}`}>
       <body className="min-h-full flex bg-bg text-ink">
+        <AuthBackground subtle />
         <Sidebar workspaces={workspaces} agentCount={agentCount} userEmail={session.user.email ?? null} />
         <div className="flex-1 min-w-0">{children}</div>
       </body>
