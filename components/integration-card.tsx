@@ -50,13 +50,22 @@ export default function IntegrationCard({
 
       {!configured && (
         <p className="text-[11px] text-ink-faint leading-relaxed">
-          No OAuth app registered yet. Register one at{" "}
+          {provider.authType === "oauth" ? (
+            <>No OAuth app registered yet. Register one at{" "}</>
+          ) : (
+            <>No API key set yet. Get one at{" "}</>
+          )}
           <a href={provider.setupUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
             {provider.setupUrl}
           </a>{" "}
-          and set <code className="text-ink-soft">{provider.clientIdEnv}</code> /{" "}
-          <code className="text-ink-soft">{provider.clientSecretEnv}</code> in <code className="text-ink-soft">.env.local</code>{" "}
-          — real OAuth wiring is still a follow-up, this just unblocks it.
+          and set{" "}
+          {provider.requiredEnvVars.map((v, i) => (
+            <span key={v}>
+              {i > 0 && " / "}
+              <code className="text-ink-soft">{v}</code>
+            </span>
+          ))}{" "}
+          in <code className="text-ink-soft">.env.local</code> — real send/live-data wiring is still a follow-up, this just unblocks it.
         </p>
       )}
 
