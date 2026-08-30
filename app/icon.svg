@@ -1,22 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-  <circle cx="24" cy="24" r="17" stroke="#2F6FED" stroke-width="3.5"/>
-  <g stroke="#2F6FED" stroke-width="1.8" stroke-linecap="round" opacity="0.55">
-    <line x1="32.50" y1="9.28" x2="31.20" y2="11.53"/>
-    <line x1="38.72" y1="15.50" x2="36.47" y2="16.80"/>
-    <line x1="38.72" y1="32.50" x2="36.47" y2="31.20"/>
-    <line x1="32.50" y1="38.72" x2="31.20" y2="36.47"/>
-    <line x1="15.50" y1="38.72" x2="16.80" y2="36.47"/>
-    <line x1="9.28" y1="32.50" x2="11.53" y2="31.20"/>
-    <line x1="9.28" y1="15.50" x2="11.53" y2="16.80"/>
-    <line x1="15.50" y1="9.28" x2="16.80" y2="11.53"/>
+  <g stroke="#2F6FED" stroke-width="1.8" stroke-linecap="round" opacity="0.45">
+    <line x1="24" y1="24" x2="24" y2="8"/>
+    <line x1="24" y1="24" x2="39" y2="16.5"/>
+    <line x1="24" y1="24" x2="39" y2="31.5"/>
+    <line x1="24" y1="24" x2="24" y2="40"/>
+    <line x1="24" y1="24" x2="9" y2="31.5"/>
+    <line x1="24" y1="24" x2="9" y2="16.5"/>
   </g>
-  <g stroke="#2F6FED" stroke-width="2.6" stroke-linecap="round">
-    <line x1="24.00" y1="7.00" x2="24.00" y2="11.20"/>
-    <line x1="41.00" y1="24.00" x2="36.80" y2="24.00"/>
-    <line x1="24.00" y1="41.00" x2="24.00" y2="36.80"/>
-    <line x1="7.00" y1="24.00" x2="11.20" y2="24.00"/>
-  </g>
-  <path d="M33.19 14.81 L21.88 26.12 L26.12 21.88 Z" fill="#2F6FED"/>
-  <path d="M14.81 33.19 L21.88 26.12 L26.12 21.88 Z" fill="#2F6FED" fill-opacity="0.32"/>
-  <circle cx="24" cy="24" r="2.2" fill="#FFFFFF"/>
+  <circle cx="24" cy="8" r="3.2" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="39" cy="16.5" r="3.2" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="39" cy="31.5" r="2.6" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="24" cy="40" r="2.6" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="9" cy="31.5" r="3.2" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="9" cy="16.5" r="2.6" fill="#2F6FED" fill-opacity="0.6"/>
+  <circle cx="24" cy="24" r="7" fill="#2F6FED"/>
 </svg>
