@@ -88,6 +88,7 @@ model Workspace {
   pipelineStages    PipelineStage[]
   customFieldDefs   CustomFieldDef[]
   workflowRules     WorkflowRule[]
+  emailTemplates    EmailTemplate[]
 }
 
 // Connector status per workspace. No live OAuth flow exists yet — this
@@ -327,4 +328,30 @@ model WorkflowRunLog {
 
   workflow   WorkflowRule @relation(fields: [workflowId], references: [id], onDelete: Cascade)
   lead       Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+}
+
+// A template built in the drag-and-drop Email Builder. htmlBody is the real
+// email that gets sent (via lib/mail.ts's sendEmail, over the same Resend
+// account this app already uses) — designJson is GrapesJS's own project
+// data, kept only so the template can be reopened and edited, never sent
+// directly. ampBody is optional AMP4EMAIL markup for providers that support
+// AMP sending (Resend currently does not — see lib/mail.ts) or for
+// validating independently; it's exported alongside htmlBody, never a
+// silent substitute for it, since AMP4EMAIL requires the plain HTML
+// fallback to exist regardless.
+model EmailTemplate {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  name         String
+  subject      String
+  htmlBody     String
+  designJson   String   @default("{}")
+  isAmpEnabled Boolean  @default(false)
+  ampBody      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }

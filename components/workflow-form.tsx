@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 const inputClass =
   "rounded-md border border-line bg-surface px-2 py-1 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/40";
 
-type ActionType = "change_stage" | "add_tag" | "set_field" | "create_note" | "log_email" | "log_sms" | "webhook" | "run_agent";
+type ActionType = "change_stage" | "add_tag" | "set_field" | "create_note" | "log_email" | "send_email_template" | "log_sms" | "webhook" | "run_agent";
 
 interface ActionRow {
   type: ActionType;
@@ -19,6 +19,7 @@ interface ActionRow {
   body?: string;
   url?: string;
   agentKey?: string;
+  templateId?: string;
 }
 
 interface ConditionRow {
@@ -33,6 +34,7 @@ const ACTION_LABELS: Record<ActionType, string> = {
   set_field: "Set custom field",
   create_note: "Add a note",
   log_email: "Log an email (not sent)",
+  send_email_template: "Send an email (built in Email Builder)",
   log_sms: "Log an SMS (not sent)",
   webhook: "POST a webhook",
   run_agent: "Run an agent",
@@ -42,10 +44,12 @@ export default function WorkflowForm({
   workspaceId,
   stages,
   agents,
+  emailTemplates,
 }: {
   workspaceId: string;
   stages: { id: string; name: string }[];
   agents: { key: string; name: string; category: string }[];
+  emailTemplates: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -72,6 +76,8 @@ export default function WorkflowForm({
         return { type: "create_note", text: a.text };
       case "log_email":
         return { type: "log_email", subject: a.subject, body: a.body };
+      case "send_email_template":
+        return { type: "send_email_template", templateId: a.templateId, templateName: emailTemplates.find((t) => t.id === a.templateId)?.name };
       case "log_sms":
         return { type: "log_sms", body: a.body };
       case "webhook":
@@ -238,6 +244,16 @@ export default function WorkflowForm({
                   <input value={a.subject ?? ""} onChange={(e) => updateAction(i, { subject: e.target.value })} placeholder="subject" className={`${inputClass} flex-1`} />
                   <input value={a.body ?? ""} onChange={(e) => updateAction(i, { body: e.target.value })} placeholder="body" className={`${inputClass} flex-1`} />
                 </>
+              )}
+              {a.type === "send_email_template" && (
+                <select value={a.templateId ?? ""} onChange={(e) => updateAction(i, { templateId: e.target.value })} className={`${inputClass} flex-1`}>
+                  <option value="">choose a template…</option>
+                  {emailTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
               )}
               {a.type === "log_sms" && (
                 <input value={a.body ?? ""} onChange={(e) => updateAction(i, { body: e.target.value })} placeholder="message" className={`${inputClass} flex-1`} />

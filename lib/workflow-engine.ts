@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { parseCustomFields, parseTags, type LeadLite } from "@/lib/crm";
 import { runAgentLLM, type CompanyDNAInput, type BrandDNAInput } from "@/lib/agent-prompts";
 import { buildLeadContext } from "@/lib/crm";
+import { sendEmail } from "@/lib/mail";
 
 export type TriggerType = "lead_created" | "stage_changed" | "field_updated" | "tag_added";
 
@@ -30,6 +31,7 @@ export type WorkflowAction =
   | { type: "set_field"; key: string; value: string }
   | { type: "create_note"; text: string }
   | { type: "log_email"; subject: string; body: string }
+  | { type: "send_email_template"; templateId: string; templateName?: string }
   | { type: "log_sms"; body: string }
   | { type: "webhook"; url: string }
   | { type: "run_agent"; agentKey: string; agentName?: string };
@@ -138,6 +140,41 @@ async function executeAction(
         },
       });
       return `Logged email (not sent — no ESP connected)`;
+    }
+    case "send_email_template": {
+      // Real send via the same sendEmail() the bulk-campaign route uses —
+      // built in the Email Builder, actually delivered through Resend when
+      // configured, not another "logged, never sent" placeholder like
+      // log_email above.
+      const template = await prisma.emailTemplate.findUnique({ where: { id: action.templateId } });
+      if (!template || template.workspaceId !== workspace.id) {
+        throw new Error(`Email template "${action.templateName ?? action.templateId}" not found.`);
+      }
+      if (!leadRow.email) {
+        await prisma.leadActivity.create({
+          data: {
+            leadId: leadRow.id,
+            type: "email",
+            channel: "email",
+            summary: `[Not sent — lead has no email on file] ${template.subject}`,
+            detail: JSON.stringify({ templateId: template.id, subject: template.subject, actuallySent: false }),
+          },
+        });
+        return `Skipped "${template.name}" — lead has no email on file`;
+      }
+      const personalizedHtml = template.htmlBody.replace(/\{\{\s*lead\.name\s*\}\}/g, leadRow.name);
+      const result = await sendEmail({ to: leadRow.email, subject: template.subject, html: personalizedHtml });
+      await prisma.leadActivity.create({
+        data: {
+          leadId: leadRow.id,
+          type: "email",
+          channel: "email",
+          summary: result.ok ? `Workflow email sent: ${template.subject}` : `[Not sent — ${result.error}] ${template.subject}`,
+          detail: JSON.stringify({ templateId: template.id, subject: template.subject, actuallySent: result.ok, error: result.error ?? null }),
+        },
+      });
+      if (!result.ok) throw new Error(result.error ?? "Send failed.");
+      return `Sent email "${template.name}"`;
     }
     case "log_sms": {
       await prisma.leadActivity.create({

@@ -33,6 +33,7 @@ const ACTION_LABELS: Record<string, string> = {
   set_field: "Set field",
   create_note: "Add note",
   log_email: "Log email",
+  send_email_template: "Send email",
   log_sms: "Log SMS",
   webhook: "Webhook",
   run_agent: "Run agent",

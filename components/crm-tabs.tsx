@@ -11,6 +11,7 @@ const TABS = [
   { slug: "", label: "Dashboard", instrument: "OVERVIEW" },
   { slug: "leads", label: "Leads", instrument: "MANIFEST" },
   { slug: "workflows", label: "Workflows", instrument: "ROUTING" },
+  { slug: "emails", label: "Emails", instrument: "DISPATCH" },
   { slug: "reports", label: "Reports", instrument: "TELEMETRY" },
   { slug: "settings", label: "Settings", instrument: "MAINTENANCE" },
 ];
