@@ -163,23 +163,24 @@ const TICKING_CLOCK_DIGITAL_HTML = `<style>
   <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto;font-family:sans-serif">${CLOCK_DISCLOSURE} The digits themselves are static text — edit them directly for a specific deadline.</div>
 </td></tr></table>`;
 
-// The real, working technique for a countdown that's actually live and
-// accurate per recipient: a hosted image-generation service (Sendtric,
-// CountdownMail, MotionMail) that returns a freshly rendered GIF/PNG for
-// the exact moment the image is requested — which happens to be exactly
-// when the recipient opens the email. This app has no such service of its
-// own (that's real hosting infrastructure, not a code feature), so this
-// block is a clearly-marked placeholder image plus the exact steps to
-// swap in a real one, not a working countdown by itself.
-const LIVE_COUNTDOWN_PLACEHOLDER_HTML = `<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
-  <img src="https://placehold.co/320x90/2f6fed/ffffff?text=Replace+with+your+countdown+image+URL" alt="Live countdown placeholder" style="max-width:100%;border-radius:6px" />
-  <div style="font-size:11px;color:#8a9089;margin-top:6px;max-width:360px;margin-left:auto;margin-right:auto">
-    This is a placeholder. For a REAL live countdown, create one free at a service like Sendtric or CountdownMail
-    (set your deadline there), then double-click this image and replace its URL with the one they give you —
-    that image is regenerated fresh every time it's requested, so it counts down accurately for every recipient
-    no matter when they open the email.
-  </div>
+// A genuinely live, self-hosted countdown — no third-party account, no
+// placeholder. app/api/countdown-image renders the remaining time server-
+// side on every single request with caching disabled, so whatever the
+// recipient's inbox sees is accurate to the second they opened the email,
+// not the moment the campaign was sent. Same real technique every ESP's
+// paid "live countdown" feature uses, just running on this app's own
+// infrastructure via next/og (bundled with Next.js — no new dependency).
+function buildCountdownImageUrl(origin: string, targetIso: string, label: string): string {
+  const params = new URLSearchParams({ target: targetIso, label });
+  return `${origin}/api/countdown-image?${params.toString()}`;
+}
+
+function buildLiveCountdownBlockHtml(origin: string, targetIso: string, label: string): string {
+  const url = buildCountdownImageUrl(origin, targetIso, label);
+  return `<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center">
+  <img src="${url}" alt="Live countdown" style="max-width:100%;border-radius:6px" />
 </td></tr></table>`;
+}
 
 // A plain (non-AMP) forms block. Regular HTML email can't actually submit a
 // form in-inbox — Gmail/Outlook/Apple Mail all strip real <form>/<input>
@@ -229,6 +230,10 @@ export default function EmailBuilder({
   const [selectedImage, setSelectedImage] = useState<Component | null>(null);
   const [imageEditorOpen, setImageEditorOpen] = useState(false);
   const [ampSnippet, setAmpSnippet] = useState("");
+  const defaultCountdownTarget = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16);
+  const [countdownTarget, setCountdownTarget] = useState(defaultCountdownTarget);
+  const [countdownLabel, setCountdownLabel] = useState("Offer ends in");
+  const [countdownCopied, setCountdownCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,35 +262,39 @@ export default function EmailBuilder({
         category: "Extra",
         content: CALENDAR_BLOCK_HTML,
       });
+      // All clock/countdown variants share one "Clocks & Countdowns" bucket
+      // — click the category to open it, then pick whichever design fits
+      // this email, same click-then-choose flow as any other block.
       editor.BlockManager.add("countdown-block", {
-        label: "Countdown Timer / Urgency Banner",
-        category: "Extra",
+        label: "Static Countdown / Urgency Banner",
+        category: "Clocks & Countdowns",
         content: URGENCY_BANNER_HTML,
       });
       editor.BlockManager.add("ticking-clock-classic-block", {
         label: "Clock — Classic Analog",
-        category: "Extra",
+        category: "Clocks & Countdowns",
         content: TICKING_CLOCK_CLASSIC_HTML,
       });
       editor.BlockManager.add("ticking-clock-sweep-block", {
         label: "Clock — Radar Sweep",
-        category: "Extra",
+        category: "Clocks & Countdowns",
         content: TICKING_CLOCK_SWEEP_HTML,
       });
       editor.BlockManager.add("ticking-clock-orbit-block", {
         label: "Clock — Orbit Ring",
-        category: "Extra",
+        category: "Clocks & Countdowns",
         content: TICKING_CLOCK_ORBIT_HTML,
       });
       editor.BlockManager.add("ticking-clock-digital-block", {
         label: "Clock — Digital Blink",
-        category: "Extra",
+        category: "Clocks & Countdowns",
         content: TICKING_CLOCK_DIGITAL_HTML,
       });
+      const defaultTarget = new Date(Date.now() + 3 * 86400000).toISOString();
       editor.BlockManager.add("live-countdown-block", {
-        label: "Live Countdown (via image service)",
-        category: "Extra",
-        content: LIVE_COUNTDOWN_PLACEHOLDER_HTML,
+        label: "Live Countdown (self-hosted, real)",
+        category: "Clocks & Countdowns",
+        content: buildLiveCountdownBlockHtml(window.location.origin, defaultTarget, "Offer ends in"),
       });
       editor.BlockManager.add("form-link-block", {
         label: "Form (links out)",
@@ -462,6 +471,47 @@ export default function EmailBuilder({
             />
           </>
         )}
+      </div>
+
+      <div className="mt-4 bg-surface border border-line rounded-lg p-4">
+        <div className="text-sm text-ink font-medium">Live Countdown generator</div>
+        <p className="text-xs text-ink-faint mt-1.5 leading-relaxed max-w-2xl">
+          Genuinely live, self-hosted — no third-party account. Set your real deadline, copy the image URL below,
+          then paste it into the &quot;Live Countdown&quot; block&apos;s image (or any Image block): the number
+          this shows recalculates fresh every time a recipient opens the email, since caching is disabled on that
+          endpoint.
+        </p>
+        <div className="flex flex-wrap items-end gap-2 mt-3">
+          <div>
+            <label className="block text-[11px] text-ink-faint mb-1">Deadline</label>
+            <input
+              type="datetime-local"
+              value={countdownTarget}
+              onChange={(e) => setCountdownTarget(e.target.value)}
+              className="rounded-md border border-line bg-bg px-2 py-1.5 text-xs text-ink"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] text-ink-faint mb-1">Label text</label>
+            <input
+              value={countdownLabel}
+              onChange={(e) => setCountdownLabel(e.target.value)}
+              className="rounded-md border border-line bg-bg px-2 py-1.5 text-xs text-ink w-40"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              const iso = new Date(countdownTarget).toISOString();
+              const url = buildCountdownImageUrl(window.location.origin, iso, countdownLabel);
+              await navigator.clipboard.writeText(url);
+              setCountdownCopied(true);
+              setTimeout(() => setCountdownCopied(false), 2000);
+            }}
+            className="rounded-md bg-accent text-white text-xs font-medium px-3 py-1.5 hover:opacity-90"
+          >
+            {countdownCopied ? "Copied!" : "Copy image URL"}
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-danger mt-3">{error}</p>}

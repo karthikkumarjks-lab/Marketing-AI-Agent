@@ -11,10 +11,16 @@ const { auth } = NextAuth(authConfig);
 // Everything in this app requires a real login now — the whole point of
 // adding accounts was that a CRM holding real lead data shouldn't be
 // reachable by anyone with the URL. Only the auth machinery itself (the
-// login/signup pages, NextAuth's own API routes) and static assets stay
-// public; every other request without a valid session bounces to /login
-// with a callbackUrl so the user lands back where they were headed.
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth"];
+// login/signup pages, NextAuth's own API routes), static assets, and the
+// countdown-image endpoint stay public; every other request without a
+// valid session bounces to /login with a callbackUrl so the user lands
+// back where they were headed.
+//
+// /api/countdown-image is deliberately public: it's embedded as a real
+// <img> in emails sent to actual leads/customers, whose mail client has no
+// session cookie for this app at all — gating it behind login would just
+// make every recipient see a broken image.
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/api/auth", "/api/countdown-image"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
