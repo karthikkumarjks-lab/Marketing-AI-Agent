@@ -281,6 +281,14 @@ export default function EmailBuilder({
         fromElement: false,
         storageManager: false,
         plugins: [presetNewsletter],
+        // A real photo/banner upload (e.g. a full-width marketing image
+        // straight from a design tool) is typically far wider than this
+        // editor's canvas — without a default cap it renders at native
+        // pixel width and overflows instead of fitting. protectedCss is
+        // GrapesJS's own mechanism for base rules inside the canvas
+        // (its default already sets body margin: 0, box-sizing, etc.);
+        // this appends to that default rather than replacing it.
+        protectedCss: `* { box-sizing: border-box; } body {margin: 0;} img { max-width: 100%; height: auto; }`,
       });
 
       // Two extra blocks the newsletter preset doesn't ship: a real
