@@ -48,7 +48,7 @@ export default function NewWorkspacePage() {
         throw new Error(data.error || "Something went wrong.");
       }
       const data = await res.json();
-      router.push(`/workspaces/${data.id}/needs`);
+      router.push(`/workspaces/${data.id}/welcome`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
