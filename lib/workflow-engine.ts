@@ -16,6 +16,7 @@ import { parseCustomFields, parseTags, type LeadLite } from "@/lib/crm";
 import { runAgentLLM, type CompanyDNAInput, type BrandDNAInput } from "@/lib/agent-prompts";
 import { buildLeadContext } from "@/lib/crm";
 import { sendEmail } from "@/lib/mail";
+import { personalizeEmailHtml } from "@/lib/email-personalize";
 
 export type TriggerType = "lead_created" | "stage_changed" | "field_updated" | "tag_added";
 
@@ -162,7 +163,7 @@ async function executeAction(
         });
         return `Skipped "${template.name}" — lead has no email on file`;
       }
-      const personalizedHtml = template.htmlBody.replace(/\{\{\s*lead\.name\s*\}\}/g, leadRow.name);
+      const personalizedHtml = personalizeEmailHtml(template.htmlBody, leadRow);
       const result = await sendEmail({ to: leadRow.email, subject: template.subject, html: personalizedHtml });
       await prisma.leadActivity.create({
         data: {

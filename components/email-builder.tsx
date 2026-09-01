@@ -260,6 +260,8 @@ export default function EmailBuilder({
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<Component | null>(null);
   const [imageEditorOpen, setImageEditorOpen] = useState(false);
+  const [dynamicEnabled, setDynamicEnabled] = useState(false);
+  const [dynamicFieldKey, setDynamicFieldKey] = useState("");
   const defaultCountdownTarget = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16);
   const [countdownTarget, setCountdownTarget] = useState(defaultCountdownTarget);
   const [countdownLabel, setCountdownLabel] = useState("Offer ends in");
@@ -349,9 +351,17 @@ export default function EmailBuilder({
       }
 
       editor.on("component:selected", (component: Component) => {
-        setSelectedImage(component.get("type") === "image" ? component : null);
+        const isImage = component.get("type") === "image";
+        setSelectedImage(isImage ? component : null);
+        const fieldKey = isImage ? (component.getAttributes()["data-dynamic-field"] as string | undefined) : undefined;
+        setDynamicEnabled(!!fieldKey);
+        setDynamicFieldKey(fieldKey ?? "");
       });
-      editor.on("component:deselected", () => setSelectedImage(null));
+      editor.on("component:deselected", () => {
+        setSelectedImage(null);
+        setDynamicEnabled(false);
+        setDynamicFieldKey("");
+      });
 
       // The one thing that makes the AMP blocks different from every other
       // block in the panel: they never actually stay on the canvas. Same
@@ -478,11 +488,53 @@ export default function EmailBuilder({
       </div>
 
       {selectedImage && (
-        <div className="mt-2 flex items-center gap-2 bg-accent-soft border border-accent/30 rounded-md px-3 py-2 text-xs text-accent-ink">
-          <span>Image selected.</span>
-          <button onClick={() => setImageEditorOpen(true)} className="underline hover:no-underline font-medium">
-            Crop / rotate / apply effects
-          </button>
+        <div className="mt-2 bg-accent-soft border border-accent/30 rounded-md px-3 py-2 text-xs text-accent-ink">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>Image selected.</span>
+            <button onClick={() => setImageEditorOpen(true)} className="underline hover:no-underline font-medium">
+              Crop / rotate / apply effects
+            </button>
+            <span className="text-accent-ink/40">·</span>
+            <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+              <input
+                type="checkbox"
+                checked={dynamicEnabled}
+                onChange={(e) => {
+                  const enabled = e.target.checked;
+                  setDynamicEnabled(enabled);
+                  if (!enabled) {
+                    selectedImage.removeAttributes("data-dynamic-field");
+                    setDynamicFieldKey("");
+                  } else if (dynamicFieldKey) {
+                    selectedImage.addAttributes({ "data-dynamic-field": dynamicFieldKey });
+                  }
+                }}
+                className="accent-accent"
+              />
+              Dynamic image
+            </label>
+            {dynamicEnabled && (
+              <input
+                value={dynamicFieldKey}
+                onChange={(e) => {
+                  const key = e.target.value;
+                  setDynamicFieldKey(key);
+                  if (key) selectedImage.addAttributes({ "data-dynamic-field": key });
+                  else selectedImage.removeAttributes("data-dynamic-field");
+                }}
+                placeholder="lead custom field key, e.g. bannerImageUrl"
+                className="rounded border border-accent/30 bg-bg px-2 py-1 text-xs text-ink w-56"
+              />
+            )}
+          </div>
+          {dynamicEnabled && (
+            <p className="mt-1.5 text-[11px] text-accent-ink/70 leading-relaxed max-w-2xl">
+              Swaps this image per recipient at send time, from that lead&apos;s custom field with this key (set it
+              per lead in the CRM&apos;s Leads tab — same custom-fields system as everything else, nothing new to
+              learn). A lead with no value set for that field just keeps showing the current image you&apos;ve
+              uploaded here, which stays as the fallback — never a broken image.
+            </p>
+          )}
         </div>
       )}
       <div ref={canvasRef} className="border border-line rounded-lg overflow-hidden mt-2" />

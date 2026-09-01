@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUserId, userOwnsWorkspace } from "@/lib/authz";
 import { sendEmail } from "@/lib/mail";
 import { parseTags } from "@/lib/crm";
+import { personalizeEmailHtml } from "@/lib/email-personalize";
 
 // Bulk campaign send — same sendEmail() as the workflow action and test-send
 // use, just looped over a real recipient list from this workspace's leads.
@@ -29,7 +30,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json();
   const filter = body.recipientFilter ?? { type: "all" };
 
-  const leads = await prisma.lead.findMany({ where: { workspaceId }, select: { id: true, name: true, email: true, stageId: true, tags: true } });
+  const leads = await prisma.lead.findMany({
+    where: { workspaceId },
+    select: { id: true, name: true, email: true, company: true, customFields: true, stageId: true, tags: true },
+  });
   const targeted = leads.filter((lead) => {
     if (filter.type === "stage") return lead.stageId === filter.stageId;
     if (filter.type === "tag") return parseTags(lead.tags).includes(filter.tag);
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const lead = recipients[i];
     if (i > 0) await new Promise((r) => setTimeout(r, SEND_STAGGER_MS));
 
-    const personalizedHtml = template.htmlBody.replace(/\{\{\s*lead\.name\s*\}\}/g, lead.name);
+    const personalizedHtml = personalizeEmailHtml(template.htmlBody, lead);
     const result = await sendEmail({ to: lead.email!, subject: template.subject, html: personalizedHtml });
 
     if (result.ok) sent++;
