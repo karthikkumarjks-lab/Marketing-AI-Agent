@@ -100,31 +100,84 @@ const URGENCY_BANNER_HTML = `<table role="presentation" style="width:100%;backgr
   <div style="font-size:12px;color:#8a6d3b;margin-top:4px">Edit this date directly — there's no email technology (AMP included) that reliably ticks a live clock down for every recipient; a real live countdown needs a third-party countdown-image service (e.g. Sendtric, CountdownMail) generating a fresh image per open, which this app doesn't integrate.</div>
 </td></tr></table>`;
 
-// A genuinely animated clock, distinct from the static banner above —
-// real CSS @keyframes rotating the hands, not a fake claim of motion.
-// Two honest limits, stated in the block itself rather than discovered
-// later: (1) it's decorative perpetual motion, not synced to the
-// recipient's real time or a real deadline — CSS can't read a clock; (2)
-// Outlook desktop (Word rendering engine) does not run CSS animations at
-// all, so it always shows the hands frozen at their start position there
-// — every other major client (Apple/iOS Mail, Gmail, Yahoo, most webmail)
-// does animate it. Kept as a real <style> block on export (see
-// getFinalHtml's preserveKeyFrames) rather than inlined away, since an
-// inlined animation is not a valid CSS declaration.
-const TICKING_CLOCK_HTML = `<style>
-@keyframes email-clock-hour { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes email-clock-minute { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+// Four genuinely animated clock designs, distinct from the static banner
+// above — real CSS @keyframes driving each one, not a fake claim of
+// motion. Every design shares the same two honest limits, stated in each
+// block's own copy rather than discovered later: (1) it's decorative
+// perpetual motion, not synced to the recipient's real time or a real
+// deadline — CSS can't read a clock; (2) Outlook desktop (Word rendering
+// engine) does not run CSS animations at all, so it always shows the
+// frozen start frame there — every other major client (Apple/iOS Mail,
+// Gmail, Yahoo, most webmail) animates it. Each keeps its own uniquely
+// named keyframes (no shared names) so dropping more than one onto the
+// same canvas never has one design's animation clobber another's. Kept as
+// real <style> blocks on export (see getFinalHtml's preserveKeyFrames)
+// rather than inlined away, since a keyframe rule can't be inlined onto
+// an element.
+const CLOCK_DISCLOSURE =
+  "Decorative motion, not a synced real-time clock (no email technology can read the actual time). Animates in Apple/iOS Mail, Gmail, Yahoo, and most webmail — Outlook desktop shows it frozen since it doesn't run CSS animations at all.";
+
+const TICKING_CLOCK_CLASSIC_HTML = `<style>
+@keyframes email-clock-classic-hour { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes email-clock-classic-minute { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 <table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
   <div style="width:80px;height:80px;border:4px solid #2f6fed;border-radius:50%;margin:0 auto;position:relative;background:#fff">
-    <div style="position:absolute;left:50%;top:50%;width:2px;height:22px;background:#14181c;transform-origin:bottom center;margin-left:-1px;margin-top:-22px;animation:email-clock-hour 12s linear infinite"></div>
-    <div style="position:absolute;left:50%;top:50%;width:2px;height:30px;background:#2f6fed;transform-origin:bottom center;margin-left:-1px;margin-top:-30px;animation:email-clock-minute 3s linear infinite"></div>
+    <div style="position:absolute;left:50%;top:50%;width:2px;height:22px;background:#14181c;transform-origin:bottom center;margin-left:-1px;margin-top:-22px;animation:email-clock-classic-hour 12s linear infinite"></div>
+    <div style="position:absolute;left:50%;top:50%;width:2px;height:30px;background:#2f6fed;transform-origin:bottom center;margin-left:-1px;margin-top:-30px;animation:email-clock-classic-minute 3s linear infinite"></div>
   </div>
   <div style="font-size:14px;color:#14181c;margin-top:10px;font-weight:600">Don't miss out</div>
-  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto">
-    Decorative motion, not a synced real-time clock (no email technology can read the actual time). Animates in
-    Apple/iOS Mail, Gmail, Yahoo, and most webmail — Outlook desktop shows the hands frozen since it doesn't run
-    CSS animations at all.
+  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto">${CLOCK_DISCLOSURE}</div>
+</td></tr></table>`;
+
+const TICKING_CLOCK_SWEEP_HTML = `<style>
+@keyframes email-clock-sweep-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
+  <div style="width:80px;height:80px;border-radius:50%;margin:0 auto;position:relative;background:conic-gradient(#2f6fed 0deg, #dbe4f7 0deg);animation:email-clock-sweep-rotate 4s linear infinite">
+    <div style="position:absolute;inset:6px;border-radius:50%;background:#fff"></div>
+  </div>
+  <div style="font-size:14px;color:#14181c;margin-top:10px;font-weight:600">Time is running out</div>
+  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto">${CLOCK_DISCLOSURE}</div>
+</td></tr></table>`;
+
+const TICKING_CLOCK_ORBIT_HTML = `<style>
+@keyframes email-clock-orbit-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
+  <div style="width:80px;height:80px;border:6px solid #f5a623;border-radius:50%;margin:0 auto;position:relative;animation:email-clock-orbit-spin 2.5s linear infinite">
+    <div style="position:absolute;top:-6px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#2f6fed;border:2px solid #fff"></div>
+  </div>
+  <div style="font-size:14px;color:#14181c;margin-top:10px;font-weight:600">Hurry — offer closing</div>
+  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto">${CLOCK_DISCLOSURE}</div>
+</td></tr></table>`;
+
+const TICKING_CLOCK_DIGITAL_HTML = `<style>
+@keyframes email-clock-digital-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+</style>
+<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:monospace">
+  <div style="display:inline-block;background:#14181c;color:#fff;padding:14px 22px;border-radius:8px;font-size:28px;letter-spacing:2px">
+    23<span style="animation:email-clock-digital-blink 1s step-end infinite">:</span>59
+  </div>
+  <div style="font-size:14px;color:#14181c;margin-top:10px;font-weight:600;font-family:sans-serif">Ends soon</div>
+  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto;font-family:sans-serif">${CLOCK_DISCLOSURE} The digits themselves are static text — edit them directly for a specific deadline.</div>
+</td></tr></table>`;
+
+// The real, working technique for a countdown that's actually live and
+// accurate per recipient: a hosted image-generation service (Sendtric,
+// CountdownMail, MotionMail) that returns a freshly rendered GIF/PNG for
+// the exact moment the image is requested — which happens to be exactly
+// when the recipient opens the email. This app has no such service of its
+// own (that's real hosting infrastructure, not a code feature), so this
+// block is a clearly-marked placeholder image plus the exact steps to
+// swap in a real one, not a working countdown by itself.
+const LIVE_COUNTDOWN_PLACEHOLDER_HTML = `<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
+  <img src="https://placehold.co/320x90/2f6fed/ffffff?text=Replace+with+your+countdown+image+URL" alt="Live countdown placeholder" style="max-width:100%;border-radius:6px" />
+  <div style="font-size:11px;color:#8a9089;margin-top:6px;max-width:360px;margin-left:auto;margin-right:auto">
+    This is a placeholder. For a REAL live countdown, create one free at a service like Sendtric or CountdownMail
+    (set your deadline there), then double-click this image and replace its URL with the one they give you —
+    that image is regenerated fresh every time it's requested, so it counts down accurately for every recipient
+    no matter when they open the email.
   </div>
 </td></tr></table>`;
 
@@ -209,10 +262,30 @@ export default function EmailBuilder({
         category: "Extra",
         content: URGENCY_BANNER_HTML,
       });
-      editor.BlockManager.add("ticking-clock-block", {
-        label: "Ticking Clock (animated)",
+      editor.BlockManager.add("ticking-clock-classic-block", {
+        label: "Clock — Classic Analog",
         category: "Extra",
-        content: TICKING_CLOCK_HTML,
+        content: TICKING_CLOCK_CLASSIC_HTML,
+      });
+      editor.BlockManager.add("ticking-clock-sweep-block", {
+        label: "Clock — Radar Sweep",
+        category: "Extra",
+        content: TICKING_CLOCK_SWEEP_HTML,
+      });
+      editor.BlockManager.add("ticking-clock-orbit-block", {
+        label: "Clock — Orbit Ring",
+        category: "Extra",
+        content: TICKING_CLOCK_ORBIT_HTML,
+      });
+      editor.BlockManager.add("ticking-clock-digital-block", {
+        label: "Clock — Digital Blink",
+        category: "Extra",
+        content: TICKING_CLOCK_DIGITAL_HTML,
+      });
+      editor.BlockManager.add("live-countdown-block", {
+        label: "Live Countdown (via image service)",
+        category: "Extra",
+        content: LIVE_COUNTDOWN_PLACEHOLDER_HTML,
       });
       editor.BlockManager.add("form-link-block", {
         label: "Form (links out)",
