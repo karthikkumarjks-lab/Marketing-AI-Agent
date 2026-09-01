@@ -100,6 +100,34 @@ const URGENCY_BANNER_HTML = `<table role="presentation" style="width:100%;backgr
   <div style="font-size:12px;color:#8a6d3b;margin-top:4px">Edit this date directly — there's no email technology (AMP included) that reliably ticks a live clock down for every recipient; a real live countdown needs a third-party countdown-image service (e.g. Sendtric, CountdownMail) generating a fresh image per open, which this app doesn't integrate.</div>
 </td></tr></table>`;
 
+// A genuinely animated clock, distinct from the static banner above —
+// real CSS @keyframes rotating the hands, not a fake claim of motion.
+// Two honest limits, stated in the block itself rather than discovered
+// later: (1) it's decorative perpetual motion, not synced to the
+// recipient's real time or a real deadline — CSS can't read a clock; (2)
+// Outlook desktop (Word rendering engine) does not run CSS animations at
+// all, so it always shows the hands frozen at their start position there
+// — every other major client (Apple/iOS Mail, Gmail, Yahoo, most webmail)
+// does animate it. Kept as a real <style> block on export (see
+// getFinalHtml's preserveKeyFrames) rather than inlined away, since an
+// inlined animation is not a valid CSS declaration.
+const TICKING_CLOCK_HTML = `<style>
+@keyframes email-clock-hour { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes email-clock-minute { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+<table role="presentation" style="width:100%;margin:16px 0"><tr><td style="text-align:center;font-family:sans-serif">
+  <div style="width:80px;height:80px;border:4px solid #2f6fed;border-radius:50%;margin:0 auto;position:relative;background:#fff">
+    <div style="position:absolute;left:50%;top:50%;width:2px;height:22px;background:#14181c;transform-origin:bottom center;margin-left:-1px;margin-top:-22px;animation:email-clock-hour 12s linear infinite"></div>
+    <div style="position:absolute;left:50%;top:50%;width:2px;height:30px;background:#2f6fed;transform-origin:bottom center;margin-left:-1px;margin-top:-30px;animation:email-clock-minute 3s linear infinite"></div>
+  </div>
+  <div style="font-size:14px;color:#14181c;margin-top:10px;font-weight:600">Don't miss out</div>
+  <div style="font-size:11px;color:#8a9089;margin-top:4px;max-width:320px;margin-left:auto;margin-right:auto">
+    Decorative motion, not a synced real-time clock (no email technology can read the actual time). Animates in
+    Apple/iOS Mail, Gmail, Yahoo, and most webmail — Outlook desktop shows the hands frozen since it doesn't run
+    CSS animations at all.
+  </div>
+</td></tr></table>`;
+
 // A plain (non-AMP) forms block. Regular HTML email can't actually submit a
 // form in-inbox — Gmail/Outlook/Apple Mail all strip real <form>/<input>
 // interactivity out of ordinary HTML email; only AMP4EMAIL's amp-form
@@ -181,6 +209,11 @@ export default function EmailBuilder({
         category: "Extra",
         content: URGENCY_BANNER_HTML,
       });
+      editor.BlockManager.add("ticking-clock-block", {
+        label: "Ticking Clock (animated)",
+        category: "Extra",
+        content: TICKING_CLOCK_HTML,
+      });
       editor.BlockManager.add("form-link-block", {
         label: "Form (links out)",
         category: "Extra",
@@ -210,15 +243,19 @@ export default function EmailBuilder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function getFinalHtml(): string {
+  async function getFinalHtml(): Promise<string> {
     const editor = editorRef.current;
     if (!editor) return "";
     // Email clients strip/ignore <style> blocks unreliably — inline every
     // rule onto its element instead, the same juice library the newsletter
-    // preset itself already depends on for exactly this reason.
+    // preset itself already depends on for exactly this reason. Keyframes
+    // and media queries can't be inlined onto an element (they're not
+    // per-element rules), so those stay in a <style> block juice preserves
+    // — that's what lets the Ticking Clock block's animation survive.
     const html = editor.getHtml();
     const css = editor.getCss() ?? "";
-    return `<style>${css}</style>${html}`;
+    const { default: juice } = await import("juice");
+    return juice.inlineContent(html, css, { preserveKeyFrames: true, preserveMediaQueries: true, removeStyleTags: false });
   }
 
   async function handleSave() {
@@ -235,7 +272,7 @@ export default function EmailBuilder({
     const body = {
       name,
       subject,
-      htmlBody: getFinalHtml(),
+      htmlBody: await getFinalHtml(),
       designJson: JSON.stringify(editor.getProjectData()),
       isAmpEnabled: ampEnabled,
       ampBody: ampEnabled ? ampBody : null,
