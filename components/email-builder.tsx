@@ -100,6 +100,21 @@ const URGENCY_BANNER_HTML = `<table role="presentation" style="width:100%;backgr
   <div style="font-size:12px;color:#8a6d3b;margin-top:4px">Edit this date directly — there's no email technology (AMP included) that reliably ticks a live clock down for every recipient; a real live countdown needs a third-party countdown-image service (e.g. Sendtric, CountdownMail) generating a fresh image per open, which this app doesn't integrate.</div>
 </td></tr></table>`;
 
+// A plain (non-AMP) forms block. Regular HTML email can't actually submit a
+// form in-inbox — Gmail/Outlook/Apple Mail all strip real <form>/<input>
+// interactivity out of ordinary HTML email; only AMP4EMAIL's amp-form
+// genuinely submits without leaving the inbox (see the AMP snippet library
+// below). So this is styled as a form but works as a real link out to an
+// external form (Google Forms, Typeform, or a landing page this app builds
+// later) — the actual universal-compatibility technique, not a
+// non-functional decoration pretending otherwise.
+const FORM_LINK_BLOCK_HTML = `<table role="presentation" style="width:100%;background:#f5f7fb;border:1px solid #d7dce5;border-radius:6px;margin:12px 0"><tr><td style="padding:20px;text-align:center;font-family:sans-serif">
+  <div style="font-weight:600;color:#14181c;margin-bottom:6px">Quick question for you</div>
+  <div style="font-size:13px;color:#545c57;margin-bottom:14px">Takes less than a minute.</div>
+  <a href="https://forms.google.com/your-form-here" style="display:inline-block;background:#2f6fed;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600">Open the form</a>
+  <div style="font-size:11px;color:#8a9089;margin-top:10px">Opens in your browser — regular email can't run a real embedded form without AMP (see the AMP snippets below for one that can).</div>
+</td></tr></table>`;
+
 export interface EmailTemplateData {
   id: string;
   name: string;
@@ -162,9 +177,14 @@ export default function EmailBuilder({
         content: CALENDAR_BLOCK_HTML,
       });
       editor.BlockManager.add("countdown-block", {
-        label: "Countdown / Urgency Banner",
+        label: "Countdown Timer / Urgency Banner",
         category: "Extra",
         content: URGENCY_BANNER_HTML,
+      });
+      editor.BlockManager.add("form-link-block", {
+        label: "Form (links out)",
+        category: "Extra",
+        content: FORM_LINK_BLOCK_HTML,
       });
 
       editor.on("component:selected", (component: Component) => {
