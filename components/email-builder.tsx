@@ -86,6 +86,37 @@ const AMP_SNIPPETS = {
 </amp-carousel>`,
 } as const;
 
+// Real draggable blocks, same right-side panel as Calendar/Clocks/Forms —
+// but amp-* markup would be meaningless dropped into the regular (non-AMP)
+// HTML canvas, since it only means anything inside a full AMP4EMAIL
+// document. So each one is intercepted on drop (see the block:drag:stop
+// handler below): the component never actually stays on the canvas, its
+// snippet goes into the AMP textarea instead. Same drag gesture as every
+// other block, different, correct destination — not a dropdown, matching
+// how Clocks/Forms are just categories in the one panel, not selects.
+const AMP_SNIPPET_META: { key: keyof typeof AMP_SNIPPETS; label: string; media: string }[] = [
+  {
+    key: "survey",
+    label: "AMP: Survey",
+    media: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>`,
+  },
+  {
+    key: "rating",
+    label: "AMP: Star Rating",
+    media: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5 14.5 9l6 .8-4.3 4.1 1 5.9L12 17l-5.2 2.8 1-5.9L3.5 9.8l6-.8Z"/></svg>`,
+  },
+  {
+    key: "rsvp",
+    label: "AMP: RSVP Form",
+    media: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="1.5"/><path d="M3 9h18M8 3v4M16 3v4m-7.5 8 2 2 4-4"/></svg>`,
+  },
+  {
+    key: "carousel",
+    label: "AMP: Carousel",
+    media: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="7" y="5" width="14" height="14" rx="1.5"/><rect x="3" y="9" width="4" height="10" rx="1" opacity="0.5"/><path d="m10 15 3-3 4 4"/></svg>`,
+  },
+];
+
 const CALENDAR_BLOCK_HTML = `<table role="presentation" style="margin:12px 0"><tr>
   <td style="padding-right:8px">
     <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Your+Event+Title&dates=20261215T180000Z/20261215T200000Z&details=Event+details+here&location=Location+here" style="display:inline-block;background:#2f6fed;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-family:sans-serif;font-size:14px">+ Add to Google Calendar</a>
@@ -229,7 +260,6 @@ export default function EmailBuilder({
   const [testStatus, setTestStatus] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<Component | null>(null);
   const [imageEditorOpen, setImageEditorOpen] = useState(false);
-  const [ampSnippet, setAmpSnippet] = useState("");
   const defaultCountdownTarget = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 16);
   const [countdownTarget, setCountdownTarget] = useState(defaultCountdownTarget);
   const [countdownLabel, setCountdownLabel] = useState("Offer ends in");
@@ -301,11 +331,33 @@ export default function EmailBuilder({
         category: "Extra",
         content: FORM_LINK_BLOCK_HTML,
       });
+      for (const meta of AMP_SNIPPET_META) {
+        editor.BlockManager.add(`amp-snippet-${meta.key}`, {
+          label: meta.label,
+          category: "AMP Interactive",
+          media: meta.media,
+          content: `<div>${AMP_SNIPPETS[meta.key]}</div>`,
+        });
+      }
 
       editor.on("component:selected", (component: Component) => {
         setSelectedImage(component.get("type") === "image" ? component : null);
       });
       editor.on("component:deselected", () => setSelectedImage(null));
+
+      // The one thing that makes the AMP blocks different from every other
+      // block in the panel: they never actually stay on the canvas. Same
+      // drag gesture, different destination — the component gets pulled
+      // right back out and its real snippet goes into the AMP textarea,
+      // since amp-* tags are meaningless mixed into the regular HTML body.
+      editor.on("block:drag:stop", (component: Component | undefined, block: { getId: () => string }) => {
+        const id = block?.getId?.() ?? "";
+        if (!id.startsWith("amp-snippet-")) return;
+        component?.remove();
+        const key = id.replace("amp-snippet-", "") as keyof typeof AMP_SNIPPETS;
+        setAmpEnabled(true);
+        setAmpBody((prev) => `${prev}\n\n${AMP_SNIPPETS[key]}`);
+      });
 
       if (template?.designJson && template.designJson !== "{}") {
         try {
@@ -440,36 +492,19 @@ export default function EmailBuilder({
           support transmitting an AMP payload yet. This editor still lets you build and export valid AMP4EMAIL
           markup for a provider that does (SendGrid, Braze, SparkPost) or to validate independently. Full
           gamification (spin-to-win, scratch cards) needs bespoke per-brand work beyond what a generic snippet can
-          give you, so it isn&apos;t included below.
+          give you, so it isn&apos;t included below. Drag one of the "AMP Interactive" blocks from the panel on
+          the right — Survey, Star Rating, RSVP Form, Carousel — the same drag-and-drop as any other block; it
+          lands here in the markup below instead of the canvas above, since amp-* components only mean anything
+          inside a real AMP4EMAIL document, not mixed into ordinary HTML.
         </p>
         {ampEnabled && (
-          <>
-            <div className="flex items-center gap-2 mt-3">
-              <select
-                value={ampSnippet}
-                onChange={(e) => {
-                  const key = e.target.value as keyof typeof AMP_SNIPPETS | "";
-                  if (key) setAmpBody((prev) => `${prev}\n\n${AMP_SNIPPETS[key]}`);
-                  setAmpSnippet("");
-                }}
-                className="rounded-md border border-line bg-bg px-2 py-1.5 text-xs text-ink"
-              >
-                <option value="">Insert a real AMP snippet…</option>
-                <option value="survey">Survey (NPS-style)</option>
-                <option value="rating">Star rating</option>
-                <option value="rsvp">RSVP form</option>
-                <option value="carousel">Image carousel</option>
-              </select>
-              <span className="text-[11px] text-ink-faint">Each needs its own action-xhr endpoint filled in — placeholders are marked.</span>
-            </div>
-            <textarea
-              value={ampBody}
-              onChange={(e) => setAmpBody(e.target.value)}
-              rows={10}
-              spellCheck={false}
-              className="mt-3 w-full rounded-md border border-line bg-bg px-3 py-2 text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-accent/40"
-            />
-          </>
+          <textarea
+            value={ampBody}
+            onChange={(e) => setAmpBody(e.target.value)}
+            rows={10}
+            spellCheck={false}
+            className="mt-3 w-full rounded-md border border-line bg-bg px-3 py-2 text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-accent/40"
+          />
         )}
       </div>
 
