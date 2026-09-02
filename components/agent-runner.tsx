@@ -24,7 +24,12 @@ const CHART_COLORS = ["#2f6fed", "#1a4fc4", "#e0900a", "#d1483f", "#52627a", "#8
 function parseChartSpec(raw: string): ChartSpec | null {
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.data) || parsed.data.length === 0) return null;
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.data)) return null;
+    // A chart exists to compare things — a single bar/slice/point isn't a
+    // comparison and is less useful than no chart at all. The prompt now
+    // tells the agent not to emit one of these, but this is the backstop:
+    // an older cached run (or any model slip-up) still won't render one.
+    if (parsed.data.length < 2) return null;
     if (!["bar", "line", "pie"].includes(parsed.type)) return null;
     return parsed as ChartSpec;
   } catch {
@@ -151,7 +156,13 @@ export default function AgentRunner({
       setPredictedOutcome("");
       setFile(null);
       setRunNote("");
-      setCompetitorUrl("");
+      // competitorUrl is deliberately NOT cleared — clearing it caused a
+      // real bug: re-running Market Research (e.g. to refresh after the
+      // competitors' sites changed) silently dropped back to a single-site
+      // "comparison" with no competitors, because the field the user had
+      // just filled in was wiped after the first run. Kept prefilled like
+      // websiteUrl already is, so a re-run compares the same sites unless
+      // the user deliberately changes them.
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Run failed.");

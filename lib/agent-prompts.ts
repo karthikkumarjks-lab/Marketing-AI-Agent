@@ -158,7 +158,7 @@ Who the players are (by category), the value chain, how buyers actually decide.
 ## Live Crawl: Us vs. Named Competitors
 A markdown table with one row per site (client + each competitor), columns: Site | Pages Found | Load Time | CTAs | Forms | Live Chat | Trust Signals (#) | Conversion Readiness Score. Every cell must be short — a number, "yes"/"no", or a couple of words. Use the COUNT of trust signals in that cell (e.g. "5"), never the full list — list which specific trust signals were found in the prose paragraphs below the table instead. Do not let any single cell run long; a table is a scan aid, not where you reproduce a full list. Then a paragraph per competitor naming the EXACT, specific gap vs. the client — cite the real numbers, not adjectives.
 
-Immediately after the table, include one fenced \`\`\`chart code block (see Chart blocks below) — a bar chart of Conversion Readiness Score by site name.
+Immediately after the table, include one fenced \`\`\`chart code block (see Chart blocks below) — a bar chart of Conversion Readiness Score by site name. IMPORTANT: only include this chart if the Live Site Crawl data contains 2 or more real, successfully-scanned sites (the client plus at least one competitor). If no competitor URL was crawled this run, skip the chart entirely and say so plainly instead ("no competitor URLs were entered for this run — add one or more to see a real comparison") — a bar chart with a single bar is not a comparison and must never be produced.
 
 ## Why We're Not Converting
 The specific, evidenced reasons — each one must trace back to either a real crawl signal (missing CTA, no live chat, slow load time, no trust signals, not mobile-responsive) or a real CRM number (low win rate on a specific source) from the data provided. Rank by likely impact. This is the section the client is paying for — do not pad it with generic CRO advice that isn't tied to this client's actual real data.
@@ -172,11 +172,11 @@ One subsection per named competitor (\`### Competitor Name\`) with short bullets
 ## What to Validate
 Every "(validate)"-tagged claim collected in one list, so the client knows exactly what still needs primary research.
 
-Chart blocks: whenever a comparison has 2+ numeric data points, include a fenced code block with language "chart" containing ONLY valid JSON, e.g.:
+Chart blocks: a chart's whole purpose here is comparison, so every chart needs 2+ real, distinct data points (2+ sites, 2+ sources, 2+ time periods) — never emit a chart with only 1 data point, that is not a comparison and is worse than no chart at all. When you do have 2+ points, include a fenced code block with language "chart" containing ONLY valid JSON, e.g.:
 \`\`\`chart
 {"type":"bar","title":"Conversion Readiness Score by Site","data":[{"name":"Us (onlinemanipal.com)","value":45},{"name":"Competitor A","value":72}]}
 \`\`\`
-Valid "type" values: "bar", "line", "pie". Use "bar" for the readiness-score comparison. Include at least the readiness-score chart; add a second chart (e.g. market-share or CTA-count comparison) if you have real numbers for it. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data.`,
+Valid "type" values: "bar", "line", "pie". Use "bar" for the readiness-score comparison. Add a second chart (e.g. market-share or CTA-count comparison) if you have real numbers for it, subject to the same 2+ points rule. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data.`,
 
   "icp-intelligence": `You are the Customer / ICP Intelligence Agent inside a marketing operations platform. You are a customer-research specialist who builds personas that performance and content teams can actually use, across industries and markets.
 
