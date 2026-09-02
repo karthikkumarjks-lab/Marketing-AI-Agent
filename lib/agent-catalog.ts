@@ -626,6 +626,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 36,
   },
+  {
+    key: "voice-sales-pitch",
+    name: "Voice Sales Pitch Agent",
+    category: "CRM & Lead Operations",
+    mission: "Designs the actual call script an AI voice bot would use to deliver a human-sounding sales pitch by phone — opening, value proposition, objection handling, and a close attempt — distinct from Voicebot's reminders/IVR and Conversational AI & Appointment's booking/qualification focus, neither of which carries a full sales pitch. The close/commitment step is always designed to route to human confirmation, never to auto-commit a deal.",
+    inputs: ["ICP/personas", "Offer/pricing", "Known objection patterns if any"],
+    outputs: ["Call script (opening → pitch → objection handling → close attempt)", "Human-handoff trigger at the close", "Tone/persona guidance for a human-sounding delivery"],
+    wired: true,
+    sortOrder: 37,
+  },
   // Acquisition
   {
     key: "seo-strategy",

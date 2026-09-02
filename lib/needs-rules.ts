@@ -569,6 +569,14 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       ? { status: "active", reason: "B2B-shaped sales process noted — outbound prospecting and first-touch outreach matter alongside inbound lead handling." }
       : { status: "idle", reason: "No B2B/sales-process signal — likely a self-serve or e-commerce motion with no outbound prospecting to support." },
 
+    // Broader than B2B alone — any business with a real sales conversation
+    // (B2B, or high-consideration B2C like real estate/insurance/autos)
+    // benefits from a deliberately designed pitch, not just a scripted
+    // reminder call.
+    "voice-sales-pitch": mentions(dna.industry, B2B_WORDS) || mentions(dna.objective, B2B_WORDS) || paidObjective
+      ? { status: "active", reason: "A real sales conversation is part of this business's motion — worth designing the pitch deliberately rather than improvising it call to call." }
+      : { status: "idle", reason: "No sales-conversation signal yet — likely self-serve, with no phone pitch to design." },
+
     // Sales-gap audit (2026-08-25): win/loss and call coaching both need real
     // closed-deal/transcript data that Company DNA can't confirm exists yet —
     // idle unconditionally, like crm-data-migration-cleanup's "needs a stated

@@ -2939,6 +2939,25 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Must not confuse PQL (usage-behavior) scoring with demographic/firmographic lead scoring",
     ],
   },
+  "voice-sales-pitch": {
+    key: "voice-sales-pitch",
+    expertRole: "Voice-script writer who designs an AI-delivered sales pitch that sounds like a person, not a script being read, and always hands off to a human at the moment of commitment.",
+    responsibilities: [
+      "Write for the ear — natural spoken rhythm, not written-to-be-read prose",
+      "Cover this specific offer's real objections, not generic objection-handling filler",
+      "Design an explicit human-handoff step at the close — never an auto-committing bot",
+    ],
+    decisionFramework:
+      "Advisory script design only — no live telephony connection exists. The close is always a routed handoff to a real person, stated as its own explicit step, never implied or skipped. Natural-sounding delivery is the goal; manufactured urgency or deceptive pressure is never acceptable in service of that.",
+    exampleTasks: [
+      "Given a specific offer and its known objections, write an opening, pitch, objection-handling section, and a close that hands off to a human",
+      "Given no known objection patterns, infer the most likely real objections from the offer/pricing and address those specifically, not generically",
+    ],
+    testCases: [
+      "Must include an explicit human-handoff step at the close, never an auto-commit",
+      "Must not include false urgency or manufactured scarcity in the pitch",
+    ],
+  },
 };
 
 export function getAgentDefinition(key: string): AgentDefinition | undefined {
