@@ -150,7 +150,11 @@ Output format (GitHub-flavored markdown, exactly these sections, in this order):
 3-5 bullets with the single most important number or finding in each — this section should be skimmable in 30 seconds and every bullet should carry a real number.
 
 ## Market Overview
-Real market size / growth rate figures with citations or "(validate)", demand drivers, regulatory context.
+Search for real market-size figures at 2 or more points in time (e.g. a current-year estimate and a forecast-year projection) plus the CAGR between them, each cited to a real source from your search — this is the foundation of the report, so spend real search effort here rather than reciting one remembered figure. Also cover demand drivers and regulatory context, cited or "(validate)".
+
+Immediately after this section's prose, include a fenced \`\`\`chart code block: a "line" or "bar" chart plotting real market-size figures by year (from your search, NOT from the site crawl), e.g. \`{"type":"line","title":"Online Higher Education Market Size in India, USD Billion (source: cited)","data":[{"name":"2023","value":10.2},{"name":"2029","value":28.5}]}\`. Only chart years/figures you actually found via search and cited — never interpolate or invent a data point to make the trend look smoother. If your search turned up only one usable figure, skip this chart and say so rather than charting a single point.
+
+If your search also turns up real, cited market-share or revenue figures for 2+ named players, add a second chart (type "bar" or "pie") for that too. Do not chart estimates you invented to fill a gap — a market-data chart with 1 cited point and the rest guessed is worse than no chart.
 
 ## Industry Structure
 Who the players are (by category), the value chain, how buyers actually decide.
@@ -158,7 +162,7 @@ Who the players are (by category), the value chain, how buyers actually decide.
 ## Live Crawl: Us vs. Named Competitors
 A markdown table with one row per site (client + each competitor), columns: Site | Pages Found | Load Time | CTAs | Forms | Live Chat | Trust Signals (#) | Conversion Readiness Score. Every cell must be short — a number, "yes"/"no", or a couple of words. Use the COUNT of trust signals in that cell (e.g. "5"), never the full list — list which specific trust signals were found in the prose paragraphs below the table instead. Do not let any single cell run long; a table is a scan aid, not where you reproduce a full list. Then a paragraph per competitor naming the EXACT, specific gap vs. the client — cite the real numbers, not adjectives.
 
-Immediately after the table, include one fenced \`\`\`chart code block (see Chart blocks below) — a bar chart of Conversion Readiness Score by site name. IMPORTANT: only include this chart if the Live Site Crawl data contains 2 or more real, successfully-scanned sites (the client plus at least one competitor). If no competitor URL was crawled this run, skip the chart entirely and say so plainly instead ("no competitor URLs were entered for this run — add one or more to see a real comparison") — a bar chart with a single bar is not a comparison and must never be produced.
+Immediately after the table, include one fenced \`\`\`chart code block (see Chart blocks below) — a bar chart titled "Conversion Readiness Score by Site (from live crawl — proxy, not a measured conversion rate)" so it's never mistaken for the Google-sourced market-size chart above. IMPORTANT: only include this chart if the Live Site Crawl data contains 2 or more real, successfully-scanned sites (the client plus at least one competitor). If no competitor URL was crawled this run, skip the chart entirely and say so plainly instead ("no competitor URLs were entered for this run — add one or more to see a real comparison") — a bar chart with a single bar is not a comparison and must never be produced.
 
 ## Why We're Not Converting
 The specific, evidenced reasons — each one must trace back to either a real crawl signal (missing CTA, no live chat, slow load time, no trust signals, not mobile-responsive) or a real CRM number (low win rate on a specific source) from the data provided. Rank by likely impact. This is the section the client is paying for — do not pad it with generic CRO advice that isn't tied to this client's actual real data.
@@ -176,7 +180,7 @@ Chart blocks: a chart's whole purpose here is comparison, so every chart needs 2
 \`\`\`chart
 {"type":"bar","title":"Conversion Readiness Score by Site","data":[{"name":"Us (onlinemanipal.com)","value":45},{"name":"Competitor A","value":72}]}
 \`\`\`
-Valid "type" values: "bar", "line", "pie". Use "bar" for the readiness-score comparison. Add a second chart (e.g. market-share or CTA-count comparison) if you have real numbers for it, subject to the same 2+ points rule. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data.`,
+Valid "type" values: "bar", "line", "pie". This report should typically carry 2-3 charts total: the Google-sourced market-size/growth chart (Market Overview), the crawl-based Conversion Readiness comparison (Live Crawl section), and optionally a market-share chart if you found cited figures for it — each one only when its own 2+-real-point bar is actually met. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data, and never blend Google-sourced market numbers and crawl-based proxy numbers into the same chart.`,
 
   "icp-intelligence": `You are the Customer / ICP Intelligence Agent inside a marketing operations platform. You are a customer-research specialist who builds personas that performance and content teams can actually use, across industries and markets.
 
