@@ -33,6 +33,7 @@ import {
   MARKET_RESEARCH_MULTI_SITE_AGENTS,
   buildMarketCrawlContext,
   type ScannedSite,
+  SINGLE_RUN_AGENTS,
 } from "@/lib/agent-prompts";
 import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
 import { computeCampaignQaSnapshot } from "@/lib/campaign-qa";
@@ -568,6 +569,16 @@ export async function POST(req: NextRequest) {
       model: result.model,
     },
   });
+
+  // Market Research (and any future SINGLE_RUN_AGENTS): a re-run replaces
+  // the last report rather than accumulating a history — real-world market
+  // conditions and competitor sites move on, so an old report isn't a
+  // useful comparison point the way most agents' run history is.
+  if (SINGLE_RUN_AGENTS.has(agentKey)) {
+    await prisma.agentRun.deleteMany({
+      where: { workspaceId, agentId: agent.id, id: { not: run.id } },
+    });
+  }
 
   if (leadId) {
     await prisma.leadActivity.create({

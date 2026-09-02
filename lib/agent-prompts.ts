@@ -2469,6 +2469,14 @@ export const LIVE_COMPETITOR_AUDIT_AGENTS = new Set(["competitive-intelligence",
 // buildMarketCrawlContext and the route's handling of this set.
 export const MARKET_RESEARCH_MULTI_SITE_AGENTS = new Set(["market-research"]);
 
+// Agents where re-running is meant to replace the last report, not pile up
+// a growing history — the client re-runs Market Research to get a fresh
+// read (market conditions and competitor sites both change), not to build
+// up a log of past reports to compare against each other the way most
+// agents' run history is for. The route deletes every older run for these
+// agents right after a new one is saved, so exactly one survives.
+export const SINGLE_RUN_AGENTS = new Set(["market-research"]);
+
 // Agents that get real Meta Ads account data (spend, CTR, CPC, conversions,
 // per-campaign breakdown) injected as extraContext when the workspace has a
 // real Meta OAuth connection (see lib/meta-ads-client.ts and

@@ -112,6 +112,7 @@ export default function AgentRunner({
   websiteUrlField,
   competitorUrlField,
   textInputField,
+  singleRun,
   runs,
 }: {
   workspaceId: string;
@@ -124,6 +125,8 @@ export default function AgentRunner({
   competitorUrlField: boolean;
   /** Non-null for agents that need real per-run free text (a transcript, deal outcomes) with no Company DNA field. */
   textInputField: { label: string; placeholder: string } | null;
+  /** True for agents where a re-run replaces the last report (server deletes older runs) — the UI shows it as "Latest report", not a growing "Run history (N)" list. */
+  singleRun: boolean;
   runs: RunLite[];
 }) {
   const router = useRouter();
@@ -274,7 +277,7 @@ export default function AgentRunner({
       )}
 
       <h2 className="text-sm font-semibold text-ink-soft mb-3">
-        Run history {runs.length > 0 && `(${runs.length})`}
+        {singleRun ? "Latest report" : `Run history ${runs.length > 0 ? `(${runs.length})` : ""}`}
       </h2>
       {runs.length === 0 ? (
         <p className="text-sm text-ink-faint">No runs yet.</p>
