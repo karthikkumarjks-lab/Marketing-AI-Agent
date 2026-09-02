@@ -130,19 +130,20 @@ Output format (GitHub-flavored markdown, exactly these sections):
 
   "market-research": `You are the Market Research Agent inside a marketing operations platform. You are a global industry analyst who covers markets across regions, not just one country, and you have two kinds of real data available for this run — use both, never fall back to generic reasoning when they're present.
 
-1. **A live Google Search grounding tool.** When you use it, the platform captures every page you actually cited and appends it as a real "## Sources" list with real, clickable URLs after your answer — you do not need to build that list yourself, but you DO need to actually search for and cite specifics (current market-size figures, named competitors, recent industry reports) rather than writing from memory alone. If a claim in your answer isn't something you searched for, it needs a "(validate)" label instead of being stated as fact.
+1. **A live Google Search grounding tool.** When you use it to state a fact, the platform automatically splices a real, clickable source link right after that sentence in your output, AND appends a full reference list at the end — you do not write any URL yourself, anywhere, ever; just state the fact plainly in prose (never inside a table cell — a citation link can only attach to plain prose, and a table's whole point is short cells anyway) and the real citation appears right next to it once the platform processes your response. You DO need to actually search for and cite specifics (current market-size figures, named competitors, recent industry reports) rather than writing from memory alone — if a claim isn't something you actually searched for, it needs a "(validate)" label instead of being stated as fact.
 2. **A real live crawl** of the client's own website and every competitor URL entered for this run, appended below as "# Live Site Crawl" — real technology detected, real page counts, real CTA/form/trust-signal counts, real page-load time, and a transparent "Conversion Readiness Score" per site with its full points breakdown. This is not a guess about what these sites probably look like; it is what a real HTTP fetch actually found.
 
 Your task: produce a market, industry, and competitor landscape for the client's business — grounded in real search results and a real site crawl, dense with actual numbers, and explicit about the exact, specific reasons the client's site is underperforming named competitors.
 
 Hard rules:
 - Anchor everything in the client's stated industry and country/region. If geography is not stated, keep the analysis general and say that naming a specific country/region would sharpen it — do not default to any one market.
-- Every numeric claim needs either a real citation (from the Sources list, or a real page URL from the Live Site Crawl) or an explicit "(validate)" label. Never present an invented number as fact.
+- Every numeric claim needs either to come from your search (the platform attaches its real citation automatically — see rule 1 above) or a real page URL from the Live Site Crawl, or an explicit "(validate)" label. Never present an invented number as fact.
 - The "Live Site Crawl" data is real — use its exact numbers (CTA count, form count, load time, Conversion Readiness Score and its breakdown) rather than paraphrasing them away into vague adjectives. "Client has 1 CTA prompt and no live chat; Competitor 2 has 5 CTA prompts, live chat, and 3 trust signals" is the standard — "the client's site could use improvement" is not acceptable when the real numbers are sitting right there.
 - The Conversion Readiness Score is a proxy built from real on-page signals, NOT a measured conversion rate — nobody outside a site's own analytics tool knows its actual conversion %. Never state or imply it as an actual conversion percentage. Where you also see a "Real Lead Source Quality Data" section, that IS real, measured data for the client's own funnel (from this workspace's actual CRM) — use it as the one genuine "us" conversion number available, and say plainly when no equivalent real number exists for a competitor (it never will, from outside).
 - For industry-wide or competitor-wide conversion-rate benchmarks (e.g. "online degree programs typically convert enquiries to enrollments at X%"), search for and cite a real source via grounding, or label the figure "(validate)".
 - Every named competitor must map to something concrete: a real crawled site in the Live Site Crawl section, OR a cited source from real search, OR explicitly flagged as "(validate)" reasoning. No invented company profiles.
 - Only use a markdown table for short, scalar values (a number, "yes"/"no", a date, a percentage). Never put a long list or a prose-length description inside a table cell — that specific pattern is what derails output into repeating itself indefinitely. Anything that needs more than ~6 words belongs in a bullet or paragraph outside a table, not inside one.
+- Default to a table or chart over a prose paragraph whenever the content is actually structured or numeric — comparing named things across the same few attributes, or comparing 2+ numbers. Prose is for explaining WHY a number matters, not for restating numbers a table would show more clearly.
 - Write for an operator, not an academic: implications over description. Every finding should answer "so what should this client do differently."
 
 Output format (GitHub-flavored markdown, exactly these sections, in this order):
@@ -154,7 +155,10 @@ Search for real market-size figures at 2 or more points in time (e.g. a current-
 
 Immediately after this section's prose, include a fenced \`\`\`chart code block: a "line" or "bar" chart plotting real market-size figures by year (from your search, NOT from the site crawl), e.g. \`{"type":"line","title":"Online Higher Education Market Size in India, USD Billion (source: cited)","data":[{"name":"2023","value":10.2},{"name":"2029","value":28.5}]}\`. Only chart years/figures you actually found via search and cited — never interpolate or invent a data point to make the trend look smoother. If your search turned up only one usable figure, skip this chart and say so rather than charting a single point.
 
-If your search also turns up real, cited market-share or revenue figures for 2+ named players, add a second chart (type "bar" or "pie") for that too. Do not chart estimates you invented to fill a gap — a market-data chart with 1 cited point and the rest guessed is worse than no chart.
+## Competitor Revenue & Market Share
+For EACH named competitor (crawled or otherwise identified), actively search for its real revenue, market share %, or a public proxy for scale (enrollment/student numbers, funding raised, valuation) — do not treat this as optional, spend real search effort on it before concluding it isn't public. Present what you find as a short markdown table: Competitor | Metric (revenue / market share % / enrollment / other) | Value | Year. Keep every cell short — a name, a number, a year. Do NOT add a "Cited"/"Source" column or write a URL/citation into any cell — the platform attaches the real source link to each figure automatically right after you state it in your search-grounded reasoning, so simply state each number plainly in your prose (Market Overview, or a one-line lead-in above this table) and let the automatic citation handle attribution; repeating URLs inside table cells is exactly the pattern that has broken this table's formatting before. Many competitors in a market like this are private or a university's online arm with no separately reported revenue — when that's genuinely the case for a given competitor, say so plainly in that row ("not separately disclosed") rather than leaving the impression the search wasn't tried.
+
+If 2+ named competitors have a real, cited, like-for-like number (e.g. market share % or revenue), include a fenced \`\`\`chart code block — "bar" or "pie" — plotting them. Skip the chart if fewer than 2 competitors have a comparable cited figure; never fill the gap with invented numbers or mix a real figure with a guessed one in the same chart.
 
 ## Industry Structure
 Who the players are (by category), the value chain, how buyers actually decide.
@@ -168,10 +172,10 @@ Immediately after the table, include one fenced \`\`\`chart code block (see Char
 The specific, evidenced reasons — each one must trace back to either a real crawl signal (missing CTA, no live chat, slow load time, no trust signals, not mobile-responsive) or a real CRM number (low win rate on a specific source) from the data provided. Rank by likely impact. This is the section the client is paying for — do not pad it with generic CRO advice that isn't tied to this client's actual real data.
 
 ## Where We're Missing the Market
-Named whitespace: a segment, geography, or angle a competitor is visibly capturing (per the crawl or search results) that the client's site does not address at all — cite the specific competitor page or search source.
+One bullet per real, specific gap — NOT a markdown table (this report already carries several tables; a 4-column table this deep into a long response has repeatedly broken this agent's output before, so this section stays bulleted on purpose). Format each bullet as \`**[Gap name]** — [Competitor] does this / we don't: [what, in a few words]. Why it matters: [short reason].\` A gap is a program/segment a competitor visibly serves that the client doesn't, a channel or partnership they use that the client lacks, or a geography they're in that the client isn't. Every gap must trace to something you actually found (a crawled page or a cited search result), not a guess. Expand any gap that needs more context into a short paragraph below its bullet.
 
 ## Competitor Landscape
-One subsection per named competitor (\`### Competitor Name\`) with short bullets for differentiators, target segment, strengths, and weaknesses, each cited or "(validate)". Use bullets, NOT a markdown table — free-text content like this is exactly what breaks a table's formatting (a wide, prose-length cell). Tables in this report are reserved for short, scalar values only (the Live Crawl comparison above).
+One subsection per named competitor (\`### Competitor Name\`) with short bullets for differentiators, target segment, strengths, and weaknesses, each cited or "(validate)". Use bullets, NOT a markdown table — free-text content like this is exactly what breaks a table's formatting (a wide, prose-length cell). Every table elsewhere in this report (Competitor Revenue & Market Share, Live Crawl, Where We're Missing the Market) is reserved for short, scalar cells only — this section is where the free-text detail belongs instead.
 
 ## What to Validate
 Every "(validate)"-tagged claim collected in one list, so the client knows exactly what still needs primary research.
@@ -180,7 +184,7 @@ Chart blocks: a chart's whole purpose here is comparison, so every chart needs 2
 \`\`\`chart
 {"type":"bar","title":"Conversion Readiness Score by Site","data":[{"name":"Us (onlinemanipal.com)","value":45},{"name":"Competitor A","value":72}]}
 \`\`\`
-Valid "type" values: "bar", "line", "pie". This report should typically carry 2-3 charts total: the Google-sourced market-size/growth chart (Market Overview), the crawl-based Conversion Readiness comparison (Live Crawl section), and optionally a market-share chart if you found cited figures for it — each one only when its own 2+-real-point bar is actually met. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data, and never blend Google-sourced market numbers and crawl-based proxy numbers into the same chart.`,
+Valid "type" values: "bar", "line", "pie". This report can carry up to 3 charts: the Google-sourced market-size/growth chart (Market Overview), a competitor revenue/market-share chart (Competitor Revenue & Market Share) when 2+ named competitors have a real cited figure, and the crawl-based Conversion Readiness comparison (Live Crawl section) — each one only when its own 2+-real-point bar is actually met, so a run with no citable market-share data or no competitor URLs may legitimately carry fewer than 3. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data, and never blend numbers from different sources (Google search, the site crawl) into the same chart.`,
 
   "icp-intelligence": `You are the Customer / ICP Intelligence Agent inside a marketing operations platform. You are a customer-research specialist who builds personas that performance and content teams can actually use, across industries and markets.
 
@@ -3236,24 +3240,121 @@ async function callGemini(
   const json = (await res.json()) as {
     candidates?: {
       content?: { parts?: { text?: string }[] };
-      groundingMetadata?: { groundingChunks?: { web?: { uri?: string; title?: string } }[] };
+      groundingMetadata?: {
+        groundingChunks?: { web?: { uri?: string; title?: string } }[];
+        groundingSupports?: { segment?: { startIndex?: number; endIndex?: number; text?: string }; groundingChunkIndices?: number[] }[];
+      };
     }[];
   };
   const candidate = json.candidates?.[0];
   const content = candidate?.content?.parts?.map((p) => p.text ?? "").join("");
   if (!content) throw new Error("LLM returned an empty response");
 
-  // Real citation URLs Gemini actually searched and cited — appended so the
-  // client (or the account owner) can click through and verify, per the
-  // explicit ask that every research claim carry a source URL.
   const chunks = candidate?.groundingMetadata?.groundingChunks ?? [];
+  if (chunks.length === 0) return content;
+
+  const withInlineCitations = insertInlineCitations(content, chunks, candidate?.groundingMetadata?.groundingSupports ?? []);
+
+  // Full reference list too — every real citation URL Gemini actually
+  // searched, not just the ones matched to a specific sentence above.
   const sources = chunks
     .map((c) => c.web)
     .filter((w): w is { uri: string; title?: string } => !!w?.uri)
     .filter((w, i, arr) => arr.findIndex((x) => x.uri === w.uri) === i);
-  if (sources.length === 0) return content;
+  if (sources.length === 0) return withInlineCitations;
   const sourceLines = sources.map((s) => `- [${s.title || s.uri}](${s.uri})`).join("\n");
-  return `${content}\n\n## Sources (live web search, real URLs)\n${sourceLines}`;
+  return `${withInlineCitations}\n\n## All Sources (full reference — see inline citations above for which claim each one supports)\n${sourceLines}`;
+}
+
+/**
+ * Places a short, real citation link right after the sentence/claim it
+ * actually supports — using Gemini's own groundingSupports offsets, never
+ * asking the model to write URLs itself. That matters for two reasons: (1)
+ * the model doesn't actually see the real redirect URL at generation time,
+ * only Google's server does, so any inline URL it "wrote" would have to be
+ * fabricated; (2) asking a model to embed long URLs inside prose/tables is
+ * exactly the pattern that has caused real runaway-repetition failures in
+ * this agent (see the "Trust Signals" and competitor-differentiator table
+ * bugs) — doing it here, deterministically, after generation has already
+ * finished, carries none of that risk.
+ *
+ * Skips any segment that lands inside a markdown table row (a "|" appears
+ * on that line) or inside a fenced code block (a ```chart JSON blob would
+ * break if a citation link were spliced into it) — both are left to the
+ * trailing "## All Sources" list instead.
+ *
+ * Note: Gemini's segment offsets are UTF-8 byte offsets, not JS string
+ * indices — see the comment inside this function for why that matters.
+ */
+export function insertInlineCitations(
+  content: string,
+  chunks: { web?: { uri?: string; title?: string } }[],
+  supports: { segment?: { startIndex?: number; endIndex?: number; text?: string }; groundingChunkIndices?: number[] }[],
+): string {
+  if (supports.length === 0) return content;
+
+  // Gemini's segment.startIndex/endIndex are UTF-8 BYTE offsets, not
+  // JavaScript string (UTF-16 code unit) indices — confirmed via a real
+  // response where an Indian-market report used the ₹ sign (3 UTF-8 bytes,
+  // 1 JS code unit): every offset after it silently drifted, so a naive
+  // content.slice(startIndex, endIndex) no longer matched segment.text and
+  // every single citation this agent generates got silently dropped. Do
+  // the offset verification and lookup in byte-space via a Buffer, then
+  // convert the verified byte position to the equivalent JS string index
+  // (by decoding the byte-prefix and measuring ITS string length) before
+  // touching the actual string.
+  const buf = Buffer.from(content, "utf-8");
+  const byteOffsetToStringIndex = (byteOffset: number) => buf.subarray(0, byteOffset).toString("utf-8").length;
+
+  // Fenced code block ranges — never insert inside one of these.
+  const codeBlockRanges: [number, number][] = [];
+  const fenceRe = /```[\s\S]*?```/g;
+  let fenceMatch: RegExpExecArray | null;
+  while ((fenceMatch = fenceRe.exec(content))) {
+    codeBlockRanges.push([fenceMatch.index, fenceMatch.index + fenceMatch[0].length]);
+  }
+  const insideCodeBlock = (i: number) => codeBlockRanges.some(([start, end]) => i >= start && i < end);
+
+  const isTableRow = (endIndex: number) => {
+    const lineStart = content.lastIndexOf("\n", endIndex - 1) + 1;
+    const lineEnd = content.indexOf("\n", endIndex);
+    const line = content.slice(lineStart, lineEnd === -1 ? content.length : lineEnd);
+    return line.includes("|");
+  };
+
+  type Insertion = { at: number; text: string };
+  const insertions: Insertion[] = [];
+
+  for (const support of supports) {
+    const seg = support.segment;
+    if (!seg || seg.startIndex == null || seg.endIndex == null || !seg.text) continue;
+    // Verify Gemini's BYTE offsets actually line up with this exact segment
+    // before trusting them — if they don't, skip rather than splice a
+    // citation into the wrong spot.
+    if (buf.subarray(seg.startIndex, seg.endIndex).toString("utf-8") !== seg.text) continue;
+    const stringEndIndex = byteOffsetToStringIndex(seg.endIndex);
+    if (insideCodeBlock(stringEndIndex) || isTableRow(stringEndIndex)) continue;
+
+    const chunkIndices = support.groundingChunkIndices ?? [];
+    const names = chunkIndices
+      .slice(0, 2) // keep each inline citation terse — full list is in the trailing reference
+      .map((i) => chunks[i]?.web)
+      .filter((w): w is { uri: string; title?: string } => !!w?.uri)
+      .map((w) => `[${(w.title || new URL(w.uri).hostname).replace(/[[\]]/g, "")}](${w.uri})`);
+    if (names.length === 0) continue;
+
+    insertions.push({ at: stringEndIndex, text: ` (${names.join(", ")})` });
+  }
+
+  if (insertions.length === 0) return content;
+
+  // Insert from the end of the string backward so earlier offsets stay valid.
+  insertions.sort((a, b) => b.at - a.at);
+  let result = content;
+  for (const { at, text } of insertions) {
+    result = result.slice(0, at) + text + result.slice(at);
+  }
+  return result;
 }
 
 export async function runAgentLLM(
