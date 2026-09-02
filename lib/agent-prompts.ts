@@ -2264,6 +2264,24 @@ The specific objections this offer will actually face, each with a real response
 Exactly where and how the bot hands off to a human to confirm.
 ## Tone & Persona Guidance
 What makes this sound like a person, not a script being read.`,
+
+  "crm-audit": `You are the CRM Audit Agent — the one agent in this system that audits REAL lead data instead of designing schema or rules in the abstract. The "Real CRM Audit Data" section in your context is a real, freshly-queried snapshot of this workspace's actual leads, stages, custom fields, and workflow rules. Every number in it is real.
+
+Hard rules:
+- Never invent a number, a lead name, or a finding not present in the real audit data provided. If the data shows zero duplicates, say zero duplicates — do not pad the report with plausible-sounding issues to seem thorough.
+- Prioritize findings by real business impact, not by which section happens to have the most items. A handful of leads unreachable (no email AND no phone) matters more than a custom field being 60% filled.
+- Call out data that actively breaks the CRM's own automation — a malformed workflow rule fails silently every time it should fire, which is worse than an inactive one someone chose to pause.
+- If total leads is 0 or very low, say plainly that this audit will get more useful as real data accumulates, rather than treating a handful of test leads as a mature dataset.
+
+Output format (GitHub-flavored markdown):
+## Audit Summary
+One paragraph: overall data health in plain terms.
+## Missing Fields
+## Lifecycle Stage Consistency
+## Duplicate Leads
+## Stalled & Broken Processes
+## Top 3 Fixes
+Ranked by real impact, each with the specific real number behind it.`,
 };
 
 export function getSystemPrompt(agentKey: string): string | null {
@@ -2571,6 +2589,64 @@ export function buildCompetitorAuditContext(
     tech,
     sitemap,
   );
+}
+
+// The one CRM & Lead Operations agent that actually looks at real lead
+// records instead of designing schema/rules in the abstract — every real
+// number below comes from a real Prisma query (see lib/crm-audit.ts),
+// never invented. The LLM's job is to prioritize and explain these
+// findings, not estimate data it doesn't have.
+export const LIVE_CRM_AUDIT_AGENTS = new Set(["crm-audit"]);
+
+export function buildCrmAuditContext(snapshot: import("./crm-audit").CrmAuditSnapshot): string {
+  if (snapshot.totalLeads === 0) {
+    return `\n\n# Real CRM Audit Data\nThis workspace has no leads yet — nothing to audit. Say so plainly rather than inventing findings.`;
+  }
+  const stageLines = snapshot.stageDistribution
+    .map((s) => `- ${s.stageName}${s.isWon ? " (won)" : ""}${s.isLost ? " (lost)" : ""}: ${s.count} lead(s)`)
+    .join("\n");
+  const dupeLines =
+    snapshot.duplicateEmailGroups.length > 0
+      ? snapshot.duplicateEmailGroups.map((d) => `- "${d.email}" shared by: ${d.leadNames.join(", ")}`).join("\n")
+      : "None found.";
+  const customFieldLines =
+    snapshot.customFieldCompleteness.length > 0
+      ? snapshot.customFieldCompleteness.map((f) => `- ${f.label} (${f.key}): ${f.filledPct}% of leads have a value`).join("\n")
+      : "No custom fields defined for this workspace.";
+
+  return `
+
+# Real CRM Audit Data (real, queried — never invented)
+## Volume
+- Total leads: ${snapshot.totalLeads}
+
+## Missing Fields
+- Missing email: ${snapshot.missingEmail}
+- Missing phone: ${snapshot.missingPhone}
+- Missing both email and phone (unreachable): ${snapshot.missingBoth}
+- No deal value set: ${snapshot.missingDealValueCount}
+- No tags: ${snapshot.noTagsCount}
+
+## Lifecycle Stage Consistency
+- Leads with no stage assigned: ${snapshot.noStageAssigned}
+- Has a stage marked "won": ${snapshot.hasWonStage ? "Yes" : "No"}
+- Has a stage marked "lost": ${snapshot.hasLostStage ? "Yes" : "No"}
+- Stage distribution:
+${stageLines}
+
+## Duplicate Patterns
+Leads sharing the exact same email address:
+${dupeLines}
+
+## Broken/Stalled Processes
+- Leads never contacted (zero logged activity, not won/lost): ${snapshot.neverContactedCount}
+- Leads stale (no activity in ${snapshot.staleDays}+ days, not won/lost): ${snapshot.staleCount}
+- Workflow rules defined: ${snapshot.workflowRuleCount}
+- Inactive workflow rules: ${snapshot.inactiveWorkflowRuleCount}
+- Malformed workflow rules (invalid conditions/actions JSON — will fail silently when triggered): ${snapshot.malformedWorkflowRuleCount}
+
+## Custom Field Completeness
+${customFieldLines}`;
 }
 
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {

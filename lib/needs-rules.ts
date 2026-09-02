@@ -355,6 +355,14 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "active",
       reason: "Real visuals are useful from day one for any channel — social posts, ads, or a placeholder before real photography exists.",
     },
+    // Real lead count isn't a DNA field this rule engine can see — it's a
+    // live DB fact, checked at run time instead. Always active; the agent's
+    // own prompt degrades gracefully to "too early" when there's nothing
+    // real to audit yet, so there's no harm running it early.
+    "crm-audit": {
+      status: "active",
+      reason: "Worth running from day one — degrades gracefully to \"too early\" with no leads yet, and catches real data issues the moment leads start coming in.",
+    },
     "carousel-generation": {
       status: "active",
       reason: "Carousel posts are a standard format on Instagram/LinkedIn from day one — useful regardless of channel or content maturity, same as single-image generation.",

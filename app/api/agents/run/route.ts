@@ -18,7 +18,10 @@ import {
   buildReputationContext,
   MEETING_HISTORY_AGENTS,
   buildMeetingHistoryContext,
+  LIVE_CRM_AUDIT_AGENTS,
+  buildCrmAuditContext,
 } from "@/lib/agent-prompts";
+import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
 import { getUploadType } from "@/lib/agent-uploads";
@@ -251,6 +254,13 @@ export async function POST(req: NextRequest) {
     extraContext =
       (extraContext ?? "") +
       buildMeetingHistoryContext(pastMeetings.map((m) => ({ createdAt: m.createdAt.toISOString(), outputMarkdown: m.outputMarkdown })));
+  }
+
+  // Real CRM data audit — a live Prisma query against this workspace's
+  // actual leads/stages/custom fields/workflow rules, never estimated.
+  if (LIVE_CRM_AUDIT_AGENTS.has(agentKey)) {
+    const snapshot = await computeCrmAuditSnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildCrmAuditContext(snapshot);
   }
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a

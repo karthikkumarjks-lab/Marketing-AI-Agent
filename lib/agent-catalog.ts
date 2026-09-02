@@ -636,6 +636,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 37,
   },
+  {
+    key: "crm-audit",
+    name: "CRM Audit Agent",
+    category: "CRM & Lead Operations",
+    mission: "Audits this workspace's REAL lead records — missing fields, inconsistent lifecycle stage setup, duplicate leads, and stalled/broken processes — the one CRM & Lead Operations agent that queries real data instead of designing schema/rules in the abstract, same live-data pattern as the website scan agent.",
+    inputs: ["This workspace's real leads, pipeline stages, custom fields, and workflow rules (automatic, no input needed)"],
+    outputs: ["Missing-field findings", "Lifecycle stage consistency check", "Duplicate lead groups", "Stalled/broken process findings"],
+    wired: true,
+    sortOrder: 38,
+  },
   // Acquisition
   {
     key: "seo-strategy",
