@@ -30,15 +30,30 @@ export default async function WelcomePage({ params }: PageProps<"/workspaces/[id
 
   return (
     <main className="max-w-3xl mx-auto px-8 py-14">
-      <div className="mb-10">
+      <div className="mb-8">
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Get Started</div>
-        <h1 className="text-2xl font-semibold text-ink">{workspace.name} is set up.</h1>
-        <p className="text-sm text-ink-soft mt-2 leading-relaxed max-w-xl">
-          Here&apos;s the honest version of what this is: a team of specialist marketing agents, each focused on
-          one job — SEO, ads, email, your CRM, and a lot more. You don&apos;t need to know which one to reach for.
-          Based on what you just told us about {workspace.name}, here&apos;s exactly where to start.
+        <h1 className="text-3xl font-semibold text-ink leading-tight">{workspace.name}, meet your marketing team.</h1>
+        <p className="text-base text-ink-soft mt-2 font-medium">147 specialist agents, one shared runtime — here&apos;s exactly where to start.</p>
+        <p className="text-sm text-ink-faint mt-3 leading-relaxed max-w-xl">
+          You don&apos;t need to know which agent to reach for. Based on what you just told us about{" "}
+          {workspace.name}, we already picked.
         </p>
       </div>
+
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 mb-10 text-sm text-ink-soft">
+        <li className="flex gap-2">
+          <span className="text-accent">✓</span>Every agent already knows your business — no re-explaining yourself.
+        </li>
+        <li className="flex gap-2">
+          <span className="text-accent">✓</span>One shared runtime, not 147 separate tools to learn.
+        </li>
+        <li className="flex gap-2">
+          <span className="text-accent">✓</span>Anything that actually commits — a spend, a send, a close — waits for your OK.
+        </li>
+        <li className="flex gap-2">
+          <span className="text-accent">✓</span>Any industry. Solo freelancer or full team, same platform.
+        </li>
+      </ul>
 
       {shown.length === 0 ? (
         <div className="bg-surface border border-line rounded-lg p-6 text-sm text-ink-soft">
