@@ -20,8 +20,23 @@ import {
   buildMeetingHistoryContext,
   LIVE_CRM_AUDIT_AGENTS,
   buildCrmAuditContext,
+  LIVE_CAMPAIGN_QA_AGENTS,
+  buildCampaignQaContext,
+  LIVE_LIFECYCLE_AGENTS,
+  buildLifecycleContext,
+  LIVE_LEAD_QUALITY_AGENTS,
+  buildLeadQualityContext,
+  LIVE_REPORTING_AGENTS,
+  buildReportingContext,
+  LIVE_OPTIMIZATION_AGENTS,
+  buildOptimizationContext,
 } from "@/lib/agent-prompts";
 import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
+import { computeCampaignQaSnapshot } from "@/lib/campaign-qa";
+import { computeLifecycleSnapshot } from "@/lib/lifecycle-audit";
+import { computeLeadQualitySnapshot } from "@/lib/lead-quality";
+import { computeReportingSnapshot } from "@/lib/reporting-insights";
+import { computeOptimizationSnapshot } from "@/lib/optimization-insights";
 import { getAgentDependencies } from "@/lib/agent-contract";
 import { buildHandoffContext, type DependencyRunSnapshot } from "@/lib/orchestrator";
 import { getUploadType } from "@/lib/agent-uploads";
@@ -86,6 +101,7 @@ export async function POST(req: NextRequest) {
   let competitorUrlOverride: string | null = null;
   let runNote: string | null = null;
   let leadId: string | null = null;
+  let emailTemplateId: string | null = null;
   let file: File | null = null;
 
   if (contentType.includes("multipart/form-data")) {
@@ -97,6 +113,7 @@ export async function POST(req: NextRequest) {
     competitorUrlOverride = (form.get("competitorUrlOverride") as string) || null;
     runNote = (form.get("runNote") as string) || null;
     leadId = (form.get("leadId") as string) || null;
+    emailTemplateId = (form.get("emailTemplateId") as string) || null;
     const uploaded = form.get("file");
     if (uploaded instanceof File && uploaded.size > 0) file = uploaded;
   } else {
@@ -108,6 +125,7 @@ export async function POST(req: NextRequest) {
     competitorUrlOverride = body.competitorUrlOverride ?? null;
     runNote = body.runNote ?? null;
     leadId = body.leadId ?? null;
+    emailTemplateId = body.emailTemplateId ?? null;
   }
 
   if (!workspaceId || !agentKey) {
@@ -261,6 +279,37 @@ export async function POST(req: NextRequest) {
   if (LIVE_CRM_AUDIT_AGENTS.has(agentKey)) {
     const snapshot = await computeCrmAuditSnapshot(workspaceId);
     extraContext = (extraContext ?? "") + buildCrmAuditContext(snapshot);
+  }
+
+  // Real campaign QA — parses one real saved email template's actual HTML
+  // plus this workspace's actual lead list, never estimated.
+  if (LIVE_CAMPAIGN_QA_AGENTS.has(agentKey)) {
+    const snapshot = await computeCampaignQaSnapshot(workspaceId, emailTemplateId);
+    extraContext = (extraContext ?? "") + buildCampaignQaContext(snapshot);
+  }
+
+  // Real lifecycle stuck-in-stage audit — a live Prisma query, never estimated.
+  if (LIVE_LIFECYCLE_AGENTS.has(agentKey)) {
+    const snapshot = await computeLifecycleSnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildLifecycleContext(snapshot);
+  }
+
+  // Real per-source win-rate and deal-value audit — a live Prisma query, never estimated.
+  if (LIVE_LEAD_QUALITY_AGENTS.has(agentKey)) {
+    const snapshot = await computeLeadQualitySnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildLeadQualityContext(snapshot);
+  }
+
+  // Real reporting/performance-insight audit — a live Prisma query, never estimated.
+  if (LIVE_REPORTING_AGENTS.has(agentKey)) {
+    const snapshot = await computeReportingSnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildReportingContext(snapshot);
+  }
+
+  // Real predicted-vs-actual outcome track record — a live Prisma query, never estimated.
+  if (LIVE_OPTIMIZATION_AGENTS.has(agentKey)) {
+    const snapshot = await computeOptimizationSnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildOptimizationContext(snapshot);
   }
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a

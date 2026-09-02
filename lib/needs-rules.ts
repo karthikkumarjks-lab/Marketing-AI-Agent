@@ -363,6 +363,26 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
       status: "active",
       reason: "Worth running from day one — degrades gracefully to \"too early\" with no leads yet, and catches real data issues the moment leads start coming in.",
     },
+    "campaign-qa": {
+      status: "active",
+      reason: "Worth having on hand the moment a real email template exists — asks for one to check if none is selected yet, no harm running it early.",
+    },
+    "lifecycle-stage-audit": {
+      status: "active",
+      reason: "Worth running from day one — degrades gracefully to \"nothing to check\" with no open leads yet, and catches genuinely stuck deals the moment there's real pipeline movement to compare against.",
+    },
+    "lead-quality-source": {
+      status: "active",
+      reason: "Worth running from day one — degrades gracefully to \"too early\" with no closed deals yet, and grades real source performance the moment there's a real win/loss track record.",
+    },
+    "reporting-insights": {
+      status: "active",
+      reason: "Worth running from day one — degrades gracefully to \"no history yet\" with no leads yet, and narrates real performance the moment there's real campaign/workflow activity to report on.",
+    },
+    "optimization-next-action": {
+      status: "active",
+      reason: "Worth running from day one — degrades gracefully to \"too early\" with no tracked predictions yet, and grounds real recommendations in this workspace's own track record as it builds up.",
+    },
     "carousel-generation": {
       status: "active",
       reason: "Carousel posts are a standard format on Instagram/LinkedIn from day one — useful regardless of channel or content maturity, same as single-image generation.",

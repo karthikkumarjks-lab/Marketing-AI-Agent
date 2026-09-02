@@ -2282,6 +2282,103 @@ One paragraph: overall data health in plain terms.
 ## Stalled & Broken Processes
 ## Top 3 Fixes
 Ranked by real impact, each with the specific real number behind it.`,
+
+  "campaign-qa": `You are the Campaign QA Agent. The "Real Campaign QA Data" section in your context is a real, freshly-parsed check of one actual saved email template's actual HTML and this workspace's actual lead list. Every finding is real.
+
+Hard rules:
+- Never invent a broken link, a merge tag, or a recipient number not present in the real data provided. If everything checks out clean, say so plainly — a clean report is a valid, useful outcome, not a failure to find something.
+- A blocking issue (empty subject, a broken link, an unresolved merge tag) means this should NOT be sent yet. Say so directly, don't bury it in a neutral tone.
+- The missing-unsubscribe finding is a real, standing limitation of this app, not something the user broke — explain it plainly rather than implying they forgot to add a link the tool doesn't yet support.
+- Treat a duplicate email in the recipient list as a real issue (that person gets the email twice) even though it's not a "broken" template — it's a data problem, not a template problem, and worth naming as a separate category.
+
+Output format (GitHub-flavored markdown):
+## Ready to Send?
+A direct yes/no/not-yet, stated in the first line.
+## Link Check
+## Merge Tag Check
+## Compliance Check
+## Recipient List Check
+## What to Fix Before Sending
+(Only the real, blocking issues — omit if genuinely clean.)`,
+
+  "lifecycle-stage-audit": `You are the Lifecycle Stage Audit Agent. The "Real Lifecycle Data" section in your context is real, freshly-computed time-in-stage data for this workspace's actual open leads. Every lead name and day count is real.
+
+Hard rules:
+- Never invent a lead name or a days-in-stage number not present in the real data provided.
+- The stuck-threshold is a generic heuristic (stated in the data), not a client-specific SLA — if the client's real sales cycle is naturally longer or shorter than the threshold, say so rather than treating every stuck lead as equally urgent.
+- Distinguish "stuck because nobody has moved it" from "genuinely still active but slow" where the data allows — a lead sitting at a high-intent stage (e.g. "Proposal") for a long time deserves more urgency than one at an early stage.
+- A workspace with zero stuck leads is a real, good finding — say so plainly, don't manufacture concern.
+
+Output format (GitHub-flavored markdown):
+## Summary
+One paragraph: how many leads are genuinely stuck, and how concerning that is given the real numbers.
+## Stuck Leads
+The specific real leads and stages, most-stuck first.
+## Time-in-Stage by Stage
+Where the pipeline is genuinely slow, using the real average.
+## What This Suggests
+Real, specific next steps tied to the actual stuck leads/stages — not generic pipeline advice.`,
+
+  "lead-quality-source": `You are the Lead Quality (Source) Agent. The "Real Lead Source Quality Data" section in your context is real win-rate and deal-value data computed from this workspace's actual leads and their actual closed outcomes. Every number is real.
+
+Hard rules:
+- Never invent a source, a win rate, or a deal value not present in the real data provided.
+- A source with no closed leads yet has no real win rate — say "too early to tell" for that source, never estimate or guess one.
+- Small sample sizes produce unstable rates — a source with 2 closed leads and a 100% win rate is not proof it's your best channel; say so plainly rather than over-crediting a small sample.
+- Recommend "lean into" or "cut" only for sources with enough real closed-deal history to actually support the call — flag which ones don't have enough data yet instead of forcing a verdict.
+
+Output format (GitHub-flavored markdown):
+## Summary
+One paragraph: which sources are genuinely proven, which look promising but thin, which have no real signal yet.
+## Performance By Source
+The real numbers, source by source.
+## Lean Into
+Sources with real, meaningful evidence of performing well — only if the sample size actually supports it.
+## Reconsider
+Sources with real evidence of underperforming — only if the sample size actually supports it.
+## Not Enough Data Yet
+Sources where it's honestly too early to call.`,
+
+  "reporting-insights": `You are the Reporting Insights Agent. The "Real Reporting Data" section in your context is real, freshly-queried performance data — real pipeline outcomes, real campaign send results, real workflow run history. Every number is real.
+
+Hard rules:
+- Never invent a trend, a percentage, or a finding not directly supported by the real numbers provided.
+- A dashboard shows numbers; you explain what they mean and why it matters — every section should say something a stat tile alone doesn't.
+- A workflow rule with error runs is a real, broken automation problem — call it out directly, don't bury it as a minor stat.
+- A campaign with failed sends is worth investigating (bad email, provider issue) — say so, don't just report the failure count neutrally.
+- With very little real history yet, say plainly that trends aren't reliable yet rather than drawing conclusions from a handful of data points.
+
+Output format (GitHub-flavored markdown):
+## What's Actually Happening
+One paragraph: the real story behind the numbers, not a recap of them.
+## Pipeline Performance
+## Campaign Performance
+Flag any real send failures directly.
+## Workflow Reliability
+Flag any real rule errors directly — a broken automation running silently is a real problem.
+## So What
+The one or two things this data actually suggests doing next — grounded in the real numbers, not generic advice.`,
+
+  "optimization-next-action": `You are the Optimization Agent. The "Real Outcome Track Record" section in your context is this workspace's actual predicted-vs-actual outcome history for every agent run that made a tracked prediction. Every number and example is real.
+
+Hard rules:
+- Never invent a prediction, an outcome, or an agent's track record not present in the real data provided.
+- A small number of tracked runs (1-2) is not enough to judge an agent's reliability — say so plainly rather than declaring an agent "unreliable" or "proven" off a tiny sample.
+- "Pending" outcomes aren't failures — they just haven't been confirmed yet. Don't count them against an agent's track record.
+- Recommend running an agent AGAIN with confidence only where its real match rate actually supports that; recommend treating an agent's predictions cautiously only where real misses actually show a pattern, not a single bad call.
+- If total tracked runs is very low, say plainly that it's too early for this workspace to have a meaningful optimization signal yet.
+
+Output format (GitHub-flavored markdown):
+## Summary
+One paragraph: how much real signal exists here, and what it suggests overall.
+## Track Record By Agent
+The real numbers, agent by agent, with a real example prediction where useful.
+## Run Again With Confidence
+Agents whose real track record actually supports it.
+## Treat Cautiously
+Agents whose real misses actually show a pattern — only with enough data to support the call.
+## Too Early to Judge
+Agents with too few tracked runs yet.`,
 };
 
 export function getSystemPrompt(agentKey: string): string | null {
@@ -2647,6 +2744,166 @@ ${dupeLines}
 
 ## Custom Field Completeness
 ${customFieldLines}`;
+}
+
+// Real pre-flight checks against one saved email template's actual HTML —
+// see lib/campaign-qa.ts. Every finding here is real, parsed from the
+// template that would genuinely be used to send, never invented.
+export const LIVE_CAMPAIGN_QA_AGENTS = new Set(["campaign-qa"]);
+
+export function buildCampaignQaContext(snapshot: import("./campaign-qa").CampaignQaSnapshot): string {
+  if (!snapshot.found) {
+    return `\n\n# Real Campaign QA Data\nNo email template was selected for this run — nothing was checked. Ask the user to pick a template rather than inventing findings about one that doesn't exist.`;
+  }
+  return `
+
+# Real Campaign QA Data (real, parsed from the actual template — never invented)
+## Template
+- Name: ${snapshot.templateName}
+- Subject: "${snapshot.subject}"${snapshot.subject.trim() ? "" : " — EMPTY SUBJECT LINE"}
+- AMP version included: ${snapshot.isAmpEnabled ? "Yes" : "No"}
+
+## Links
+- Total links found: ${snapshot.linkCount}
+- Broken/empty/unresolved links: ${snapshot.brokenLinks.length > 0 ? snapshot.brokenLinks.map((l) => `\n  - ${l}`).join("") : "None found."}
+- Unsubscribe link present: ${snapshot.hasUnsubscribeLink ? "Yes" : "No — and this app has no suppression-list system yet, so there is currently no real unsubscribe mechanism at all"}
+
+## Merge Tags
+- Unresolved/unrecognized merge tags (likely typos — will send literally as "{{...}}" instead of real data): ${
+    snapshot.unresolvedMergeTags.length > 0 ? snapshot.unresolvedMergeTags.map((t) => `{{${t}}}`).join(", ") : "None found — all recognized."
+  }
+
+## Recipient List (for a send to all leads with an email)
+- Leads with an email (would receive this): ${snapshot.targetedLeadCount - snapshot.skippedNoEmailCount}
+- Leads with no email (would be silently skipped): ${snapshot.skippedNoEmailCount}
+- Duplicate email addresses within the send list (would receive it twice): ${snapshot.duplicateEmailInTargetCount}`;
+}
+
+// Real time-since-last-stage-change data — see lib/lifecycle-audit.ts. A
+// distinct real signal from CRM Audit's "stale" check (no activity logged);
+// this is specifically about leads that keep getting worked without ever
+// actually advancing.
+export const LIVE_LIFECYCLE_AGENTS = new Set(["lifecycle-stage-audit"]);
+
+export function buildLifecycleContext(snapshot: import("./lifecycle-audit").LifecycleSnapshot): string {
+  if (snapshot.totalOpenLeads === 0) {
+    return `\n\n# Real Lifecycle Data\nNo open (not won/lost) leads exist yet — nothing to check for stuck leads. Say so plainly rather than inventing findings.`;
+  }
+  const stuckLines =
+    snapshot.stuckLeads.length > 0
+      ? snapshot.stuckLeads.map((l) => `- "${l.leadName}" — ${l.daysInStage} days in "${l.stageName}"`).join("\n")
+      : "None found — every open lead has changed stage within the threshold.";
+  const stageLines = snapshot.byStage.map((s) => `- ${s.stageName}: ${s.openCount} open lead(s), average ${s.avgDaysInStage} days in stage`).join("\n");
+
+  return `
+
+# Real Lifecycle Data (real, queried — never invented)
+Stuck threshold used: ${snapshot.stuckThresholdDays}+ days with no real stage_change activity logged (a heuristic default, not a client-specific SLA — say so if it doesn't fit this business's real sales cycle).
+
+## Total Open (not won/lost) Leads
+${snapshot.totalOpenLeads}
+
+## Leads Stuck Beyond the Threshold
+${stuckLines}
+
+## Average Time-in-Stage by Stage
+${stageLines}`;
+}
+
+// Real per-source win-rate and deal-value data — see lib/lead-quality.ts.
+// Grades sources by their actual closed-deal outcomes, not general
+// channel-quality reasoning.
+export const LIVE_LEAD_QUALITY_AGENTS = new Set(["lead-quality-source"]);
+
+export function buildLeadQualityContext(snapshot: import("./lead-quality").LeadQualitySnapshot): string {
+  if (snapshot.totalLeads === 0) {
+    return `\n\n# Real Lead Source Quality Data\nNo leads exist yet — nothing to grade. Say so plainly rather than inventing source performance.`;
+  }
+  if (snapshot.bySource.length === 0) {
+    return `\n\n# Real Lead Source Quality Data\n${snapshot.totalLeads} lead(s) exist, but none have a "source" value set — nothing to compare. Recommend starting to capture lead source rather than inventing which channels perform well.`;
+  }
+  const lines = snapshot.bySource
+    .map((s) => {
+      const rate = s.winRatePct != null ? `${s.winRatePct}% win rate (${s.wonCount} won / ${s.lostCount} lost)` : `no closed leads yet (${s.openCount} still open)`;
+      const value = s.avgWonDealValue != null ? formatMoney(s.avgWonDealValue, snapshot.currency) : "no won-deal value data";
+      return `- **${s.source}**: ${s.totalLeads} total leads, ${rate}, avg won deal value: ${value}`;
+    })
+    .join("\n");
+  return `
+
+# Real Lead Source Quality Data (real, queried — never invented)
+Total leads: ${snapshot.totalLeads} (${snapshot.missingSourceCount} have no source recorded and are excluded below)
+
+## Performance By Source
+${lines}`;
+}
+
+// Real performance data — see lib/reporting-insights.ts. Distinct from CRM
+// Audit (data hygiene) and Lifecycle (stuck leads): this is about what's
+// actually happening — real send success, real workflow reliability, real
+// pipeline outcomes.
+export const LIVE_REPORTING_AGENTS = new Set(["reporting-insights"]);
+
+export function buildReportingContext(snapshot: import("./reporting-insights").ReportingSnapshot): string {
+  if (snapshot.totalLeads === 0) {
+    return `\n\n# Real Reporting Data\nNo leads exist yet — there's no real performance history to report on. Say so plainly rather than inventing trends.`;
+  }
+  const activityLines = snapshot.activityByType.length > 0 ? snapshot.activityByType.map((a) => `- ${a.type}: ${a.count}`).join("\n") : "None logged yet.";
+  const campaignLines =
+    snapshot.campaignSends.length > 0
+      ? snapshot.campaignSends.map((c) => `- "${c.templateName}": ${c.sentCount} sent, ${c.failedCount} failed`).join("\n")
+      : "No campaign sends logged yet.";
+  const workflowLines =
+    snapshot.workflowRuns.length > 0
+      ? snapshot.workflowRuns
+          .map((w) => `- "${w.ruleName}"${w.isActive ? "" : " (paused)"}: ${w.successCount} successful run(s), ${w.errorCount} error(s)`)
+          .join("\n")
+      : "No workflow rules exist yet.";
+
+  return `
+
+# Real Reporting Data (real, queried — never invented)
+## Pipeline Outcomes
+- Total leads: ${snapshot.totalLeads}
+- Won: ${snapshot.wonLeads}
+- Lost: ${snapshot.lostLeads}
+- Still open: ${snapshot.openLeads}
+
+## Activity Volume By Type
+${activityLines}
+
+## Real Campaign Send Results
+${campaignLines}
+
+## Real Workflow Rule Reliability
+${workflowLines}`;
+}
+
+// Real predicted-vs-actual outcome track record — see
+// lib/optimization-insights.ts. Grounds "what to run next" in this
+// workspace's own real history, not general reasoning.
+export const LIVE_OPTIMIZATION_AGENTS = new Set(["optimization-next-action"]);
+
+export function buildOptimizationContext(snapshot: import("./optimization-insights").OptimizationSnapshot): string {
+  if (snapshot.totalRunsWithPrediction === 0) {
+    return `\n\n# Real Outcome Track Record\nNo agent runs with a tracked prediction exist yet in this workspace — there's no real track record to base a recommendation on. Say so plainly rather than inventing one.`;
+  }
+  const lines = snapshot.byAgent
+    .map((a) => {
+      const examples = a.recentPredictions
+        .map((p) => `    - Predicted: "${p.predictedOutcome}" → ${p.outcomeStatus}${p.actualOutcome ? ` (actual: "${p.actualOutcome}")` : ""}`)
+        .join("\n");
+      return `- **${a.agentName}**: ${a.totalRuns} tracked run(s) — ${a.matchedCount} matched, ${a.missedCount} missed, ${a.pendingCount} still pending\n${examples}`;
+    })
+    .join("\n");
+
+  return `
+
+# Real Outcome Track Record (real, queried — never invented)
+Total tracked runs with a predicted outcome: ${snapshot.totalRunsWithPrediction}
+
+## Per-Agent Track Record
+${lines}`;
 }
 
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {
