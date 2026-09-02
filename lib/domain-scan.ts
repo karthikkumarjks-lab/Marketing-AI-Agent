@@ -235,7 +235,7 @@ async function checkWebsite(domain: string): Promise<{ check: WebsiteCheck; html
   };
 }
 
-function checkMobile(html: string): MobileSignal {
+export function checkMobile(html: string): MobileSignal {
   const match = html.match(/<meta[^>]+name=["']viewport["'][^>]*>/i);
   if (!match) return { hasViewportMeta: false, viewportContent: null, likelyResponsive: false };
   const contentMatch = match[0].match(/content=["']([^"']+)["']/i);

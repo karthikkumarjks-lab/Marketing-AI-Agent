@@ -8,6 +8,7 @@
 
 import { formatMoney } from "./currency";
 import { getAgentDefinition } from "./agent-contract";
+import { scoreConversionReadiness, type ConversionSignals } from "./conversion-signals";
 
 export interface CompanyDNAInput {
   name: string;
@@ -127,23 +128,55 @@ Output format (GitHub-flavored markdown, exactly these sections):
 ## KPI Targets
 ## Assumptions & Risks`,
 
-  "market-research": `You are the Market Research Agent inside a marketing operations platform. You are a global industry analyst who covers markets across regions, not just one country.
+  "market-research": `You are the Market Research Agent inside a marketing operations platform. You are a global industry analyst who covers markets across regions, not just one country, and you have two kinds of real data available for this run — use both, never fall back to generic reasoning when they're present.
 
-Your task: produce market, industry, and competitor landscape notes for the client's business type and geography.
+1. **A live Google Search grounding tool.** When you use it, the platform captures every page you actually cited and appends it as a real "## Sources" list with real, clickable URLs after your answer — you do not need to build that list yourself, but you DO need to actually search for and cite specifics (current market-size figures, named competitors, recent industry reports) rather than writing from memory alone. If a claim in your answer isn't something you searched for, it needs a "(validate)" label instead of being stated as fact.
+2. **A real live crawl** of the client's own website and every competitor URL entered for this run, appended below as "# Live Site Crawl" — real technology detected, real page counts, real CTA/form/trust-signal counts, real page-load time, and a transparent "Conversion Readiness Score" per site with its full points breakdown. This is not a guess about what these sites probably look like; it is what a real HTTP fetch actually found.
+
+Your task: produce a market, industry, and competitor landscape for the client's business — grounded in real search results and a real site crawl, dense with actual numbers, and explicit about the exact, specific reasons the client's site is underperforming named competitors.
 
 Hard rules:
 - Anchor everything in the client's stated industry and country/region. If geography is not stated, keep the analysis general and say that naming a specific country/region would sharpen it — do not default to any one market.
-- Distinguish clearly between what you know with confidence and what the client should validate with primary research. Mark uncertain claims with "(validate)".
-- Never fabricate market-size statistics. If you give a number, attribute a plausible source type and mark it "(validate)".
-- Write for an operator, not an academic: implications over description.
+- Every numeric claim needs either a real citation (from the Sources list, or a real page URL from the Live Site Crawl) or an explicit "(validate)" label. Never present an invented number as fact.
+- The "Live Site Crawl" data is real — use its exact numbers (CTA count, form count, load time, Conversion Readiness Score and its breakdown) rather than paraphrasing them away into vague adjectives. "Client has 1 CTA prompt and no live chat; Competitor 2 has 5 CTA prompts, live chat, and 3 trust signals" is the standard — "the client's site could use improvement" is not acceptable when the real numbers are sitting right there.
+- The Conversion Readiness Score is a proxy built from real on-page signals, NOT a measured conversion rate — nobody outside a site's own analytics tool knows its actual conversion %. Never state or imply it as an actual conversion percentage. Where you also see a "Real Lead Source Quality Data" section, that IS real, measured data for the client's own funnel (from this workspace's actual CRM) — use it as the one genuine "us" conversion number available, and say plainly when no equivalent real number exists for a competitor (it never will, from outside).
+- For industry-wide or competitor-wide conversion-rate benchmarks (e.g. "online degree programs typically convert enquiries to enrollments at X%"), search for and cite a real source via grounding, or label the figure "(validate)".
+- Every named competitor must map to something concrete: a real crawled site in the Live Site Crawl section, OR a cited source from real search, OR explicitly flagged as "(validate)" reasoning. No invented company profiles.
+- Only use a markdown table for short, scalar values (a number, "yes"/"no", a date, a percentage). Never put a long list or a prose-length description inside a table cell — that specific pattern is what derails output into repeating itself indefinitely. Anything that needs more than ~6 words belongs in a bullet or paragraph outside a table, not inside one.
+- Write for an operator, not an academic: implications over description. Every finding should answer "so what should this client do differently."
 
-Output format (GitHub-flavored markdown):
+Output format (GitHub-flavored markdown, exactly these sections, in this order):
+## Executive Summary
+3-5 bullets with the single most important number or finding in each — this section should be skimmable in 30 seconds and every bullet should carry a real number.
+
 ## Market Overview
+Real market size / growth rate figures with citations or "(validate)", demand drivers, regulatory context.
+
 ## Industry Structure
+Who the players are (by category), the value chain, how buyers actually decide.
+
+## Live Crawl: Us vs. Named Competitors
+A markdown table with one row per site (client + each competitor), columns: Site | Pages Found | Load Time | CTAs | Forms | Live Chat | Trust Signals (#) | Conversion Readiness Score. Every cell must be short — a number, "yes"/"no", or a couple of words. Use the COUNT of trust signals in that cell (e.g. "5"), never the full list — list which specific trust signals were found in the prose paragraphs below the table instead. Do not let any single cell run long; a table is a scan aid, not where you reproduce a full list. Then a paragraph per competitor naming the EXACT, specific gap vs. the client — cite the real numbers, not adjectives.
+
+Immediately after the table, include one fenced \`\`\`chart code block (see Chart blocks below) — a bar chart of Conversion Readiness Score by site name.
+
+## Why We're Not Converting
+The specific, evidenced reasons — each one must trace back to either a real crawl signal (missing CTA, no live chat, slow load time, no trust signals, not mobile-responsive) or a real CRM number (low win rate on a specific source) from the data provided. Rank by likely impact. This is the section the client is paying for — do not pad it with generic CRO advice that isn't tied to this client's actual real data.
+
+## Where We're Missing the Market
+Named whitespace: a segment, geography, or angle a competitor is visibly capturing (per the crawl or search results) that the client's site does not address at all — cite the specific competitor page or search source.
+
 ## Competitor Landscape
-## Whitespace Opportunities
-## Implications for This Client
-## What to Validate`,
+One subsection per named competitor (\`### Competitor Name\`) with short bullets for differentiators, target segment, strengths, and weaknesses, each cited or "(validate)". Use bullets, NOT a markdown table — free-text content like this is exactly what breaks a table's formatting (a wide, prose-length cell). Tables in this report are reserved for short, scalar values only (the Live Crawl comparison above).
+
+## What to Validate
+Every "(validate)"-tagged claim collected in one list, so the client knows exactly what still needs primary research.
+
+Chart blocks: whenever a comparison has 2+ numeric data points, include a fenced code block with language "chart" containing ONLY valid JSON, e.g.:
+\`\`\`chart
+{"type":"bar","title":"Conversion Readiness Score by Site","data":[{"name":"Us (onlinemanipal.com)","value":45},{"name":"Competitor A","value":72}]}
+\`\`\`
+Valid "type" values: "bar", "line", "pie". Use "bar" for the readiness-score comparison. Include at least the readiness-score chart; add a second chart (e.g. market-share or CTA-count comparison) if you have real numbers for it. Do not fabricate data to fill a chart — only chart numbers that appear elsewhere in your real data.`,
 
   "icp-intelligence": `You are the Customer / ICP Intelligence Agent inside a marketing operations platform. You are a customer-research specialist who builds personas that performance and content teams can actually use, across industries and markets.
 
@@ -2418,8 +2451,19 @@ export const LIVE_WEBSITE_AUDIT_AGENTS = new Set(["website-technology-structure"
 
 // Same real fetch/detect infrastructure as LIVE_WEBSITE_AUDIT_AGENTS, applied
 // to a COMPETITOR's site (entered per-run — there's no Company DNA field for
-// it) rather than the client's own. See buildCompetitorAuditContext.
-export const LIVE_COMPETITOR_AUDIT_AGENTS = new Set(["competitive-intelligence"]);
+// it) rather than the client's own. See buildCompetitorAuditContext. Also
+// gates whether the run form shows a competitor URL input at all — Market
+// Research reuses this same field (see MARKET_RESEARCH_MULTI_SITE_AGENTS
+// below for its own, multi-URL, real-crawl handling of that input).
+export const LIVE_COMPETITOR_AUDIT_AGENTS = new Set(["competitive-intelligence", "market-research"]);
+
+// Market Research gets its own real-crawl path, distinct from the single-URL
+// LIVE_WEBSITE_AUDIT_AGENTS/LIVE_COMPETITOR_AUDIT_AGENTS pair above: it
+// real-crawls the client's own site AND every competitor URL entered
+// (comma/newline-separated, several at once) with the same signal set, so
+// "us vs. them" is a genuine like-for-like comparison. See
+// buildMarketCrawlContext and the route's handling of this set.
+export const MARKET_RESEARCH_MULTI_SITE_AGENTS = new Set(["market-research"]);
 
 // Agents that get real Meta Ads account data (spend, CTR, CPC, conversions,
 // per-campaign breakdown) injected as extraContext when the workspace has a
@@ -2620,18 +2664,44 @@ ${activeLines}
 ${runLines}`;
 }
 
+function croSection(cro: ConversionSignals | null | undefined, loadTimeMs: number | null | undefined): string {
+  if (cro === undefined) return ""; // caller didn't ask for this section at all
+  if (!cro) return "\n\n## Conversion signals\n(page fetched but signal extraction failed — do not invent these)";
+  const readiness = scoreConversionReadiness(cro, loadTimeMs ?? null);
+  const breakdownLines = readiness.breakdown.map((b) => `  - ${b.points}/${b.max} — ${b.label}`).join("\n");
+  return `
+
+## Conversion signals (real, parsed from the actual page HTML)
+- Title: ${cro.title ?? "(none found)"}
+- Meta description: ${cro.metaDescription ?? "(none found)"}
+- H1: ${cro.h1 ?? "(none found)"}
+- Page load time: ${loadTimeMs != null ? `${loadTimeMs}ms` : "(not measured)"}
+- Word count on page: ${cro.wordCount}
+- CTA prompts found: ${cro.ctaCount}${cro.ctaSamples.length > 0 ? ` (examples: ${cro.ctaSamples.map((c) => `"${c}"`).join(", ")})` : ""}
+- Lead-capture forms on page: ${cro.formCount}
+- Mobile-responsive (viewport configured for device width): ${cro.mobile.likelyResponsive ? "yes" : "no"}
+- Live chat / chatbot: ${cro.chatbot.detected ? `yes (${cro.chatbot.providers.join(", ")})` : "not detected"}
+- Phone number published: ${cro.phone.numbers.length > 0 ? "yes" : "no"}
+- Social profiles linked: ${cro.social.length > 0 ? cro.social.map((s) => s.platform).join(", ") : "none found"}
+- Trust signals found on page (accreditation/ranking/reviews/placement wording): ${cro.trustSignalHits.length > 0 ? cro.trustSignalHits.join(", ") : "none found"}
+- **Conversion Readiness Score: ${readiness.score}/100** (a transparent score built only from the real signals above — NOT a measured conversion rate, nobody outside this site's own analytics knows that)
+${breakdownLines}`;
+}
+
 function buildLiveScanContext(
   heading: string,
   subjectUrl: string | null,
   noUrlLine: string,
   tech: { category: string; name: string }[] | null,
   sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
+  cro?: ConversionSignals | null,
+  loadTimeMs?: number | null,
 ): string {
   if (!subjectUrl) {
     return `\n\n# ${heading}\n${noUrlLine}`;
   }
   if (!tech || !sitemap) {
-    return `\n\n# ${heading}\nAttempted to scan ${subjectUrl} but it did not respond or returned no readable content. Do not invent a technology stack or page list — report this as a reachability finding instead.`;
+    return `\n\n# ${heading}\nAttempted to scan ${subjectUrl} but it did not respond or returned no readable content. Do not invent a technology stack, page list, or conversion signal — report this as a reachability finding instead.`;
   }
 
   const byCategory = new Map<string, string[]>();
@@ -2657,13 +2727,15 @@ function buildLiveScanContext(
 ${techLines}
 
 ## Discovered subpages (source: ${sitemap.source}${sitemap.isSitemapIndex ? ", this is a sitemap INDEX — entries point to other sitemaps, not final pages" : ""}${sitemap.truncated ? ", truncated to first 50" : ""})
-${pageLines}`;
+${pageLines}${croSection(cro, loadTimeMs)}`;
 }
 
 export function buildWebsiteAuditContext(
   websiteUrl: string | null,
   tech: { category: string; name: string }[] | null,
   sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null,
+  cro?: ConversionSignals | null,
+  loadTimeMs?: number | null,
 ): string {
   return buildLiveScanContext(
     "Live Website Scan",
@@ -2671,6 +2743,8 @@ export function buildWebsiteAuditContext(
     "No website URL is on record for this workspace — nothing was scanned. Do not invent a technology stack or page list.",
     tech,
     sitemap,
+    cro,
+    loadTimeMs,
   );
 }
 
@@ -2686,6 +2760,61 @@ export function buildCompetitorAuditContext(
     tech,
     sitemap,
   );
+}
+
+export interface ScannedSite {
+  url: string;
+  tech: { category: string; name: string }[] | null;
+  sitemap: { pages: string[]; source: string; isSitemapIndex: boolean; truncated: boolean } | null;
+  cro: ConversionSignals | null;
+  loadTimeMs: number | null;
+}
+
+// Market Research's "us vs. named competitors" ask: the client's own site
+// PLUS every competitor URL the client typed in, all real-crawled with the
+// same signal set so the comparison is apples-to-apples — never a guess
+// about what a competitor's site probably looks like.
+export function buildMarketCrawlContext(client: ScannedSite | null, competitors: ScannedSite[]): string {
+  if (!client && competitors.length === 0) {
+    return "\n\n# Live Site Crawl\nNo client website is on record and no competitor URLs were entered for this run — do not invent a technology stack, page count, or conversion signal for any site. Reason from category knowledge only, and say so plainly.";
+  }
+
+  const renderSite = (label: string, site: ScannedSite | null): string => {
+    if (!site) return `\n### ${label}\n(not scanned — no URL provided)`;
+    if (!site.tech || !site.sitemap) return `\n### ${label} (${site.url})\nAttempted to scan but the site did not respond or returned no readable content. Do not invent findings for it — report unreachable instead.`;
+    const readiness = site.cro ? scoreConversionReadiness(site.cro, site.loadTimeMs) : null;
+    const byCategory = new Map<string, string[]>();
+    for (const t of site.tech) {
+      const list = byCategory.get(t.category) ?? [];
+      list.push(t.name);
+      byCategory.set(t.category, list);
+    }
+    const techLine = [...byCategory.entries()].map(([cat, names]) => `${cat}: ${names.join(", ")}`).join(" · ") || "nothing recognized";
+    return `
+### ${label} (${site.url}) — real crawl, ${site.sitemap.pages.length} page(s) discovered
+- Technology: ${techLine}
+- Page load time: ${site.loadTimeMs != null ? `${site.loadTimeMs}ms` : "not measured"}
+- CTA prompts: ${site.cro?.ctaCount ?? "n/a"}${site.cro && site.cro.ctaSamples.length > 0 ? ` (e.g. ${site.cro.ctaSamples.slice(0, 3).map((c) => `"${c}"`).join(", ")})` : ""}
+- Lead-capture forms: ${site.cro?.formCount ?? "n/a"}
+- Mobile-responsive: ${site.cro?.mobile.likelyResponsive ? "yes" : "no"}
+- Live chat: ${site.cro?.chatbot.detected ? "yes" : "no"}
+- Phone published: ${site.cro && site.cro.phone.numbers.length > 0 ? "yes" : "no"}
+- Trust signals on page: ${site.cro && site.cro.trustSignalHits.length > 0 ? site.cro.trustSignalHits.join(", ") : "none found"}
+- **Conversion Readiness Score: ${readiness ? `${readiness.score}/100` : "n/a"}** (proxy built from the real signals above — not a measured conversion rate)`;
+  };
+
+  const clientBlock = renderSite("Client site (us)", client);
+  const competitorBlocks = competitors.length > 0
+    ? competitors.map((c, i) => renderSite(`Competitor ${i + 1}`, c)).join("\n")
+    : "\n(no competitor URLs were entered for this run — ask the client for named competitors to get a real comparison instead of reasoning about them blind)";
+
+  return `
+
+# Live Site Crawl (real data — every field below comes from an actual HTTP fetch, never invented)
+
+This is a like-for-like comparison built from real, parsed HTML. Use the Conversion Readiness Score breakdowns to name the EXACT, specific gaps between the client's site and each competitor — "competitor has 3 CTA prompts and live chat, client's page has one CTA and no chat" is a real finding; a vague "improve your CTAs" is not.
+${clientBlock}
+${competitorBlocks}`;
 }
 
 // The one CRM & Lead Operations agent that actually looks at real lead
@@ -2990,6 +3119,14 @@ const LARGE_OUTPUT_AGENTS = new Set([
 ]);
 const LARGE_MAX_OUTPUT_TOKENS = 8000;
 
+// Market Research needs even more room than LARGE_OUTPUT_AGENTS — its output
+// carries a real multi-site crawl comparison table, two full-length chart
+// blocks, grounded search citations, and 8 distinct sections. Found
+// necessary via a real run against onlinemanipal.com + 2 real competitor
+// crawls that was still cut off mid-table at 8000 tokens.
+const XL_OUTPUT_AGENTS = new Set(["market-research"]);
+const XL_MAX_OUTPUT_TOKENS = 16000;
+
 async function callOpenRouter(
   apiKey: string,
   model: string,
@@ -3045,6 +3182,13 @@ const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 // magnitude above OpenRouter's 50/day (Google doesn't publish one fixed
 // number — it's visible per-project at https://aistudio.google.com/rate-limit
 // once a key exists). Get a free key at https://aistudio.google.com/apikey.
+// Agents that get real, live Google Search grounding on the Gemini call —
+// genuine current web results the model must cite, not just its training
+// data. Reserved for research-heavy agents where a stale or invented market
+// number is a real problem; every other agent stays on the plain (cheaper,
+// faster) call.
+const GROUNDED_SEARCH_AGENTS = new Set(["market-research"]);
+
 async function callGemini(
   apiKey: string,
   model: string,
@@ -3052,6 +3196,7 @@ async function callGemini(
   user: string,
   imageDataUri?: string,
   maxTokens: number = DEFAULT_MAX_OUTPUT_TOKENS,
+  grounded: boolean = false,
 ): Promise<string> {
   const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [{ text: user }];
   if (imageDataUri) {
@@ -3068,6 +3213,7 @@ async function callGemini(
         system_instruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts }],
         generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
+        ...(grounded ? { tools: [{ google_search: {} }] } : {}),
       }),
     },
   );
@@ -3076,11 +3222,26 @@ async function callGemini(
     throw new Error(`LLM request failed (${res.status}): ${body.slice(0, 300)}`);
   }
   const json = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    candidates?: {
+      content?: { parts?: { text?: string }[] };
+      groundingMetadata?: { groundingChunks?: { web?: { uri?: string; title?: string } }[] };
+    }[];
   };
-  const content = json.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("");
+  const candidate = json.candidates?.[0];
+  const content = candidate?.content?.parts?.map((p) => p.text ?? "").join("");
   if (!content) throw new Error("LLM returned an empty response");
-  return content;
+
+  // Real citation URLs Gemini actually searched and cited — appended so the
+  // client (or the account owner) can click through and verify, per the
+  // explicit ask that every research claim carry a source URL.
+  const chunks = candidate?.groundingMetadata?.groundingChunks ?? [];
+  const sources = chunks
+    .map((c) => c.web)
+    .filter((w): w is { uri: string; title?: string } => !!w?.uri)
+    .filter((w, i, arr) => arr.findIndex((x) => x.uri === w.uri) === i);
+  if (sources.length === 0) return content;
+  const sourceLines = sources.map((s) => `- [${s.title || s.uri}](${s.uri})`).join("\n");
+  return `${content}\n\n## Sources (live web search, real URLs)\n${sourceLines}`;
 }
 
 export async function runAgentLLM(
@@ -3116,13 +3277,17 @@ export async function runAgentLLM(
   // the decision documented alongside GEMINI_API_KEY in .env.local.example).
   const geminiKey = process.env.GEMINI_API_KEY;
   const openrouterKey = process.env.OPENROUTER_API_KEY;
-  const maxTokens = LARGE_OUTPUT_AGENTS.has(agentKey) ? LARGE_MAX_OUTPUT_TOKENS : DEFAULT_MAX_OUTPUT_TOKENS;
+  const maxTokens = XL_OUTPUT_AGENTS.has(agentKey)
+    ? XL_MAX_OUTPUT_TOKENS
+    : LARGE_OUTPUT_AGENTS.has(agentKey)
+      ? LARGE_MAX_OUTPUT_TOKENS
+      : DEFAULT_MAX_OUTPUT_TOKENS;
   let firstError: unknown;
 
   if (geminiKey) {
     try {
       const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-      const markdown = await callGemini(geminiKey, model, system, user, imageDataUri, maxTokens);
+      const markdown = await callGemini(geminiKey, model, system, user, imageDataUri, maxTokens, GROUNDED_SEARCH_AGENTS.has(agentKey));
       return { markdown, isDemo: false, model: `gemini:${model}` };
     } catch (err) {
       firstError = err;

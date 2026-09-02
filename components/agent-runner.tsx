@@ -1,9 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useState, isValidElement } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+// Agent output can embed a ```chart fenced block (JSON: {type, title, data,
+// series?}) instead of only prose/tables — real numbers the agent already
+// has (a crawl signal, a real CRM count) rendered as an actual chart rather
+// than a wall of text. Parsed here rather than trusting the LLM to produce
+// valid JSX; any block that fails to parse just falls back to a plain code
+// block so a malformed one never breaks the whole page.
+interface ChartSpec {
+  type: "bar" | "line" | "pie";
+  title?: string;
+  data: Record<string, string | number>[];
+  series?: string[];
+}
+
+const CHART_COLORS = ["#2f6fed", "#1a4fc4", "#e0900a", "#d1483f", "#52627a", "#8a97ab"];
+
+function parseChartSpec(raw: string): ChartSpec | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.data) || parsed.data.length === 0) return null;
+    if (!["bar", "line", "pie"].includes(parsed.type)) return null;
+    return parsed as ChartSpec;
+  } catch {
+    return null;
+  }
+}
+
+function AgentChart({ spec }: { spec: ChartSpec }) {
+  const nameKey = "name" in (spec.data[0] ?? {}) ? "name" : Object.keys(spec.data[0] ?? {})[0];
+  const series = spec.series && spec.series.length > 0 ? spec.series : Object.keys(spec.data[0] ?? {}).filter((k) => k !== nameKey);
+
+  return (
+    <div className="my-4 bg-surface border border-line rounded-lg p-4 not-prose">
+      {spec.title && <div className="text-sm font-semibold text-ink mb-3">{spec.title}</div>}
+      <ResponsiveContainer width="100%" height={280}>
+        {spec.type === "pie" ? (
+          <PieChart>
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "var(--line)" }} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Pie data={spec.data} dataKey={series[0] ?? "value"} nameKey={nameKey} outerRadius={100} label={(d: { name?: string }) => d.name ?? ""}>
+              {spec.data.map((_, i) => (
+                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+              ))}
+            </Pie>
+          </PieChart>
+        ) : spec.type === "line" ? (
+          <LineChart data={spec.data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+            <XAxis dataKey={nameKey} tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "var(--line)" }} />
+            {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
+            {series.map((s, i) => (
+              <Line key={s} type="monotone" dataKey={s} stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth={2} />
+            ))}
+          </LineChart>
+        ) : (
+          <BarChart data={spec.data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+            <XAxis dataKey={nameKey} tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: "var(--line)" }} />
+            {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
+            {series.map((s, i) => (
+              <Bar key={s} dataKey={s} fill={CHART_COLORS[i % CHART_COLORS.length]} radius={[4, 4, 0, 0]} />
+            ))}
+          </BarChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 // react-markdown's default URL sanitizer strips `data:` URIs (a reasonable
 // default against unknown/user-authored markdown), but the Image Generation
@@ -110,16 +183,20 @@ export default function AgentRunner({
           )}
           {competitorUrlField && (
             <div className="mb-3">
-              <label className="text-sm font-medium text-ink mb-1 block">Competitor URL to scan (optional)</label>
+              <label className="text-sm font-medium text-ink mb-1 block">
+                {agentKey === "market-research" ? "Competitor URL(s) to scan (optional)" : "Competitor URL to scan (optional)"}
+              </label>
               <input
                 type="text"
                 className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
-                placeholder="e.g. competitor.com"
+                placeholder={agentKey === "market-research" ? "e.g. competitor-a.com, competitor-b.com" : "e.g. competitor.com"}
                 value={competitorUrl}
                 onChange={(e) => setCompetitorUrl(e.target.value)}
               />
               <p className="text-[11px] text-ink-faint mt-1">
-                Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead.
+                {agentKey === "market-research"
+                  ? "Real crawl (technology, pages, CTAs, forms, trust signals, load time) for up to 4 sites, comma-separated. Leave blank to compare against category knowledge only."
+                  : "Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead."}
               </p>
             </div>
           )}
@@ -228,7 +305,38 @@ function RunCard({ run }: { run: RunLite }) {
       </div>
 
       <div className="prose-agent">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} urlTransform={urlTransform}>{run.outputMarkdown}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          urlTransform={urlTransform}
+          components={{
+            // A ```chart block renders as <pre><code class="language-chart">.
+            // Unwrap the <pre> too (not just unstyle it) so the chart isn't
+            // sitting inside an invalid div-in-pre nesting with unwanted
+            // monospace/margin styling — react-markdown gives us the <pre>'s
+            // single <code> child to inspect here before deciding.
+            pre({ children }) {
+              const onlyChild = Array.isArray(children) ? children[0] : children;
+              if (isValidElement<{ className?: string }>(onlyChild) && /language-chart/.test(onlyChild.props.className || "")) {
+                return <>{children}</>;
+              }
+              return <pre>{children}</pre>;
+            },
+            code({ className, children, ...props }) {
+              const isChartBlock = /language-chart/.test(className || "");
+              if (isChartBlock) {
+                const spec = parseChartSpec(String(children).replace(/\n$/, ""));
+                if (spec) return <AgentChart spec={spec} />;
+              }
+              return (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+          }}
+        >
+          {run.outputMarkdown}
+        </ReactMarkdown>
       </div>
 
       {run.predictedOutcome && (

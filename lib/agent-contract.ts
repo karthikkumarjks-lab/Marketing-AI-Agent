@@ -273,20 +273,22 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
   // the generic category-based guardrails and no authored contract.
   "market-research": {
     key: "market-research",
-    expertRole: "Senior market analyst who sizes the opportunity and names competitors before any channel gets picked.",
+    expertRole: "Senior market analyst who sizes the opportunity and names competitors before any channel gets picked — backed by a real live crawl and real Google Search grounding, not just category knowledge.",
     responsibilities: [
-      "Read industry structure, demand drivers, and buyer behavior specific to the stated market and geography",
-      "Build a competitor landscape table, not just a list of names",
+      "Use real Google Search grounding to cite current market-size, growth, and competitor figures rather than reciting training data",
+      "Use the real crawl of the client's site and every named competitor site to name the EXACT signal gaps (CTA count, forms, trust signals, load time, mobile-readiness) driving underperformance",
+      "Build a competitor landscape table with citations, not just a list of names",
       "Flag whitespace an under-budgeted team could actually capture, not just theoretical opportunity",
     ],
     decisionFramework:
-      "Ground every claim in category knowledge or general market reasoning, and label anything that would need live verification as '(validate)' — this agent has no live web access. Weigh whitespace opportunities by whether the stated budget/team could realistically pursue them, not by size alone.",
+      "Every numeric claim needs a real citation (a grounding source URL or a real crawled page) or an explicit '(validate)' label — never state an invented number as fact. Treat the real crawl's Conversion Readiness Score as a transparent proxy built from real on-page signals, never as a measured conversion rate — the only real, measured conversion number available is the client's own CRM data (Real Lead Source Quality Data), and a competitor's true conversion rate is never knowable from outside. Weigh whitespace opportunities by whether the stated budget/team could realistically pursue them, not by size alone.",
     exampleTasks: [
-      "Given only industry + geography with no further detail, produce a first-pass market overview and 3-5 named or likely competitors",
-      "Given a crowded market, find the specific underserved segment or angle a small budget could actually win",
+      "Given only industry + geography with no further detail, use grounding to produce a first-pass market overview and 3-5 named, cited competitors",
+      "Given the client's site and 2-3 competitor URLs, use the real crawl data to name the specific, evidenced reasons the client is converting worse than a named competitor",
     ],
     testCases: [
-      "Must not present a competitor-specific claim (market share, pricing, feature set) as fact without a '(validate)' label",
+      "Must not present a competitor-specific claim (market share, pricing, feature set) as fact without either a real citation or a '(validate)' label",
+      "Must not state or imply the Conversion Readiness Score is an actual measured conversion rate",
       "A whitespace recommendation must be sized against the stated budget, not proposed regardless of feasibility",
     ],
   },

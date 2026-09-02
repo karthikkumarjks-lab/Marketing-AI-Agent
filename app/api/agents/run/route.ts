@@ -30,6 +30,9 @@ import {
   buildReportingContext,
   LIVE_OPTIMIZATION_AGENTS,
   buildOptimizationContext,
+  MARKET_RESEARCH_MULTI_SITE_AGENTS,
+  buildMarketCrawlContext,
+  type ScannedSite,
 } from "@/lib/agent-prompts";
 import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
 import { computeCampaignQaSnapshot } from "@/lib/campaign-qa";
@@ -44,6 +47,7 @@ import { getTextInputSpec } from "@/lib/agent-text-input";
 import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
+import { extractConversionSignals } from "@/lib/conversion-signals";
 import { generateImage, type GeneratedImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
@@ -58,18 +62,30 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const EXCEL_EXTENSIONS = [".xlsx", ".xls", ".csv"];
 const IMAGE_MIME_PREFIXES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
-// Shared by LIVE_WEBSITE_AUDIT_AGENTS and LIVE_COMPETITOR_AUDIT_AGENTS — same
-// real fetch + signature detection + sitemap discovery, just aimed at a
-// different URL (the client's own site vs. a competitor's).
+// Shared by LIVE_WEBSITE_AUDIT_AGENTS, LIVE_COMPETITOR_AUDIT_AGENTS, and
+// MARKET_RESEARCH_MULTI_SITE_AGENTS — same real fetch + signature detection +
+// sitemap discovery, just aimed at a different URL (the client's own site vs.
+// a competitor's). Also captures real page-load time and, when requested,
+// real on-page conversion signals (lib/conversion-signals.ts) — the extra
+// work only Market Research needs, skipped for callers that pass
+// includeConversionSignals: false to avoid the added parse cost.
 async function scanWebsite(
   url: string,
-): Promise<{ tech: ReturnType<typeof detectTechStack>; sitemap: Awaited<ReturnType<typeof discoverSubpages>> } | null> {
+  includeConversionSignals = false,
+): Promise<{
+  tech: ReturnType<typeof detectTechStack>;
+  sitemap: Awaited<ReturnType<typeof discoverSubpages>>;
+  cro: ReturnType<typeof extractConversionSignals> | null;
+  loadTimeMs: number | null;
+} | null> {
   const domain = url.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
   let html: string | null = null;
   let headers: Headers | null = null;
+  let loadTimeMs: number | null = null;
   for (const scheme of ["https", "http"]) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SCAN_TIMEOUT_MS);
+    const start = Date.now();
     try {
       const res = await fetch(`${scheme}://${domain}`, {
         signal: controller.signal,
@@ -78,6 +94,7 @@ async function scanWebsite(
       if (res.ok) {
         html = await res.text();
         headers = res.headers;
+        loadTimeMs = Date.now() - start;
         break;
       }
     } catch {
@@ -89,7 +106,27 @@ async function scanWebsite(
   if (!html || !headers) return null;
   const tech = detectTechStack(html, headers);
   const sitemap = await discoverSubpages(domain, html);
-  return { tech, sitemap };
+  const cro = includeConversionSignals ? extractConversionSignals(html) : null;
+  return { tech, sitemap, cro, loadTimeMs };
+}
+
+// "example.com, competitor-b.org\ncompetitor-c.com" -> up to 4 deduped,
+// normalized URLs. Market Research's competitor field accepts several sites
+// at once (comma or newline separated) since the whole point is comparing
+// the client against a set of named competitors, not just one.
+function parseMultipleUrls(raw: string, max = 4): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const piece of raw.split(/[,\n]/)) {
+    const trimmed = piece.trim();
+    if (!trimmed) continue;
+    const domain = trimmed.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
+    if (!domain || seen.has(domain)) continue;
+    seen.add(domain);
+    out.push(trimmed);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -314,14 +351,49 @@ export async function POST(req: NextRequest) {
 
   // Live competitor scan: same real fetch/detect infrastructure, aimed at a
   // competitor's site — there's no Company DNA field for this, it's entered
-  // fresh per run.
-  if (LIVE_COMPETITOR_AUDIT_AGENTS.has(agentKey)) {
+  // fresh per run. Market Research shares this same input field but gets its
+  // own multi-site handling below instead (real crawl of the client's site
+  // PLUS every competitor URL entered, not just one).
+  if (LIVE_COMPETITOR_AUDIT_AGENTS.has(agentKey) && !MARKET_RESEARCH_MULTI_SITE_AGENTS.has(agentKey)) {
     if (!competitorUrlOverride) {
       extraContext = (extraContext ?? "") + buildCompetitorAuditContext(null, null, null);
     } else {
       const scan = await scanWebsite(competitorUrlOverride);
       extraContext = (extraContext ?? "") + buildCompetitorAuditContext(competitorUrlOverride, scan?.tech ?? null, scan?.sitemap ?? null);
     }
+  }
+
+  // Market Research: real crawl of the client's own site AND every named
+  // competitor URL entered (comma/newline-separated, up to 4), all scanned
+  // with the same signal set (tech, sitemap, real CRO signals, load time) so
+  // the "us vs. them" comparison is genuinely apples-to-apples — plus the
+  // client's own REAL lead-source conversion data from the CRM, the one
+  // actual measured conversion number available (no one outside a
+  // competitor's own analytics can know theirs).
+  if (MARKET_RESEARCH_MULTI_SITE_AGENTS.has(agentKey)) {
+    const clientUrl = websiteUrlOverride || workspace.websiteUrl;
+    const competitorUrls = competitorUrlOverride ? parseMultipleUrls(competitorUrlOverride) : [];
+
+    const [clientScan, ...competitorScans] = await Promise.all([
+      clientUrl ? scanWebsite(clientUrl, true) : Promise.resolve(null),
+      ...competitorUrls.map((u) => scanWebsite(u, true)),
+    ]);
+
+    const toScannedSite = (url: string, scan: Awaited<ReturnType<typeof scanWebsite>>): ScannedSite => ({
+      url,
+      tech: scan?.tech ?? null,
+      sitemap: scan?.sitemap ?? null,
+      cro: scan?.cro ?? null,
+      loadTimeMs: scan?.loadTimeMs ?? null,
+    });
+
+    const client = clientUrl ? toScannedSite(clientUrl, clientScan) : null;
+    const competitors = competitorUrls.map((url, i) => toScannedSite(url, competitorScans[i]));
+
+    extraContext = (extraContext ?? "") + buildMarketCrawlContext(client, competitors);
+
+    const leadQuality = await computeLeadQualitySnapshot(workspaceId);
+    extraContext = (extraContext ?? "") + buildLeadQualityContext(leadQuality);
   }
 
   // Real Meta Ads data: only when this workspace has a genuine OAuth
