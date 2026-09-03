@@ -47,13 +47,15 @@ export function guessMimeFromUrl(url: string): string | null {
 }
 
 export interface LeadRecording {
-  email: string;
+  // Not every lead has an email on file — prospectId + url alone is a
+  // valid lead, per explicit requirement.
+  email: string | null;
   prospectId: string;
   url: string;
 }
 
 export interface TranscriptionResult {
-  email: string;
+  email: string | null;
   prospectId: string;
   url: string;
   transcript: string | null;

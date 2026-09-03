@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 interface TranscriptionResult {
-  email: string;
+  email: string | null;
   prospectId: string;
   url: string;
   transcript: string | null;
@@ -12,7 +12,7 @@ interface TranscriptionResult {
 }
 
 interface ParsedLead {
-  email: string;
+  email: string | null;
   prospectId: string;
   url: string;
 }
@@ -23,6 +23,9 @@ interface ParseError {
   reason: string;
 }
 
+// Accepts two shapes per line, since not every lead has an email on file:
+//   "email, prospectId, recordingUrl"   (3 fields)
+//   "prospectId, recordingUrl"          (2 fields — email omitted)
 function parseLeadsInput(text: string): { leads: ParsedLead[]; errors: ParseError[] } {
   const leads: ParsedLead[] = [];
   const errors: ParseError[] = [];
@@ -32,12 +35,17 @@ function parseLeadsInput(text: string): { leads: ParsedLead[]; errors: ParseErro
     .filter(Boolean)
     .forEach((line, i) => {
       const parts = line.split(",").map((p) => p.trim());
-      if (parts.length !== 3 || parts.some((p) => !p)) {
-        errors.push({ line: i + 1, raw: line, reason: 'expected exactly "email, prospectId, recordingUrl"' });
+      if (parts.length === 3 && parts.every(Boolean)) {
+        const [email, prospectId, url] = parts;
+        leads.push({ email, prospectId, url });
         return;
       }
-      const [email, prospectId, url] = parts;
-      leads.push({ email, prospectId, url });
+      if (parts.length === 2 && parts.every(Boolean)) {
+        const [prospectId, url] = parts;
+        leads.push({ email: null, prospectId, url });
+        return;
+      }
+      errors.push({ line: i + 1, raw: line, reason: 'expected "email, prospectId, recordingUrl" or, if no email, "prospectId, recordingUrl"' });
     });
   return { leads, errors };
 }
@@ -56,7 +64,7 @@ function buildTsv(results: TranscriptionResult[]): string {
   const header = ["S.No", "Lead Email ID", "Prospect ID", "Recording URL", "Transcription", "Comments"];
   const rows = results.map((r, i) => [
     String(i + 1),
-    r.email,
+    r.email ?? "",
     r.prospectId,
     r.url,
     r.transcript ?? (r.error ? `ERROR: ${r.error}` : ""),
@@ -110,8 +118,9 @@ export default function TranscribePage() {
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Transcription</div>
         <h1 className="text-2xl font-semibold text-ink">Transcribe recordings into a lead report</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl leading-relaxed">
-          One lead per line: <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">email, prospectId, recordingUrl</code> — each
-          recording is fetched and transcribed for real (Hindi/English/mixed, always output in
+          One lead per line: <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">email, prospectId, recordingUrl</code> — or,
+          if a lead has no email on file, just <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">prospectId, recordingUrl</code>.
+          Each recording is fetched and transcribed for real (Hindi/English/mixed, always output in
           English). Add qualification context below and every call also gets a Comments verdict
           in the same pass — up to 20 leads per run, one at a time, so a slow or failing recording
           never silently drops the rest.
@@ -137,7 +146,7 @@ export default function TranscribePage() {
         <textarea
           value={leadsText}
           onChange={(e) => setLeadsText(e.target.value)}
-          placeholder={"lead1@example.com, PROS-1001, https://example.com/call-1.mp3\nlead2@example.com, PROS-1002, https://example.com/call-2.wav"}
+          placeholder={"lead1@example.com, PROS-1001, https://example.com/call-1.mp3\nPROS-1002, https://example.com/call-2.wav (no email? just leave it out)"}
           disabled={loading}
           rows={8}
           className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60"
@@ -198,7 +207,7 @@ export default function TranscribePage() {
                 {results.map((r, i) => (
                   <tr key={`${r.prospectId}-${i}`} className="border-b border-line last:border-0 align-top">
                     <td className="px-3 py-2 text-ink-faint tabular-nums">{i + 1}</td>
-                    <td className="px-3 py-2 text-ink">{r.email}</td>
+                    <td className="px-3 py-2 text-ink">{r.email ?? <span className="text-ink-faint">—</span>}</td>
                     <td className="px-3 py-2 text-ink font-mono text-xs">{r.prospectId}</td>
                     <td className="px-3 py-2 text-ink-faint text-xs max-w-40 truncate" title={r.url}>
                       {r.url}
