@@ -14,8 +14,6 @@ import {
   extractCarouselPrompts,
   META_ADS_LIVE_AGENTS,
   buildMetaAdsLiveContext,
-  SECURITY_REPUTATION_AGENTS,
-  buildReputationContext,
   MEETING_HISTORY_AGENTS,
   buildMeetingHistoryContext,
   LIVE_CRM_AUDIT_AGENTS,
@@ -51,7 +49,6 @@ import { discoverSubpages } from "@/lib/sitemap-discover";
 import { extractConversionSignals } from "@/lib/conversion-signals";
 import { generateImage, type GeneratedImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
-import { buildReputationCheckLinks, buildWebFilterCategoryLinks } from "@/lib/url-reputation";
 import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
 import { getSessionUserId } from "@/lib/authz";
 
@@ -286,16 +283,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Real one-click reputation-check links — never an automated cross-vendor
-  // check (see lib/url-reputation.ts for why). Just deterministic URL
-  // construction, no network call needed here.
-  if (SECURITY_REPUTATION_AGENTS.has(agentKey)) {
-    const url = websiteUrlOverride || workspace.websiteUrl;
-    const cleanDomain = url ? url.replace(/^https?:\/\//, "").split("/")[0] : null;
-    const links = cleanDomain ? buildReputationCheckLinks(cleanDomain) : [];
-    const webFilterLinks = cleanDomain ? buildWebFilterCategoryLinks(cleanDomain) : [];
-    extraContext = (extraContext ?? "") + buildReputationContext(url, links, webFilterLinks);
-  }
 
   // Real past-meeting history for both meeting agents — every entry is a
   // real prior run's stored output, never invented. Scoped to this one

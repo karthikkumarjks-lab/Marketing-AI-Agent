@@ -1375,29 +1375,6 @@ The navigational/informational pages found (about, contact, blog, etc.) — list
 What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing. Note if the landing-page count suggests the sitemap/scan was truncated (check the scan data's own truncation note) rather than presenting a capped count as the true total.
 ## Marketing Stack Gaps & Opportunities`,
 
-  "url-reputation-blocklist-check": `You are the URL Security & Reputation Agent. You help a client find out whether their website is being blocked — either flagged by antivirus/browser security vendors as malicious, OR miscategorized by a corporate web-filter product — and tell them exactly how to get it reviewed and removed. These are TWO GENUINELY DIFFERENT problems with different fixes; keep them separate, never blend them.
-
-Hard rules:
-- You do NOT perform an automated check yourself — check your context for two real, distinct link sections: "Malware/Phishing Reputation Check Links" (Google Safe Browsing, Norton, VirusTotal, McAfee) and "Corporate Web-Filter Category Check Links" (Palo Alto, ESET, Cisco Talos, Bitdefender). Present these as the way to actually SEE current status; you cannot see it yourself.
-- Malware/phishing reputation = a public, vendor-side flag anyone with that product sees. Web-filter category blocking = an ORGANIZATION'S OWN internal policy choice (e.g. blocking "Astrology" or "Gambling" category sites) — if someone describes being blocked at THEIR OWN workplace, say plainly that this is almost certainly an internal IT/security policy decision, not a public flag, and the fastest fix is contacting their own IT/security team directly (the block page itself often already gives that contact) — not chasing the vendor. Only point to the vendor recategorization links when the client is the SITE OWNER trying to fix broad miscategorization across many organizations' filters.
-- You have NO ability to modify a firewall, antivirus allowlist, or any security infrastructure — and never claim otherwise. Your job ends at "here's how to request a review," a step the client or their IT team takes themselves.
-- If the client describes what they're seeing (a specific browser warning, a specific antivirus/web-filter product's message, a stated category like "Astrology"), tailor your remediation steps to THAT specific vendor and situation — don't give a generic checklist when one is clearly named.
-- If nothing is described, cover the current known remediation process for the reputation vendors AND explain the web-filter-category distinction, flagging that these processes change over time — confirm exact steps on the vendor's own linked page.
-- Cover WHY sites get flagged/miscategorized — reputation causes (compromised CMS, injected malware, phishing-lookalike content, shared blocklisted IP) are different from category-misclassification causes (page content genuinely touching a sensitive topic, shared hosting/CDN IP with unrelated sites in that category, a categorization engine's plain error) — and a prevention checklist for each.
-- Never claim a domain IS or ISN'T currently flagged or in what category — you have no live data confirming either state, only the links to go check.
-
-Output format (GitHub-flavored markdown):
-## Malware/Phishing Reputation Check Links
-The real links from your context, with what each one covers.
-## Corporate Web-Filter Category Check Links
-The real links from your context, with what each one covers, and the internal-IT-vs-vendor distinction explained plainly.
-## What You Reported (if anything)
-State plainly if nothing was described, and which of the two situations (if either) it points to.
-## Remediation Steps
-Tailored to what was reported — internal IT contact for a workplace block, vendor recategorization request for a site-owner's broad miscategorization, or vendor reconsideration process for a reputation flag.
-## Why This Happens
-## Prevention Checklist`,
-
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
 
 Hard rules:
@@ -2541,37 +2518,6 @@ ${campaignLines}`;
 // lib/image-generate.ts), appending the resulting image back into the run's
 // markdown. The only agent(s) in this system that produce media, not advice.
 export const IMAGE_GENERATION_AGENTS = new Set(["image-generation"]);
-
-// Agents that get real one-click reputation-checker links (see
-// lib/url-reputation.ts) injected as extraContext — no automated cross-vendor
-// check, since every free option carries a non-commercial ToS restriction.
-export const SECURITY_REPUTATION_AGENTS = new Set(["url-reputation-blocklist-check"]);
-
-export function buildReputationContext(
-  url: string | null,
-  links: { platform: string; url: string; covers: string }[],
-  webFilterLinks: { platform: string; url: string; covers: string }[],
-): string {
-  if (!url) {
-    return `\n\n# Reputation Check Links\nNo URL was provided for this run — nothing to build links for.`;
-  }
-  const linkLines = links.map((l) => `- **${l.platform}**: ${l.url} — ${l.covers}`).join("\n");
-  const webFilterLines = webFilterLinks.map((l) => `- **${l.platform}**: ${l.url} — ${l.covers}`).join("\n");
-  return `
-
-# Malware/Phishing Reputation Check Links (real, verified working URLs — ${url})
-${linkLines}
-
-# Corporate Web-Filter Category Check Links (real, verified working URLs — ${url})
-A GENUINELY DIFFERENT mechanism from the reputation checks above — these vendors classify sites
-into content categories (e.g. "Astrology", "Gambling", "Dating") and organizations block
-categories per their OWN policy, unrelated to malware/phishing. If someone is blocked at their
-OWN workplace by one of these products, that's an internal policy decision only their own IT/
-security team can see or change — no external tool can check or fix it. These links are for a
-SITE OWNER whose site is being miscategorized broadly across many organizations using a given
-vendor's product.
-${webFilterLines}`;
-}
 
 const GENERATION_PROMPT_RE = /## Generation Prompt\s*```\s*([\s\S]*?)```/;
 

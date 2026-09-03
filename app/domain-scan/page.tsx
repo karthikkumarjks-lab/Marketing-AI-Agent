@@ -40,9 +40,9 @@ export default function DomainScanPage() {
           Real, live checks — DNS, registration (WHOIS/RDAP), SSL certificate, email
           authentication (SPF/DMARC), website reachability, mobile-friendliness signal, social
           links, chatbot widget, and phone number — read directly from the domain, not inferred by
-          an LLM. Ad activity across Meta/Google/LinkedIn and blacklist status aren&apos;t
-          automatable for free anywhere right now (see the notes in results), so those show up as
-          one-click links instead.
+          an LLM. Ad activity across Meta/Google/LinkedIn, blacklist status, security/reputation
+          flags, and corporate web-filter category checks aren&apos;t automatable for free anywhere
+          right now (see the notes in results), so those show up as one-click links instead.
         </p>
       </div>
 
@@ -199,6 +199,58 @@ function ScanResults({ result }: { result: DomainScanResult }) {
           </div>
           <span className="text-accent text-sm">Open →</span>
         </a>
+      </Section>
+
+      <Section title="Security & Reputation — One-Click Checks">
+        <p className="text-[11px] text-ink-faint mb-2.5 leading-relaxed">
+          Whether antivirus/browser vendors flag this domain as malicious — a public flag anyone with
+          that product sees.
+        </p>
+        <div className="flex flex-col gap-2">
+          {result.reputationCheckLinks.map((link) => (
+            <a
+              key={link.platform}
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2 hover:bg-bg transition-colors"
+            >
+              <div>
+                <div className="text-sm font-medium text-ink">{link.platform}</div>
+                <div className="text-[11px] text-ink-faint">{link.covers}</div>
+              </div>
+              <span className="text-accent text-sm">Open →</span>
+            </a>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Corporate Web-Filter Category Checks">
+        <p className="text-[11px] text-ink-faint mb-2.5 leading-relaxed">
+          A genuinely different mechanism from reputation flags above — these vendors classify sites
+          into content categories (e.g. &quot;Astrology&quot;, &quot;Gambling&quot;) and each
+          organization blocks categories per its own policy. If a block is happening at your OWN
+          workplace, that&apos;s almost always your own IT/security team&apos;s policy, not a public
+          flag — contact them directly rather than the vendor. These links are for a site owner
+          fixing broad miscategorization across many organizations&apos; filters instead.
+        </p>
+        <div className="flex flex-col gap-2">
+          {result.webFilterCategoryLinks.map((link) => (
+            <a
+              key={link.platform}
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2 hover:bg-bg transition-colors"
+            >
+              <div>
+                <div className="text-sm font-medium text-ink">{link.platform}</div>
+                <div className="text-[11px] text-ink-faint">{link.covers}</div>
+              </div>
+              <span className="text-accent text-sm">Open →</span>
+            </a>
+          ))}
+        </div>
       </Section>
 
       {result.mobile && (

@@ -1106,16 +1106,6 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 29,
   },
-  {
-    key: "url-reputation-blocklist-check",
-    name: "URL Security & Reputation Agent",
-    category: "Digital Experience",
-    mission: "Checks two genuinely different ways a URL can be blocked: flagged as malicious by antivirus/browser security vendors (Google Safe Browsing, Norton, VirusTotal, McAfee), or miscategorized by a corporate web-filter product (Palo Alto, ESET, Cisco Talos, Bitdefender) — real one-click links to each vendor's own free checker, since no free automated cross-vendor API exists without violating that vendor's own terms of service. Explains the key distinction: a workplace category block is almost always the viewer's own IT policy (contact them directly), while a public reputation flag or broad miscategorization is something the site owner requests a vendor review for. Advisory on remediation, not an automated firewall/antivirus configuration change — this system has no access to modify security infrastructure, and never would.",
-    inputs: ["Website/landing page URL", "What you're seeing if already flagged (optional)"],
-    outputs: ["Real one-click reputation-check links (Google Safe Browsing, Norton Safe Web, VirusTotal, McAfee)", "Real one-click web-filter category-check links (Palo Alto, ESET, Cisco Talos, Bitdefender)", "Vendor-specific remediation/reconsideration steps", "Prevention checklist"],
-    wired: true,
-    sortOrder: 30,
-  },
   // Retention & Lifecycle
   {
     key: "email-marketing",

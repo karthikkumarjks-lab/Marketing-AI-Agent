@@ -34,6 +34,16 @@ async function main() {
       },
     });
   }
+  // Remove any Agent row that's no longer in the catalog — e.g. an agent
+  // that was decommissioned (folded into a plain non-LLM tool, merged into
+  // another agent). Cascades to that agent's own AgentRun/NeedsAnalysis
+  // rows (both onDelete: Cascade in schema.prisma), which is the right
+  // outcome for something that's no longer a real agent at all, not an
+  // orphaned row silently left behind on every future re-seed.
+  const catalogKeys = AGENT_CATALOG.map((a) => a.key);
+  const { count: removedCount } = await prisma.agent.deleteMany({ where: { key: { notIn: catalogKeys } } });
+  if (removedCount > 0) console.log(`Removed ${removedCount} decommissioned agent(s) no longer in the catalog.`);
+
   console.log(`Seeded ${AGENT_CATALOG.length} agents.`);
 }
 

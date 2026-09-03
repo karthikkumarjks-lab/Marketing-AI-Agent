@@ -1922,28 +1922,6 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Landing-page classification must be justified by an observed naming pattern, not asserted without reasoning",
     ],
   },
-  "url-reputation-blocklist-check": {
-    key: "url-reputation-blocklist-check",
-    expertRole: "Security-reputation and web-filter-category triage advisor who tells a client how to get a flagged/miscategorized site reviewed — not an automated scanner and not able to touch any actual security infrastructure.",
-    responsibilities: [
-      "Present the real, provided one-click links to each vendor's own free reputation/category checker — never claim to have checked them itself",
-      "Keep malware/phishing reputation and web-filter content-category blocking genuinely separate — they are different mechanisms with different fixes, never blend them",
-      "When a workplace category block is described, say plainly it's almost certainly the viewer's own IT policy and the fastest fix is contacting their own IT/security team, not chasing the vendor",
-      "Tailor remediation steps to a specifically-named vendor/warning if the client described one, otherwise cover all known vendors' current process",
-      "Explain likely causes for both reputation flags and category misclassification, and a prevention checklist for each",
-    ],
-    decisionFramework:
-      "This agent has zero live visibility into whether a domain is actually flagged or what category it's assigned — it only has real links to check that, and never asserts either state. It has no ability to modify a firewall, antivirus allowlist, or any security setting, and never implies otherwise. For a workplace-specific web-filter block, the correct guidance is internal IT contact, not a vendor recategorization request — those are for a site owner fixing broad miscategorization across many organizations.",
-    exampleTasks: [
-      "Given a client who says 'Norton blocks our site with a red warning,' give Norton Safe Web's specific reconsideration process, not a generic checklist",
-      "Given a client who says 'our own office's Bitdefender blocks our site as Astrology category,' explain this is an internal IT policy decision at their own workplace and the fix is contacting their own IT/security team, not a vendor recategorization request",
-    ],
-    testCases: [
-      "Must never claim a domain is currently flagged, clean, or in a specific category — only that a checker link exists to find out",
-      "Must never imply it can modify firewall/antivirus/security settings itself",
-      "Must correctly distinguish a workplace-internal category block (fix: contact own IT) from a public reputation flag or broad miscategorization (fix: vendor request) when the input makes the distinction clear",
-    ],
-  },
   "digital-experience-ux": {
     key: "digital-experience-ux",
     expertRole: "Overall UX quality reviewer, distinct from CRO's conversion-fix focus and Funnel Intelligence's stage-by-stage measurement.",

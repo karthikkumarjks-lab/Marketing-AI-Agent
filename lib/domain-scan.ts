@@ -24,6 +24,7 @@ import {
   type EmailAuthInfo,
   type HealthScoreResult,
 } from "./domain-health";
+import { buildReputationCheckLinks, buildWebFilterCategoryLinks, type ReputationCheckLink } from "./url-reputation";
 
 export interface DnsRecords {
   a: string[];
@@ -83,6 +84,8 @@ export interface DomainScanResult {
   ssl: SslInfo | null;
   emailAuth: EmailAuthInfo | null;
   blacklistCheckLink: string;
+  reputationCheckLinks: ReputationCheckLink[];
+  webFilterCategoryLinks: ReputationCheckLink[];
   healthScore: HealthScoreResult;
   notes: string[];
 }
@@ -385,6 +388,15 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     "Mobile-friendliness is a signal (viewport tag present + configured for device width), not a rendered screenshot.",
   ];
   const adLibraryLinks = buildAdLibraryLinks(domain);
+  // Real one-click links, not an automated check — every free cross-vendor
+  // reputation API carries a non-commercial ToS restriction (see
+  // lib/url-reputation.ts). Pure URL construction from the domain alone, so
+  // computed once here regardless of whether the domain even resolves.
+  const reputationCheckLinks = buildReputationCheckLinks(domain);
+  const webFilterCategoryLinks = buildWebFilterCategoryLinks(domain);
+  notes.push(
+    "Security/reputation flags (malware, phishing) and corporate web-filter category blocks (e.g. Astrology, Gambling) are two different mechanisms — neither is checked automatically here, for the same non-commercial-API reason as blacklist status above. If a block is happening at your OWN workplace, that's almost always your own IT/security team's policy, not a public flag — contact them directly rather than the vendor.",
+  );
 
   const [dnsRecords, whois] = await Promise.all([fetchDns(domain), lookupWhois(domain)]);
   const domainExists = dnsRecords.a.length > 0 || dnsRecords.ns.length > 0 || dnsRecords.mx.length > 0;
@@ -426,6 +438,8 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       ssl: null,
       emailAuth: null,
       blacklistCheckLink,
+      reputationCheckLinks,
+      webFilterCategoryLinks,
       healthScore,
       notes,
     };
@@ -474,6 +488,8 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
       ssl,
       emailAuth,
       blacklistCheckLink,
+      reputationCheckLinks,
+      webFilterCategoryLinks,
       healthScore,
       notes,
     };
@@ -518,6 +534,8 @@ export async function scanDomain(rawInput: string): Promise<DomainScanResult> {
     ssl,
     emailAuth,
     blacklistCheckLink,
+    reputationCheckLinks,
+    webFilterCategoryLinks,
     healthScore,
     notes,
   };
