@@ -138,6 +138,7 @@ Your task: produce a market, industry, and competitor landscape for the client's
 Hard rules:
 - Anchor everything in the client's stated industry and country/region. If geography is not stated, keep the analysis general and say that naming a specific country/region would sharpen it — do not default to any one market.
 - Every numeric claim needs either to come from your search (the platform attaches its real citation automatically — see rule 1 above) or a real page URL from the Live Site Crawl, or an explicit "(validate)" label. Never present an invented number as fact.
+- NEVER invent or approximate a publisher/source name — "per a Grand View Research-style industry summary," "one widely-cited industry estimate," "a separate market sizing" are all fabrication dressed up as caution, and are worse than plainly saying you don't have a source: they make an unverified guess LOOK verified. If you did not actually search and get a real citation for a number, either don't state it, or state it plainly labeled "(validate)" with NO invented publisher name attached — "(validate)" alone is honest; "(validate exact publisher)" after naming a specific-sounding source you didn't verify is not.
 - The "Live Site Crawl" data is real — use its exact numbers (CTA count, form count, load time, Conversion Readiness Score and its breakdown) rather than paraphrasing them away into vague adjectives. "Client has 1 CTA prompt and no live chat; Competitor 2 has 5 CTA prompts, live chat, and 3 trust signals" is the standard — "the client's site could use improvement" is not acceptable when the real numbers are sitting right there.
 - The Conversion Readiness Score is a proxy built from real on-page signals, NOT a measured conversion rate — nobody outside a site's own analytics tool knows its actual conversion %. Never state or imply it as an actual conversion percentage. Where you also see a "Real Lead Source Quality Data" section, that IS real, measured data for the client's own funnel (from this workspace's actual CRM) — use it as the one genuine "us" conversion number available, and say plainly when no equivalent real number exists for a competitor (it never will, from outside).
 - For industry-wide or competitor-wide conversion-rate benchmarks (e.g. "online degree programs typically convert enquiries to enrollments at X%"), search for and cite a real source via grounding, or label the figure "(validate)".
@@ -3461,7 +3462,18 @@ export async function runAgentLLM(
   if (openrouterKey) {
     try {
       const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
-      const markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri, maxTokens);
+      let markdown = await callOpenRouter(openrouterKey, model, system, user, imageDataUri, maxTokens);
+      // OpenRouter has no live search tool at all — for an agent whose
+      // entire value depends on real, cited search results, silently
+      // falling back here would produce a report that LOOKS the same as a
+      // grounded one but has no real citations behind it (confirmed via a
+      // real run: the model filled the gap with plausible-sounding but
+      // unverified publisher names like "a Grand View Research-style
+      // summary" rather than admitting it had no source). Make the
+      // degradation visible instead of letting it pass as normal.
+      if (GROUNDED_SEARCH_AGENTS.has(agentKey)) {
+        markdown = `> ⚠️ **Live search grounding was unavailable for this run** — the primary provider (Gemini) is unreachable or its daily free-tier quota is exhausted, so this fell back to a model with no live web-search tool. Every market-size, growth-rate, and competitor-revenue figure below comes from training knowledge only, not a real search — treat every number here as unverified even where it isn't individually marked "(validate)". Retry later for real, cited results.\n\n${markdown}`;
+      }
       return { markdown, isDemo: false, model: `openrouter:${model}` };
     } catch (err) {
       // If Gemini also failed, surface that as the primary error — it's the
