@@ -3,26 +3,81 @@
 import { useState } from "react";
 
 interface TranscriptionResult {
+  email: string;
+  prospectId: string;
   url: string;
   transcript: string | null;
+  comments: string | null;
   error: string | null;
 }
 
+interface ParsedLead {
+  email: string;
+  prospectId: string;
+  url: string;
+}
+
+interface ParseError {
+  line: number;
+  raw: string;
+  reason: string;
+}
+
+function parseLeadsInput(text: string): { leads: ParsedLead[]; errors: ParseError[] } {
+  const leads: ParsedLead[] = [];
+  const errors: ParseError[] = [];
+  text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .forEach((line, i) => {
+      const parts = line.split(",").map((p) => p.trim());
+      if (parts.length !== 3 || parts.some((p) => !p)) {
+        errors.push({ line: i + 1, raw: line, reason: 'expected exactly "email, prospectId, recordingUrl"' });
+        return;
+      }
+      const [email, prospectId, url] = parts;
+      leads.push({ email, prospectId, url });
+    });
+  return { leads, errors };
+}
+
+// Excel/Sheets clipboard convention: tab-separated columns, newline-separated
+// rows — a cell containing a tab, newline, or double-quote must itself be
+// wrapped in double quotes (with internal quotes doubled), same rule as CSV,
+// or a multi-line transcript would paste as several broken rows instead of
+// one cell.
+function tsvCell(value: string): string {
+  if (/[\t\n"]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function buildTsv(results: TranscriptionResult[]): string {
+  const header = ["S.No", "Lead Email ID", "Prospect ID", "Recording URL", "Transcription", "Comments"];
+  const rows = results.map((r, i) => [
+    String(i + 1),
+    r.email,
+    r.prospectId,
+    r.url,
+    r.transcript ?? (r.error ? `ERROR: ${r.error}` : ""),
+    r.comments ?? "",
+  ]);
+  return [header, ...rows].map((row) => row.map(tsvCell).join("\t")).join("\n");
+}
+
 export default function TranscribePage() {
-  const [urlsText, setUrlsText] = useState("");
+  const [context, setContext] = useState("");
+  const [leadsText, setLeadsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<TranscriptionResult[] | null>(null);
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const urls = urlsText
-    .split("\n")
-    .map((u) => u.trim())
-    .filter(Boolean);
+  const { leads, errors: parseErrors } = parseLeadsInput(leadsText);
 
   async function runTranscribe(e: React.FormEvent) {
     e.preventDefault();
-    if (urls.length === 0) return;
+    if (leads.length === 0 || parseErrors.length > 0) return;
     setLoading(true);
     setError(null);
     setResults(null);
@@ -30,7 +85,7 @@ export default function TranscribePage() {
       const res = await fetch("/api/transcribe", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ urls }),
+        body: JSON.stringify({ leads, context: context.trim() || null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Transcription failed.");
@@ -42,43 +97,70 @@ export default function TranscribePage() {
     }
   }
 
-  async function copyTranscript(url: string, transcript: string) {
-    await navigator.clipboard.writeText(transcript);
-    setCopiedUrl(url);
-    setTimeout(() => setCopiedUrl((cur) => (cur === url ? null : cur)), 1500);
+  async function copyTable() {
+    if (!results) return;
+    await navigator.clipboard.writeText(buildTsv(results));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-8 py-10">
+    <main className="max-w-5xl mx-auto px-8 py-10">
       <div className="mb-8">
         <div className="text-xs font-mono uppercase tracking-wider text-accent mb-2">Transcription</div>
-        <h1 className="text-2xl font-semibold text-ink">Transcribe recordings from a URL</h1>
+        <h1 className="text-2xl font-semibold text-ink">Transcribe recordings into a lead report</h1>
         <p className="text-sm text-ink-soft mt-1.5 max-w-2xl leading-relaxed">
-          Paste one or more direct audio file URLs (one per line) — each is fetched and transcribed
-          for real. Works on Hindi, English, or mixed-language recordings; the output is always
-          English, translating any non-English speech rather than transliterating it. Up to 20 URLs
-          per run, processed one at a time (not in parallel) so a slow or failing one doesn&apos;t
-          silently drop the rest.
+          One lead per line: <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">email, prospectId, recordingUrl</code> — each
+          recording is fetched and transcribed for real (Hindi/English/mixed, always output in
+          English). Add qualification context below and every call also gets a Comments verdict
+          in the same pass — up to 20 leads per run, one at a time, so a slow or failing recording
+          never silently drops the rest.
         </p>
       </div>
 
       <form onSubmit={runTranscribe} className="mb-8">
+        <label className="text-sm font-medium text-ink mb-1 block">
+          Qualification context (optional — describe what counts as qualified and what to note)
+        </label>
         <textarea
-          value={urlsText}
-          onChange={(e) => setUrlsText(e.target.value)}
-          placeholder={"https://example.com/call-1.mp3\nhttps://example.com/call-2.wav"}
+          value={context}
+          onChange={(e) => setContext(e.target.value)}
+          placeholder={
+            "e.g. We're checking if these leads are qualified. If the lead says they're interested, or gives a time slot for a call, note that and say the bot should assign a sales agent. If they're not interested or vague, note that too."
+          }
           disabled={loading}
-          rows={6}
+          rows={3}
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60 mb-4"
+        />
+
+        <label className="text-sm font-medium text-ink mb-1 block">Leads — one per line</label>
+        <textarea
+          value={leadsText}
+          onChange={(e) => setLeadsText(e.target.value)}
+          placeholder={"lead1@example.com, PROS-1001, https://example.com/call-1.mp3\nlead2@example.com, PROS-1002, https://example.com/call-2.wav"}
+          disabled={loading}
+          rows={8}
           className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60"
         />
+
+        {parseErrors.length > 0 && (
+          <div className="mt-2 text-xs text-danger">
+            {parseErrors.map((e) => (
+              <div key={e.line}>
+                Line {e.line}: {e.reason} — got &quot;{e.raw}&quot;
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-2">
-          <span className="text-[11px] text-ink-faint">{urls.length} URL{urls.length === 1 ? "" : "s"}</span>
+          <span className="text-[11px] text-ink-faint">{leads.length} lead{leads.length === 1 ? "" : "s"}</span>
           <button
             type="submit"
-            disabled={loading || urls.length === 0}
+            disabled={loading || leads.length === 0 || parseErrors.length > 0}
             className="rounded-md bg-accent text-white text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-50 whitespace-nowrap"
           >
-            {loading ? `Transcribing… (this can take a while for several files)` : "Transcribe"}
+            {loading ? "Transcribing… (this can take a while for several files)" : "Transcribe"}
           </button>
         </div>
       </form>
@@ -90,29 +172,46 @@ export default function TranscribePage() {
       )}
 
       {results && (
-        <div className="flex flex-col gap-4">
-          {results.map((r) => (
-            <div key={r.url} className="bg-surface border border-line rounded-lg p-4">
-              <div className="flex items-center justify-between gap-3 mb-2.5">
-                <div className="text-xs font-mono text-ink-faint truncate" title={r.url}>
-                  {r.url}
-                </div>
-                {r.transcript && (
-                  <button
-                    onClick={() => copyTranscript(r.url, r.transcript!)}
-                    className="text-xs rounded border border-line-strong px-2.5 py-1 hover:bg-bg whitespace-nowrap shrink-0"
-                  >
-                    {copiedUrl === r.url ? "Copied" : "Copy text"}
-                  </button>
-                )}
-              </div>
-              {r.error ? (
-                <p className="text-sm text-danger">{r.error}</p>
-              ) : (
-                <p className="text-sm text-ink-soft whitespace-pre-wrap leading-relaxed">{r.transcript}</p>
-              )}
-            </div>
-          ))}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-ink-soft">Report ({results.length} row{results.length === 1 ? "" : "s"})</h2>
+            <button
+              onClick={copyTable}
+              className="text-xs rounded border border-line-strong px-3 py-1.5 hover:bg-bg whitespace-nowrap"
+            >
+              {copied ? "Copied — paste into Excel/Sheets" : "Copy table"}
+            </button>
+          </div>
+          <div className="overflow-x-auto bg-surface border border-line rounded-lg">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-line text-left">
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs">S.No</th>
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs">Lead Email ID</th>
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs">Prospect ID</th>
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs">Recording URL</th>
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs min-w-64">Transcription</th>
+                  <th className="px-3 py-2 font-medium text-ink-faint text-xs min-w-56">Comments</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((r, i) => (
+                  <tr key={`${r.prospectId}-${i}`} className="border-b border-line last:border-0 align-top">
+                    <td className="px-3 py-2 text-ink-faint tabular-nums">{i + 1}</td>
+                    <td className="px-3 py-2 text-ink">{r.email}</td>
+                    <td className="px-3 py-2 text-ink font-mono text-xs">{r.prospectId}</td>
+                    <td className="px-3 py-2 text-ink-faint text-xs max-w-40 truncate" title={r.url}>
+                      {r.url}
+                    </td>
+                    <td className="px-3 py-2 text-ink-soft whitespace-pre-wrap">
+                      {r.transcript ?? (r.error && <span className="text-danger">{r.error}</span>)}
+                    </td>
+                    <td className="px-3 py-2 text-ink-soft whitespace-pre-wrap">{r.comments ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </main>
