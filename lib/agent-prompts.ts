@@ -130,7 +130,7 @@ Output format (GitHub-flavored markdown, exactly these sections):
 
   "market-research": `You are the Market Research Agent inside a marketing operations platform. You are a global industry analyst who covers markets across regions, not just one country, and you have two kinds of real data available for this run — use both, never fall back to generic reasoning when they're present.
 
-1. **A live Google Search grounding tool.** When you use it to state a fact, the platform automatically splices a real, clickable source link right after that sentence in your output, AND appends a full reference list at the end — you do not write any URL yourself, anywhere, ever; just state the fact plainly in prose (never inside a table cell — a citation link can only attach to plain prose, and a table's whole point is short cells anyway) and the real citation appears right next to it once the platform processes your response. You DO need to actually search for and cite specifics (current market-size figures, named competitors, recent industry reports) rather than writing from memory alone — if a claim isn't something you actually searched for, it needs a "(validate)" label instead of being stated as fact.
+1. **A live Google Search grounding tool.** When you use it to state a fact, the platform automatically adds a "*Source: ...*" line directly BELOW the paragraph that fact is in (and below a chart, attributing it to whatever paragraph right above it states the charted numbers), plus a full reference list at the end — you do not write any URL yourself, anywhere, ever; just state facts plainly in prose (never inside a table cell) and the real citation appears right underneath once the platform processes your response. You DO need to actually search for and cite specifics (current market-size figures, named competitors, recent industry reports) rather than writing from memory alone — if a claim isn't something you actually searched for, it needs a "(validate)" label instead of being stated as fact.
 2. **A real live crawl** of the client's own website and every competitor URL entered for this run, appended below as "# Live Site Crawl" — real technology detected, real page counts, real CTA/form/trust-signal counts, real page-load time, and a transparent "Conversion Readiness Score" per site with its full points breakdown. This is not a guess about what these sites probably look like; it is what a real HTTP fetch actually found.
 
 Your task: produce a market, industry, and competitor landscape for the client's business — grounded in real search results and a real site crawl, dense with actual numbers, and explicit about the exact, specific reasons the client's site is underperforming named competitors.
@@ -3267,23 +3267,24 @@ async function callGemini(
 }
 
 /**
- * Places a short, real citation link right after the sentence/claim it
- * actually supports — using Gemini's own groundingSupports offsets, never
- * asking the model to write URLs itself. That matters for two reasons: (1)
- * the model doesn't actually see the real redirect URL at generation time,
- * only Google's server does, so any inline URL it "wrote" would have to be
- * fabricated; (2) asking a model to embed long URLs inside prose/tables is
- * exactly the pattern that has caused real runaway-repetition failures in
- * this agent (see the "Trust Signals" and competitor-differentiator table
- * bugs) — doing it here, deterministically, after generation has already
- * finished, carries none of that risk.
+ * Places one real "*Source: ...*" line directly BELOW each paragraph or
+ * chart it actually supports — using Gemini's own groundingSupports
+ * offsets, never asking the model to write URLs itself. That matters for
+ * two reasons: (1) the model doesn't actually see the real redirect URL at
+ * generation time, only Google's server does, so any inline URL it "wrote"
+ * would have to be fabricated; (2) asking a model to embed long URLs
+ * inside prose/tables is exactly the pattern that has caused real
+ * runaway-repetition failures in this agent (see the "Trust Signals" and
+ * competitor-differentiator table bugs) — doing it here, deterministically,
+ * after generation has already finished, carries none of that risk.
  *
- * Skips any segment that lands inside a markdown table row (a "|" appears
- * on that line) or inside a fenced code block (a ```chart JSON blob would
- * break if a citation link were spliced into it) — both are left to the
- * trailing "## All Sources" list instead.
+ * Explicitly per-paragraph/per-chart, not per-sentence: every citation
+ * found inside one paragraph is deduped and combined into a single source
+ * line right after that paragraph, and a chart (whose own fenced JSON has
+ * no citable text) borrows its source line from the paragraph immediately
+ * before it — the one that actually states the numbers being charted.
  *
- * Note: Gemini's segment offsets are UTF-8 byte offsets, not JS string
+ * Note: Gemini's segment offsets are UTF-8 BYTE offsets, not JS string
  * indices — see the comment inside this function for why that matters.
  */
 export function insertInlineCitations(
@@ -3306,44 +3307,94 @@ export function insertInlineCitations(
   const buf = Buffer.from(content, "utf-8");
   const byteOffsetToStringIndex = (byteOffset: number) => buf.subarray(0, byteOffset).toString("utf-8").length;
 
-  // Fenced code block ranges — never insert inside one of these.
-  const codeBlockRanges: [number, number][] = [];
-  const fenceRe = /```[\s\S]*?```/g;
-  let fenceMatch: RegExpExecArray | null;
-  while ((fenceMatch = fenceRe.exec(content))) {
-    codeBlockRanges.push([fenceMatch.index, fenceMatch.index + fenceMatch[0].length]);
-  }
-  const insideCodeBlock = (i: number) => codeBlockRanges.some(([start, end]) => i >= start && i < end);
-
-  const isTableRow = (endIndex: number) => {
-    const lineStart = content.lastIndexOf("\n", endIndex - 1) + 1;
-    const lineEnd = content.indexOf("\n", endIndex);
-    const line = content.slice(lineStart, lineEnd === -1 ? content.length : lineEnd);
-    return line.includes("|");
-  };
-
-  type Insertion = { at: number; text: string };
-  const insertions: Insertion[] = [];
-
+  // Resolve every real support to a verified JS string position + its real
+  // citation link(s), up front — before deciding where they attach.
+  type Resolved = { at: number; links: string[] };
+  const resolved: Resolved[] = [];
   for (const support of supports) {
     const seg = support.segment;
     if (!seg || seg.startIndex == null || seg.endIndex == null || !seg.text) continue;
-    // Verify Gemini's BYTE offsets actually line up with this exact segment
-    // before trusting them — if they don't, skip rather than splice a
-    // citation into the wrong spot.
     if (buf.subarray(seg.startIndex, seg.endIndex).toString("utf-8") !== seg.text) continue;
     const stringEndIndex = byteOffsetToStringIndex(seg.endIndex);
-    if (insideCodeBlock(stringEndIndex) || isTableRow(stringEndIndex)) continue;
-
     const chunkIndices = support.groundingChunkIndices ?? [];
-    const names = chunkIndices
-      .slice(0, 2) // keep each inline citation terse — full list is in the trailing reference
+    const links = chunkIndices
+      .slice(0, 2) // keep each source line terse — full list is in the trailing reference
       .map((i) => chunks[i]?.web)
       .filter((w): w is { uri: string; title?: string } => !!w?.uri)
       .map((w) => `[${(w.title || new URL(w.uri).hostname).replace(/[[\]]/g, "")}](${w.uri})`);
-    if (names.length === 0) continue;
+    if (links.length === 0) continue;
+    resolved.push({ at: stringEndIndex, links });
+  }
+  if (resolved.length === 0) return content;
 
-    insertions.push({ at: stringEndIndex, text: ` (${names.join(", ")})` });
+  // Fenced code blocks (the ```chart blocks) — each is its own unit, never
+  // itself touched (splicing into real JSON would break it), but a
+  // "chart" one gets a source line placed right after its closing fence.
+  const codeBlocks: { start: number; end: number; isChart: boolean }[] = [];
+  const fenceRe = /```[\s\S]*?```/g;
+  let fenceMatch: RegExpExecArray | null;
+  while ((fenceMatch = fenceRe.exec(content))) {
+    codeBlocks.push({
+      start: fenceMatch.index,
+      end: fenceMatch.index + fenceMatch[0].length,
+      isChart: /^```chart\b/.test(fenceMatch[0]),
+    });
+  }
+  // Prose-only segments: content with every fenced code block cut out —
+  // computed BEFORE paragraph-splitting so a paragraph can never swallow a
+  // code block into itself. Splitting on blank lines alone isn't enough:
+  // if the model's real output ever puts a chart right after a line of
+  // prose with no blank line between them, a single blank-line-based
+  // regex over the whole string would merge that prose and the chart's
+  // raw JSON into one "paragraph" and misattribute a citation to it.
+  const proseSegments: { start: number; end: number }[] = [];
+  {
+    let cursor = 0;
+    for (const block of codeBlocks) {
+      if (block.start > cursor) proseSegments.push({ start: cursor, end: block.start });
+      cursor = block.end;
+    }
+    if (cursor < content.length) proseSegments.push({ start: cursor, end: content.length });
+  }
+
+  // Paragraphs: maximal runs of non-blank lines within one prose segment.
+  // This naturally isolates a markdown table as one paragraph too (a table
+  // is always set off from surrounding prose by blank lines), so any
+  // citation matched inside one lands after the whole table, never
+  // spliced into a row — the exact thing that broke this table's
+  // formatting before.
+  const paragraphs: { start: number; end: number }[] = [];
+  const paraRe = /[^\n]+(?:\n(?!\n)[^\n]*)*/g;
+  for (const seg of proseSegments) {
+    const segText = content.slice(seg.start, seg.end);
+    let paraMatch: RegExpExecArray | null;
+    while ((paraMatch = paraRe.exec(segText))) {
+      paragraphs.push({ start: seg.start + paraMatch.index, end: seg.start + paraMatch.index + paraMatch[0].length });
+    }
+  }
+
+  const insertions: { at: number; text: string }[] = [];
+
+  for (const para of paragraphs) {
+    const paraCitations = resolved.filter((r) => r.at > para.start && r.at <= para.end);
+    if (paraCitations.length === 0) continue;
+    const links = [...new Set(paraCitations.flatMap((c) => c.links))];
+    insertions.push({ at: para.end, text: `\n*Source: ${links.join(", ")}*` });
+  }
+
+  // A chart's own fenced JSON never has a matching citation (there's no
+  // prose text inside it for Gemini to have cited) — borrow the source
+  // line from the single nearest paragraph immediately before it, which is
+  // the one actually stating the numbers being charted.
+  for (const block of codeBlocks) {
+    if (!block.isChart) continue;
+    const precedingParas = paragraphs.filter((p) => p.end <= block.start);
+    const nearest = precedingParas[precedingParas.length - 1];
+    if (!nearest) continue;
+    const paraCitations = resolved.filter((r) => r.at > nearest.start && r.at <= nearest.end);
+    if (paraCitations.length === 0) continue;
+    const links = [...new Set(paraCitations.flatMap((c) => c.links))];
+    insertions.push({ at: block.end, text: `\n*Source: ${links.join(", ")}*` });
   }
 
   if (insertions.length === 0) return content;
