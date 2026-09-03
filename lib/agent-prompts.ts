@@ -3435,12 +3435,20 @@ export async function runAgentLLM(
     user += buildBrandDNAPrompt(brand ?? null);
   }
 
-  // Two DIFFERENT providers, tried in order, each with its own separate
-  // quota — genuine failover (Gemini having an outage or hitting its own
-  // limit falls through to OpenRouter), not multiple accounts on the same
-  // provider pooling one limit, which this deliberately does not do (see
-  // the decision documented alongside GEMINI_API_KEY in .env.local.example).
-  const geminiKey = process.env.GEMINI_API_KEY;
+  // Gemini is tried first (1-2 keys, see below), then OpenRouter as a
+  // genuinely different provider/quota if both Gemini attempts fail.
+  //
+  // GEMINI_API_KEY_2 is a deliberate, later exception to this file's
+  // original design (a single Gemini key, explicitly NOT multiple accounts
+  // pooling one limit) — added after gemini-2.5-flash's real free-tier cap
+  // turned out to be a hard 20 requests/DAY (confirmed via a real 429),
+  // which genuinely blocked real usage of a grounded (live-search) agent.
+  // A second key from a different Google account/project has its own
+  // separate quota, so this is real failover, not pooling — same
+  // principle as the Gemini-then-OpenRouter fallback below, just applied
+  // one layer earlier because OpenRouter has no search-grounding tool at
+  // all and would otherwise be the ONLY fallback for a grounded agent.
+  const geminiKeys = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_2].filter((k): k is string => !!k);
   const openrouterKey = process.env.OPENROUTER_API_KEY;
   const maxTokens = XL_OUTPUT_AGENTS.has(agentKey)
     ? XL_MAX_OUTPUT_TOKENS
@@ -3449,13 +3457,13 @@ export async function runAgentLLM(
       : DEFAULT_MAX_OUTPUT_TOKENS;
   let firstError: unknown;
 
-  if (geminiKey) {
+  for (const geminiKey of geminiKeys) {
     try {
       const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
       const markdown = await callGemini(geminiKey, model, system, user, imageDataUri, maxTokens, GROUNDED_SEARCH_AGENTS.has(agentKey));
       return { markdown, isDemo: false, model: `gemini:${model}` };
     } catch (err) {
-      firstError = err;
+      if (firstError === undefined) firstError = err; // keep the FIRST key's error as primary — a later key's failure isn't the interesting one
     }
   }
 
