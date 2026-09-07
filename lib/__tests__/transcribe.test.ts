@@ -25,30 +25,30 @@ describe("guessMimeFromUrl", () => {
 
 describe("parseResponse", () => {
   it("splits transcript and comments when both markers are present", () => {
-    const raw = "===TRANSCRIPT===\nSpeaker 1: Hello, I'm interested.\n===COMMENTS===\nQualified — expressed interest.";
-    const { transcript, comments } = parseResponse(raw, true);
+    const raw = "===TRANSCRIPT===\nSpeaker 1: Hello, I'm interested.\n===COMMENTS===\nAssign to Sales — expressed interest.";
+    const { transcript, comments } = parseResponse(raw);
     expect(transcript).toBe("Speaker 1: Hello, I'm interested.");
-    expect(comments).toBe("Qualified — expressed interest.");
-  });
-
-  it("returns only the transcript when no context was given (no Comments expected)", () => {
-    const raw = "===TRANSCRIPT===\nSpeaker 1: Hello.";
-    const { transcript, comments } = parseResponse(raw, false);
-    expect(transcript).toBe("Speaker 1: Hello.");
-    expect(comments).toBeNull();
+    expect(comments).toBe("Assign to Sales — expressed interest.");
   });
 
   it("falls back to treating the whole response as the transcript when the model didn't use the markers", () => {
     const raw = "Speaker 1: Hello there, no markers here.";
-    const { transcript, comments } = parseResponse(raw, true);
+    const { transcript, comments } = parseResponse(raw);
     expect(transcript).toBe(raw);
     expect(comments).toBeNull();
   });
 
+  it("returns only the transcript (no comments) when only the transcript marker came back", () => {
+    const raw = "===TRANSCRIPT===\nSpeaker 1: Hello.";
+    const { transcript, comments } = parseResponse(raw);
+    expect(transcript).toBe("Speaker 1: Hello.");
+    expect(comments).toBeNull();
+  });
+
   it("does not lose content if a real transcript happens to mention the word 'comments'", () => {
-    const raw = "===TRANSCRIPT===\nHe said please leave your comments after the beep.\n===COMMENTS===\nNot enough signal to qualify.";
-    const { transcript, comments } = parseResponse(raw, true);
+    const raw = "===TRANSCRIPT===\nHe said please leave your comments after the beep.\n===COMMENTS===\nNot enough signal to decide.";
+    const { transcript, comments } = parseResponse(raw);
     expect(transcript).toBe("He said please leave your comments after the beep.");
-    expect(comments).toBe("Not enough signal to qualify.");
+    expect(comments).toBe("Not enough signal to decide.");
   });
 });

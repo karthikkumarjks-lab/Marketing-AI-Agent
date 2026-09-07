@@ -121,15 +121,16 @@ export default function TranscribePage() {
           One lead per line: <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">email, prospectId, recordingUrl</code> — or,
           if a lead has no email on file, just <code className="font-mono text-xs bg-bg border border-line rounded px-1 py-0.5">prospectId, recordingUrl</code>.
           Each recording is fetched and transcribed for real (Hindi/English/mixed, always output in
-          English). Add qualification context below and every call also gets a Comments verdict
-          in the same pass — up to 20 leads per run, one at a time, so a slow or failing recording
-          never silently drops the rest.
+          English), and every call automatically gets a Comments verdict on whether it should be
+          assigned to sales — no setup needed. Up to 20 leads per run, one at a time, so a slow or
+          failing recording never silently drops the rest.
         </p>
       </div>
 
       <form onSubmit={runTranscribe} className="mb-8">
         <label className="text-sm font-medium text-ink mb-1 block">
-          Qualification context (optional — describe what counts as qualified and what to note)
+          Qualification context (optional — by default every call is checked for &quot;assign to sales&quot;
+          signal; fill this in only to use different criteria for this batch)
         </label>
         <textarea
           value={context}

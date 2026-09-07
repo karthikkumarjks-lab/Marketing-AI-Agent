@@ -69,6 +69,13 @@ export interface TranscriptionResult {
 const TRANSCRIPT_MARKER = "===TRANSCRIPT===";
 const COMMENTS_MARKER = "===COMMENTS===";
 
+// The built-in default qualification framework — a Comments verdict is
+// ALWAYS produced (per explicit requirement: pasting just prospectId +
+// recordingUrl should be enough, no per-batch setup required), using this
+// unless the client's own context textarea overrides it with something
+// more specific for a particular batch.
+const DEFAULT_QUALIFICATION_CONTEXT = `Determine whether this lead should be assigned to a sales agent based on this call. Assign to Sales if the lead expressed genuine interest, asked for more details with real intent to move forward, or gave a specific time slot/availability for a follow-up call. Mark as Not Ready if they declined, showed no interest, or asked not to be contacted.`;
+
 function buildPrompt(context: string | null): string {
   const base = `Transcribe this audio recording completely and accurately, word for word.
 
@@ -78,19 +85,17 @@ If there are multiple speakers, label them generically as "Speaker 1", "Speaker 
 
 If the audio is silent, unintelligible, or too degraded to transcribe in parts, say so plainly for that portion rather than inventing plausible-sounding text — never fabricate any part of a transcript.`;
 
-  if (!context) {
-    return `${base}\n\nOutput format — exactly this, with the literal marker line and nothing else around it:\n${TRANSCRIPT_MARKER}\n<the full transcript>`;
-  }
+  const effectiveContext = context || DEFAULT_QUALIFICATION_CONTEXT;
 
   return `${base}
 
-After the transcript, also write a short Comments verdict on this specific call, using ONLY the following context/criteria the client gave you — do not invent your own qualification rules, apply exactly what's described below:
+After the transcript, also write a short Comments verdict on this specific call, using ONLY the following context/criteria — do not invent your own qualification rules, apply exactly what's described below:
 
 """
-${context}
+${effectiveContext}
 """
 
-The Comments must be grounded only in what was actually said in THIS call — never assume or carry over anything from a different call. If the call doesn't clearly meet the described criteria either way, say that plainly (e.g. "Not enough signal to call this qualified/unqualified — [why]") rather than forcing a verdict the transcript doesn't support. Keep it to 1-3 sentences: the verdict, the specific evidence from the call, and the next action per the client's context if one applies.
+The Comments must be grounded only in what was actually said in THIS call — never assume or carry over anything from a different call. If the call doesn't clearly meet the described criteria either way, say that plainly (e.g. "Not enough signal to decide — [why]") rather than forcing a verdict the transcript doesn't support. Keep it to 1-3 sentences: the verdict, the specific evidence from the call, and the next action if one applies.
 
 Output format — exactly this, with the literal marker lines and nothing else around them:
 ${TRANSCRIPT_MARKER}
@@ -99,7 +104,7 @@ ${COMMENTS_MARKER}
 <the comments verdict for this call>`;
 }
 
-export function parseResponse(text: string, hasContext: boolean): { transcript: string; comments: string | null } {
+export function parseResponse(text: string): { transcript: string; comments: string | null } {
   const transcriptIdx = text.indexOf(TRANSCRIPT_MARKER);
   const commentsIdx = text.indexOf(COMMENTS_MARKER);
 
@@ -110,7 +115,7 @@ export function parseResponse(text: string, hasContext: boolean): { transcript: 
     return { transcript: text.trim(), comments: null };
   }
 
-  if (hasContext && commentsIdx > transcriptIdx) {
+  if (commentsIdx > transcriptIdx) {
     return {
       transcript: text.slice(transcriptIdx + TRANSCRIPT_MARKER.length, commentsIdx).trim(),
       comments: text.slice(commentsIdx + COMMENTS_MARKER.length).trim(),
@@ -193,7 +198,7 @@ export async function transcribeLead(lead: LeadRecording, context: string | null
   for (const key of geminiKeys) {
     try {
       const raw = await callGeminiAudio(key, model, prompt, fetched.base64, fetched.mimeType);
-      const { transcript, comments } = parseResponse(raw, !!context);
+      const { transcript, comments } = parseResponse(raw);
       return { ...base, transcript, comments, error: null };
     } catch (err) {
       lastError = err;
