@@ -198,19 +198,31 @@ export default function AgentRunner({
           {competitorUrlField && (
             <div className="mb-3">
               <label className="text-sm font-medium text-ink mb-1 block">
-                {agentKey === "market-research" ? "Competitor URL(s) to scan (optional)" : "Competitor URL to scan (optional)"}
+                {agentKey === "market-research"
+                  ? "Competitor URL(s) to scan (optional)"
+                  : agentKey === "landing-page-health-score"
+                    ? "Landing page URLs to audit (required)"
+                    : "Competitor URL to scan (optional)"}
               </label>
               <input
                 type="text"
                 className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
-                placeholder={agentKey === "market-research" ? "e.g. competitor-a.com, competitor-b.com" : "e.g. competitor.com"}
+                placeholder={
+                  agentKey === "market-research"
+                    ? "e.g. competitor-a.com, competitor-b.com"
+                    : agentKey === "landing-page-health-score"
+                      ? "e.g. example.com/lp-1, example.com/lp-2, example.com/lp-3"
+                      : "e.g. competitor.com"
+                }
                 value={competitorUrl}
                 onChange={(e) => setCompetitorUrl(e.target.value)}
               />
               <p className="text-[11px] text-ink-faint mt-1">
                 {agentKey === "market-research"
                   ? "Real crawl (technology, pages, CTAs, forms, trust signals, load time) for up to 4 sites, comma-separated. Leave blank to compare against category knowledge only."
-                  : "Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead."}
+                  : agentKey === "landing-page-health-score"
+                    ? "Real Lighthouse audit (Performance/Accessibility/Best Practices/SEO + Core Web Vitals) for up to 10 pages, comma-separated — each one, including an unlinked/paid landing page not in your sitemap. Each audit takes 15-40s, so a full batch can take several minutes."
+                    : "Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead."}
               </p>
             </div>
           )}

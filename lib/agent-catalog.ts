@@ -1106,6 +1106,16 @@ export const AGENT_CATALOG: AgentSpec[] = [
     wired: true,
     sortOrder: 29,
   },
+  {
+    key: "landing-page-health-score",
+    name: "Landing Page Health Score Agent",
+    category: "Digital Experience",
+    mission: "Real Lighthouse audit (via Google's own PageSpeed Insights API — the same engine as Chrome's Inspect → Lighthouse panel) across multiple landing pages at once: real Performance/Accessibility/Best Practices/SEO scores and Core Web Vitals per page, plus cross-page pattern-finding — which specific pages are dragging the average down, what fix would help the most pages at once, not just a per-page audit repeated N times.",
+    inputs: ["Landing page URLs (multiple, real audit per page)"],
+    outputs: ["Per-page Lighthouse scores (Performance/Accessibility/Best Practices/SEO)", "Core Web Vitals per page", "Worst-performing pages ranked", "Shared/common issues across pages", "Prioritized fixes by cross-page impact"],
+    wired: true,
+    sortOrder: 30,
+  },
   // Retention & Lifecycle
   {
     key: "email-marketing",

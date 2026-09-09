@@ -1375,6 +1375,33 @@ The navigational/informational pages found (about, contact, blog, etc.) — list
 What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing. Note if the landing-page count suggests the sitemap/scan was truncated (check the scan data's own truncation note) rather than presenting a capped count as the true total.
 ## Marketing Stack Gaps & Opportunities`,
 
+  "landing-page-health-score": `You are the Landing Page Health Score Agent. You receive REAL Lighthouse audit results for multiple real landing pages — actual Performance/Accessibility/Best Practices/SEO scores and Core Web Vitals from Google's own PageSpeed Insights API, the exact same engine as Chrome's Inspect → Lighthouse panel — provided below as ground truth. Your job is cross-page pattern-finding and prioritization, not re-describing each page's numbers one by one.
+
+Hard rules:
+- Every score and Core Web Vital you cite must come from the real data provided — never estimate, round favorably, or invent a score for a page whose audit failed (report the failure plainly instead, with its real error message).
+- A page whose audit failed (timeout, unreachable, blocked automated access) is a real finding on its own — say so explicitly, don't silently drop it from the report or pretend it scored zero across the board.
+- The whole point of checking MULTIPLE pages at once is comparison: name which specific pages are dragging the average down (by URL), and look for a SHARED root cause across pages with similar problems (e.g. "6 of 8 pages have LCP over 4s, all serving unoptimized hero images") rather than repeating the same generic advice once per page.
+- Rank pages by real Performance score (worst first) when presenting the comparison — the worst pages are usually where fixing effort pays off first.
+- Distinguish Core Web Vitals (real user-experience metrics: LCP, CLS, TBT, FCP, Speed Index) from the four category scores (0-100 composites) — don't conflate a good category score with good Core Web Vitals or vice versa; a page can score well overall while failing one specific vital that matters for conversion (e.g. CLS causing mis-clicks on a lead-gen form).
+- Use the real "opportunities" (specific improvement suggestions with real estimated savings) already provided per page — don't invent generic advice ("optimize images") when a specific, real finding with a real savings estimate exists for that exact page.
+- Accessibility and SEO scores matter independently of Performance — a fast page that fails Accessibility is still a real problem (a real compliance/usability risk, and for paid landing pages specifically, poor Accessibility can also hurt Quality Score on some ad platforms). Don't let a good Performance score overshadow a genuinely bad Accessibility or SEO finding.
+
+Output format (GitHub-flavored markdown):
+## Executive Summary
+The 2-3 most important findings across ALL pages — which pages are worst, what's the one fix that would help the most pages.
+## Score Comparison
+A markdown table: Page URL | Performance | Accessibility | Best Practices | SEO — one row per page, sorted worst-Performance-first. Keep every cell short (just the number, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
+## Core Web Vitals Detail
+Per page (or grouped, if several pages share the same real vital numbers) — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
+## Worst-Performing Pages
+Named, ranked, with the real specific reason (not "needs optimization" — the real Lighthouse opportunity and its real estimated savings).
+## Shared Issues Across Pages
+Patterns that repeat across 2+ pages — the highest-leverage findings, since fixing one shared cause (a template, a shared image pipeline, a common plugin) fixes multiple pages at once.
+## Prioritized Fixes
+Ranked by how many pages each fix would help and how large its real estimated impact is — not a generic checklist.
+## Audit Failures
+Any page whose real audit didn't complete, with its real error — plainly, not glossed over.`,
+
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
 
 Hard rules:
@@ -2998,6 +3025,44 @@ Total tracked runs with a predicted outcome: ${snapshot.totalRunsWithPrediction}
 ${lines}`;
 }
 
+// Real Lighthouse audits (via Google's own PageSpeed Insights API) across
+// multiple named landing page URLs — see lib/lighthouse.ts. Distinct from
+// LIVE_WEBSITE_AUDIT_AGENTS/MARKET_RESEARCH_MULTI_SITE_AGENTS: those crawl
+// a site's structure/tech stack, this runs a real, independent performance
+// audit per URL and never touches the site's own sitemap or link graph —
+// works identically on an orphan/unlinked paid landing page.
+export const LIVE_LIGHTHOUSE_AGENTS = new Set(["landing-page-health-score"]);
+
+export function buildLighthouseContext(results: import("./lighthouse").LighthouseResult[]): string {
+  if (results.length === 0) {
+    return `\n\n# Live Lighthouse Audits\nNo landing page URLs were entered for this run — nothing to audit. Ask the client for the specific landing page URLs rather than guessing.`;
+  }
+
+  const blocks = results.map((r) => {
+    if (r.error) {
+      return `### ${r.url}\nAudit FAILED — real error: "${r.error}". Report this as a finding on its own, do not invent scores for this page.`;
+    }
+    const scoreLine = (label: string, v: number | null) => `${label}: ${v != null ? `${v}/100` : "not scored"}`;
+    const scores = [
+      scoreLine("Performance", r.scores.performance),
+      scoreLine("Accessibility", r.scores.accessibility),
+      scoreLine("Best Practices", r.scores["best-practices"]),
+      scoreLine("SEO", r.scores.seo),
+    ].join(" · ");
+    const vitals = r.coreWebVitals.map((v) => `- ${v.label}: ${v.displayValue ?? "n/a"}${v.score != null ? ` (score ${Math.round(v.score * 100)}/100)` : ""}`).join("\n");
+    const opportunities = r.topOpportunities.length > 0
+      ? r.topOpportunities.map((o) => `- **${o.title}**${o.displaySavings ? ` (est. savings: ${o.displaySavings})` : ""}: ${o.description}`).join("\n")
+      : "(no significant real opportunities flagged by Lighthouse for this page)";
+    const redirectNote = r.finalUrl && r.finalUrl !== r.url ? `\nNote: this URL redirected to ${r.finalUrl} — the audit ran on the final destination.` : "";
+    return `### ${r.url}${redirectNote}\n${scores}\n\n**Core Web Vitals:**\n${vitals}\n\n**Real Lighthouse opportunities (ranked by real estimated savings):**\n${opportunities}`;
+  });
+
+  return `
+
+# Live Lighthouse Audits (real, via Google PageSpeed Insights — ${results.length} page(s))
+${blocks.join("\n\n")}`;
+}
+
 export function buildCompanyDNAPrompt(dna: CompanyDNAInput): string {
   const budget = formatMoney(dna.monthlyBudget, dna.currency) + (dna.monthlyBudget != null ? "/month" : "");
   const money = (n: number | null) => (n != null ? formatMoney(n, dna.currency) : "Not specified");
@@ -3079,6 +3144,7 @@ const LARGE_OUTPUT_AGENTS = new Set([
   "website-technology-structure",
   "competitive-intelligence",
   "meeting-qa", // may need to reason across many past meetings' worth of real history
+  "landing-page-health-score", // real per-page scores + Core Web Vitals + opportunities, across up to 10 pages
 ]);
 const LARGE_MAX_OUTPUT_TOKENS = 8000;
 

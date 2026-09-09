@@ -32,6 +32,8 @@ import {
   buildMarketCrawlContext,
   type ScannedSite,
   SINGLE_RUN_AGENTS,
+  LIVE_LIGHTHOUSE_AGENTS,
+  buildLighthouseContext,
 } from "@/lib/agent-prompts";
 import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
 import { computeCampaignQaSnapshot } from "@/lib/campaign-qa";
@@ -47,6 +49,7 @@ import { parseExcelBuffer } from "@/lib/excel-parse";
 import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
 import { extractConversionSignals } from "@/lib/conversion-signals";
+import { checkLighthouseBatch } from "@/lib/lighthouse";
 import { generateImage, type GeneratedImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
@@ -382,6 +385,19 @@ export async function POST(req: NextRequest) {
 
     const leadQuality = await computeLeadQualitySnapshot(workspaceId);
     extraContext = (extraContext ?? "") + buildLeadQualityContext(leadQuality);
+  }
+
+  // Real Lighthouse audits (via Google PageSpeed Insights) across every
+  // landing page URL entered — reuses the same competitor-URL input field
+  // as market-research (see the "Landing page URLs to audit" label in
+  // agent-runner.tsx) since the semantics here are "N pages to check", not
+  // "my site vs. a rival". Capped higher than market-research's 4 (real
+  // Lighthouse runs are single-purpose per-URL, not a multi-signal crawl,
+  // so a client checking several landing pages at once is the normal case).
+  if (LIVE_LIGHTHOUSE_AGENTS.has(agentKey)) {
+    const urls = competitorUrlOverride ? parseMultipleUrls(competitorUrlOverride, 10) : [];
+    const results = await checkLighthouseBatch(urls);
+    extraContext = (extraContext ?? "") + buildLighthouseContext(results);
   }
 
   // Real Meta Ads data: only when this workspace has a genuine OAuth

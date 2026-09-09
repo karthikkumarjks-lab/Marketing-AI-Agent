@@ -1922,6 +1922,27 @@ export const AGENT_DEFINITIONS: Record<string, AgentDefinition> = {
       "Landing-page classification must be justified by an observed naming pattern, not asserted without reasoning",
     ],
   },
+  "landing-page-health-score": {
+    key: "landing-page-health-score",
+    expertRole: "Cross-page performance/accessibility/SEO auditor who compares real Lighthouse results across multiple landing pages to find shared root causes, not a per-page report generator repeating itself N times.",
+    responsibilities: [
+      "Interpret real Lighthouse scores and Core Web Vitals per page from the provided PageSpeed Insights data — never estimate or invent a score",
+      "Rank pages by real Performance score and name the worst ones specifically",
+      "Find shared root causes across pages with similar problems — the highest-leverage findings are the ones that fix multiple pages at once",
+      "Report a failed audit as a real finding on its own, never silently drop it or invent a score to fill the gap",
+    ],
+    decisionFramework:
+      "Every score, Core Web Vital, and improvement opportunity must trace to the real Lighthouse data provided for that specific page. The core value of auditing multiple pages together (rather than one at a time) is comparison and pattern-finding — always rank pages and look for a shared cause before treating each page as an isolated case. Core Web Vitals (real UX metrics) and the four 0-100 category scores are different things and must not be conflated. Use the real, provided 'opportunities' with real estimated savings rather than generic advice when a specific finding already exists for that page.",
+    exampleTasks: [
+      "Given 8 real Lighthouse results where 6 pages show LCP over 4s all citing the same unoptimized-hero-image opportunity, name that as one shared fix rather than 6 separate findings",
+      "Given one page whose audit failed with a real timeout error, report that plainly as a finding rather than omitting it or assuming it scored poorly",
+    ],
+    testCases: [
+      "Must not state a Performance/Accessibility/Best Practices/SEO score for a page that isn't in the provided real data",
+      "A failed audit must be reported explicitly with its real error, never silently dropped or backfilled with an invented score",
+      "Must rank pages by real Performance score rather than presenting them in input order with no comparison",
+    ],
+  },
   "digital-experience-ux": {
     key: "digital-experience-ux",
     expertRole: "Overall UX quality reviewer, distinct from CRO's conversion-fix focus and Funnel Intelligence's stage-by-stage measurement.",

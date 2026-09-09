@@ -678,6 +678,13 @@ export function analyzeNeeds(dna: WorkspaceDNA, agentKeys: string[]): NeedRecomm
     "website-technology-structure": website
       ? { status: "active", reason: "A website exists — worth auditing its real technology stack and structure before recommending integrations or flagging tracking gaps." }
       : { status: "idle", reason: "No website on record yet to scan." },
+
+    // Real Lighthouse checks need real landing page URLs, entered fresh
+    // per run — same website-exists trigger as a starting signal, since a
+    // client with no website at all has no landing pages to name yet.
+    "landing-page-health-score": website
+      ? { status: "active", reason: "A website exists — real Performance/Accessibility/SEO scores on the actual landing pages are worth checking before spending on traffic to them." }
+      : { status: "idle", reason: "No website on record yet — nothing to point real landing page URLs at." },
   };
 
   return agentKeys.map((key) => {
