@@ -12,10 +12,17 @@
 // unlike Gemini, this key needs no billing enabled, just the "PageSpeed
 // Insights API" turned on for a free Google Cloud project. See
 // .env.local.example for the exact steps.
+//
+// Runs BOTH mobile and desktop strategies per URL — Lighthouse scores
+// (especially Performance) commonly differ a lot between the two because
+// PSI's mobile run throttles CPU/network to simulate a real mid-tier
+// phone, while desktop doesn't. Reporting only one strategy hides that gap.
 
 const PSI_TIMEOUT_MS = 60000; // a real Lighthouse run (Google renders the actual page) commonly takes 15-40s
 const CATEGORIES = ["performance", "accessibility", "best-practices", "seo"] as const;
 type Category = (typeof CATEGORIES)[number];
+const STRATEGIES = ["mobile", "desktop"] as const;
+export type Strategy = (typeof STRATEGIES)[number];
 
 export interface CoreWebVital {
   label: string;
@@ -29,13 +36,18 @@ export interface Opportunity {
   displaySavings: string | null;
 }
 
-export interface LighthouseResult {
-  url: string;
+export interface DeviceAudit {
   scores: Record<Category, number | null>; // 0-100
   coreWebVitals: CoreWebVital[];
   topOpportunities: Opportunity[];
   finalUrl: string | null; // where the audited page actually landed, if redirected
   error: string | null;
+}
+
+export interface LighthouseResult {
+  url: string;
+  mobile: DeviceAudit;
+  desktop: DeviceAudit;
 }
 
 const CWV_AUDIT_IDS: { id: string; label: string }[] = [
@@ -47,6 +59,7 @@ const CWV_AUDIT_IDS: { id: string; label: string }[] = [
 ];
 
 const MAX_OPPORTUNITIES = 6;
+const EMPTY_SCORES: Record<Category, number | null> = { performance: null, accessibility: null, "best-practices": null, seo: null };
 
 interface PsiAuditRef {
   score?: number | null;
@@ -56,26 +69,25 @@ interface PsiAuditRef {
   details?: { type?: string; overallSavingsMs?: number };
 }
 
-async function fetchPageSpeedInsights(url: string, apiKey: string): Promise<LighthouseResult> {
+async function fetchPageSpeedInsights(url: string, apiKey: string, strategy: Strategy): Promise<DeviceAudit> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PSI_TIMEOUT_MS);
-  const empty: Record<Category, number | null> = { performance: null, accessibility: null, "best-practices": null, seo: null };
   try {
-    const params = new URLSearchParams({ url, strategy: "mobile", key: apiKey });
+    const params = new URLSearchParams({ url, strategy, key: apiKey });
     for (const c of CATEGORIES) params.append("category", c.toUpperCase());
     const res = await fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, { signal: controller.signal });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       const message = body?.error?.message || `HTTP ${res.status}`;
-      return { url, scores: empty, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: message };
+      return { scores: EMPTY_SCORES, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: message };
     }
     const json = await res.json();
     const lr = json.lighthouseResult;
     if (!lr) {
-      return { url, scores: empty, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: "PageSpeed Insights returned no lighthouseResult — the page may be unreachable or blocking automated audits." };
+      return { scores: EMPTY_SCORES, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: "PageSpeed Insights returned no lighthouseResult — the page may be unreachable or blocking automated audits." };
     }
 
-    const scores: Record<Category, number | null> = { ...empty };
+    const scores: Record<Category, number | null> = { ...EMPTY_SCORES };
     for (const c of CATEGORIES) {
       const raw = lr.categories?.[c]?.score;
       scores[c] = typeof raw === "number" ? Math.round(raw * 100) : null;
@@ -98,39 +110,40 @@ async function fetchPageSpeedInsights(url: string, apiKey: string): Promise<Ligh
         displaySavings: a.displayValue ?? null,
       }));
 
-    return {
-      url,
-      scores,
-      coreWebVitals,
-      topOpportunities,
-      finalUrl: lr.finalUrl ?? null,
-      error: null,
-    };
+    return { scores, coreWebVitals, topOpportunities, finalUrl: lr.finalUrl ?? null, error: null };
   } catch (err) {
     const message = err instanceof Error && err.name === "AbortError" ? "Timed out waiting for the Lighthouse audit (60s) — the page may be very slow or unreachable." : err instanceof Error ? err.message : "Lighthouse audit failed.";
-    return { url, scores: empty, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: message };
+    return { scores: EMPTY_SCORES, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: message };
   } finally {
     clearTimeout(timeout);
   }
 }
 
+const NO_KEY_AUDIT: DeviceAudit = { scores: EMPTY_SCORES, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: "No PAGESPEED_API_KEY configured — see .env.local.example for how to get a free one." };
+
 /**
- * Checks one URL's real Lighthouse scores via PageSpeed Insights.
+ * Checks one URL's real Lighthouse scores via PageSpeed Insights, for both
+ * mobile and desktop. The two strategies run in parallel — they're
+ * independent Google-side page renders, not a burst against the same
+ * resource, so there's no throttling reason to serialize them.
  */
 export async function checkLighthouse(url: string): Promise<LighthouseResult> {
   const apiKey = process.env.PAGESPEED_API_KEY;
   if (!apiKey) {
-    const empty: Record<Category, number | null> = { performance: null, accessibility: null, "best-practices": null, seo: null };
-    return { url, scores: empty, coreWebVitals: [], topOpportunities: [], finalUrl: null, error: "No PAGESPEED_API_KEY configured — see .env.local.example for how to get a free one." };
+    return { url, mobile: NO_KEY_AUDIT, desktop: NO_KEY_AUDIT };
   }
-  return fetchPageSpeedInsights(url, apiKey);
+  const [mobile, desktop] = await Promise.all([
+    fetchPageSpeedInsights(url, apiKey, "mobile"),
+    fetchPageSpeedInsights(url, apiKey, "desktop"),
+  ]);
+  return { url, mobile, desktop };
 }
 
 /**
- * Sequential, not parallel — a real Lighthouse run is a genuine page
- * render on Google's end (15-40s each), and bursting several at once
- * against the same API key risks the exact throttling this codebase has
- * already hit with other providers this session.
+ * Sequential across URLs — each URL's own mobile+desktop pair already runs
+ * in parallel above, but bursting several different URLs at once against
+ * the same API key risks the exact throttling this codebase has already
+ * hit with other providers this session.
  */
 export async function checkLighthouseBatch(urls: string[]): Promise<LighthouseResult[]> {
   const results: LighthouseResult[] = [];

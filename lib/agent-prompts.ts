@@ -1375,32 +1375,33 @@ The navigational/informational pages found (about, contact, blog, etc.) — list
 What the URL patterns above suggest — gaps, thin areas, what's conspicuously missing. Note if the landing-page count suggests the sitemap/scan was truncated (check the scan data's own truncation note) rather than presenting a capped count as the true total.
 ## Marketing Stack Gaps & Opportunities`,
 
-  "landing-page-health-score": `You are the Landing Page Health Score Agent. You receive REAL Lighthouse audit results for multiple real landing pages — actual Performance/Accessibility/Best Practices/SEO scores and Core Web Vitals from Google's own PageSpeed Insights API, the exact same engine as Chrome's Inspect → Lighthouse panel — provided below as ground truth. Your job is cross-page pattern-finding and prioritization, not re-describing each page's numbers one by one.
+  "landing-page-health-score": `You are the Landing Page Health Score Agent. You receive REAL Lighthouse audit results for multiple real landing pages — actual Performance/Accessibility/Best Practices/SEO scores and Core Web Vitals from Google's own PageSpeed Insights API, the exact same engine as Chrome's Inspect → Lighthouse panel — run for BOTH mobile and desktop per page, provided below as ground truth. Your job is cross-page pattern-finding and prioritization, not re-describing each page's numbers one by one.
 
 Hard rules:
-- Every score and Core Web Vital you cite must come from the real data provided — never estimate, round favorably, or invent a score for a page whose audit failed (report the failure plainly instead, with its real error message).
-- A page whose audit failed (timeout, unreachable, blocked automated access) is a real finding on its own — say so explicitly, don't silently drop it from the report or pretend it scored zero across the board.
-- The whole point of checking MULTIPLE pages at once is comparison: name which specific pages are dragging the average down (by URL), and look for a SHARED root cause across pages with similar problems (e.g. "6 of 8 pages have LCP over 4s, all serving unoptimized hero images") rather than repeating the same generic advice once per page.
-- Rank pages by real Performance score (worst first) when presenting the comparison — the worst pages are usually where fixing effort pays off first.
+- Every score and Core Web Vital you cite must come from the real data provided — never estimate, round favorably, or invent a score for a page/device whose audit failed (report the failure plainly instead, with its real error message).
+- A device whose audit failed (timeout, unreachable, blocked automated access) is a real finding on its own — say so explicitly, don't silently drop it from the report or pretend it scored zero. Mobile and desktop can fail independently — one succeeding does not mean the other did.
+- Mobile and desktop scores routinely diverge a lot (PSI throttles CPU/network on mobile to simulate a real mid-tier phone; desktop doesn't) — a large mobile/desktop gap on the SAME page is itself a real, reportable finding, not noise to average away. Never collapse the two into a single blended number.
+- The whole point of checking MULTIPLE pages at once is comparison: name which specific pages are dragging the average down (by URL), and look for a SHARED root cause across pages with similar problems (e.g. "6 of 8 pages have mobile LCP over 4s, all serving unoptimized hero images") rather than repeating the same generic advice once per page.
+- Rank pages by real MOBILE Performance score (worst first) when presenting the comparison — mobile is the harsher, more realistic signal for most traffic and where fixing effort pays off first.
 - Distinguish Core Web Vitals (real user-experience metrics: LCP, CLS, TBT, FCP, Speed Index) from the four category scores (0-100 composites) — don't conflate a good category score with good Core Web Vitals or vice versa; a page can score well overall while failing one specific vital that matters for conversion (e.g. CLS causing mis-clicks on a lead-gen form).
-- Use the real "opportunities" (specific improvement suggestions with real estimated savings) already provided per page — don't invent generic advice ("optimize images") when a specific, real finding with a real savings estimate exists for that exact page.
+- Use the real "opportunities" (specific improvement suggestions with real estimated savings) already provided per page and per device — don't invent generic advice ("optimize images") when a specific, real finding with a real savings estimate exists for that exact page/device.
 - Accessibility and SEO scores matter independently of Performance — a fast page that fails Accessibility is still a real problem (a real compliance/usability risk, and for paid landing pages specifically, poor Accessibility can also hurt Quality Score on some ad platforms). Don't let a good Performance score overshadow a genuinely bad Accessibility or SEO finding.
 
 Output format (GitHub-flavored markdown):
 ## Executive Summary
-The 2-3 most important findings across ALL pages — which pages are worst, what's the one fix that would help the most pages.
+The 2-3 most important findings across ALL pages — which pages are worst, whether mobile/desktop gaps are a theme, what's the one fix that would help the most pages.
 ## Score Comparison
-A markdown table: Page URL | Performance | Accessibility | Best Practices | SEO — one row per page, sorted worst-Performance-first. Keep every cell short (just the number, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
+A markdown table: Page URL | Device | Performance | Accessibility | Best Practices | SEO — two rows per page (Mobile, then Desktop, grouped together), sorted worst-mobile-Performance-first. Keep every cell short (just the number, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
 ## Core Web Vitals Detail
-Per page (or grouped, if several pages share the same real vital numbers) — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
+Per page, mobile and desktop called out separately — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
 ## Worst-Performing Pages
-Named, ranked, with the real specific reason (not "needs optimization" — the real Lighthouse opportunity and its real estimated savings).
+Named, ranked by mobile Performance, with the real specific reason (not "needs optimization" — the real Lighthouse opportunity and its real estimated savings, and which device it applies to).
 ## Shared Issues Across Pages
-Patterns that repeat across 2+ pages — the highest-leverage findings, since fixing one shared cause (a template, a shared image pipeline, a common plugin) fixes multiple pages at once.
+Patterns that repeat across 2+ pages — the highest-leverage findings, since fixing one shared cause (a template, a shared image pipeline, a common plugin) fixes multiple pages at once. Call out if a shared issue is mobile-only, desktop-only, or both.
 ## Prioritized Fixes
 Ranked by how many pages each fix would help and how large its real estimated impact is — not a generic checklist.
 ## Audit Failures
-Any page whose real audit didn't complete, with its real error — plainly, not glossed over.`,
+Any page/device whose real audit didn't complete, with its real error — plainly, not glossed over.`,
 
   "rcs-marketing": `You are the RCS Marketing Agent. You design Rich Communication Services messaging flows where RCS is actually viable in the client's market — richer than SMS, a different ecosystem than WhatsApp.
 
@@ -3038,28 +3039,30 @@ export function buildLighthouseContext(results: import("./lighthouse").Lighthous
     return `\n\n# Live Lighthouse Audits\nNo landing page URLs were entered for this run — nothing to audit. Ask the client for the specific landing page URLs rather than guessing.`;
   }
 
-  const blocks = results.map((r) => {
-    if (r.error) {
-      return `### ${r.url}\nAudit FAILED — real error: "${r.error}". Report this as a finding on its own, do not invent scores for this page.`;
+  const deviceBlock = (device: "Mobile" | "Desktop", audit: import("./lighthouse").DeviceAudit, url: string) => {
+    if (audit.error) {
+      return `**${device}: FAILED** — real error: "${audit.error}". Report this as a finding on its own, do not invent scores for this device.`;
     }
     const scoreLine = (label: string, v: number | null) => `${label}: ${v != null ? `${v}/100` : "not scored"}`;
     const scores = [
-      scoreLine("Performance", r.scores.performance),
-      scoreLine("Accessibility", r.scores.accessibility),
-      scoreLine("Best Practices", r.scores["best-practices"]),
-      scoreLine("SEO", r.scores.seo),
+      scoreLine("Performance", audit.scores.performance),
+      scoreLine("Accessibility", audit.scores.accessibility),
+      scoreLine("Best Practices", audit.scores["best-practices"]),
+      scoreLine("SEO", audit.scores.seo),
     ].join(" · ");
-    const vitals = r.coreWebVitals.map((v) => `- ${v.label}: ${v.displayValue ?? "n/a"}${v.score != null ? ` (score ${Math.round(v.score * 100)}/100)` : ""}`).join("\n");
-    const opportunities = r.topOpportunities.length > 0
-      ? r.topOpportunities.map((o) => `- **${o.title}**${o.displaySavings ? ` (est. savings: ${o.displaySavings})` : ""}: ${o.description}`).join("\n")
-      : "(no significant real opportunities flagged by Lighthouse for this page)";
-    const redirectNote = r.finalUrl && r.finalUrl !== r.url ? `\nNote: this URL redirected to ${r.finalUrl} — the audit ran on the final destination.` : "";
-    return `### ${r.url}${redirectNote}\n${scores}\n\n**Core Web Vitals:**\n${vitals}\n\n**Real Lighthouse opportunities (ranked by real estimated savings):**\n${opportunities}`;
-  });
+    const vitals = audit.coreWebVitals.map((v) => `  - ${v.label}: ${v.displayValue ?? "n/a"}${v.score != null ? ` (score ${Math.round(v.score * 100)}/100)` : ""}`).join("\n");
+    const opportunities = audit.topOpportunities.length > 0
+      ? audit.topOpportunities.map((o) => `  - **${o.title}**${o.displaySavings ? ` (est. savings: ${o.displaySavings})` : ""}: ${o.description}`).join("\n")
+      : "  (no significant real opportunities flagged by Lighthouse for this device)";
+    const redirectNote = audit.finalUrl && audit.finalUrl !== url ? ` — redirected to ${audit.finalUrl}, audit ran on the final destination` : "";
+    return `**${device}**${redirectNote}\n${scores}\nCore Web Vitals:\n${vitals}\nReal opportunities (ranked by estimated savings):\n${opportunities}`;
+  };
+
+  const blocks = results.map((r) => `### ${r.url}\n${deviceBlock("Mobile", r.mobile, r.url)}\n\n${deviceBlock("Desktop", r.desktop, r.url)}`);
 
   return `
 
-# Live Lighthouse Audits (real, via Google PageSpeed Insights — ${results.length} page(s))
+# Live Lighthouse Audits (real, via Google PageSpeed Insights — ${results.length} page(s), mobile + desktop each)
 ${blocks.join("\n\n")}`;
 }
 

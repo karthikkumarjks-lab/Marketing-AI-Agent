@@ -50,6 +50,7 @@ import { detectTechStack } from "@/lib/tech-stack-detect";
 import { discoverSubpages } from "@/lib/sitemap-discover";
 import { extractConversionSignals } from "@/lib/conversion-signals";
 import { checkLighthouseBatch } from "@/lib/lighthouse";
+import { parseMultipleUrls } from "@/lib/parse-multiple-urls";
 import { generateImage, type GeneratedImage } from "@/lib/image-generate";
 import { fetchAdAccountInsights } from "@/lib/meta-ads-client";
 import { buildLeadContext, parseCustomFields, parseTags } from "@/lib/crm";
@@ -109,25 +110,6 @@ async function scanWebsite(
   const sitemap = await discoverSubpages(domain, html);
   const cro = includeConversionSignals ? extractConversionSignals(html) : null;
   return { tech, sitemap, cro, loadTimeMs };
-}
-
-// "example.com, competitor-b.org\ncompetitor-c.com" -> up to 4 deduped,
-// normalized URLs. Market Research's competitor field accepts several sites
-// at once (comma or newline separated) since the whole point is comparing
-// the client against a set of named competitors, not just one.
-function parseMultipleUrls(raw: string, max = 4): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const piece of raw.split(/[,\n]/)) {
-    const trimmed = piece.trim();
-    if (!trimmed) continue;
-    const domain = trimmed.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase();
-    if (!domain || seen.has(domain)) continue;
-    seen.add(domain);
-    out.push(trimmed);
-    if (out.length >= max) break;
-  }
-  return out;
 }
 
 export async function POST(req: NextRequest) {
@@ -395,7 +377,7 @@ export async function POST(req: NextRequest) {
   // Lighthouse runs are single-purpose per-URL, not a multi-signal crawl,
   // so a client checking several landing pages at once is the normal case).
   if (LIVE_LIGHTHOUSE_AGENTS.has(agentKey)) {
-    const urls = competitorUrlOverride ? parseMultipleUrls(competitorUrlOverride, 10) : [];
+    const urls = competitorUrlOverride ? parseMultipleUrls(competitorUrlOverride, 10, true) : [];
     const results = await checkLighthouseBatch(urls);
     extraContext = (extraContext ?? "") + buildLighthouseContext(results);
   }

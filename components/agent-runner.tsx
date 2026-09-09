@@ -204,14 +204,13 @@ export default function AgentRunner({
                     ? "Landing page URLs to audit (required)"
                     : "Competitor URL to scan (optional)"}
               </label>
-              <input
-                type="text"
-                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40"
+              <textarea
+                className="w-full rounded-md border border-line bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/40 min-h-20"
                 placeholder={
                   agentKey === "market-research"
                     ? "e.g. competitor-a.com, competitor-b.com"
                     : agentKey === "landing-page-health-score"
-                      ? "e.g. example.com/lp-1, example.com/lp-2, example.com/lp-3"
+                      ? "e.g. example.com/lp-1\nexample.com/lp-2\nexample.com/lp-3"
                       : "e.g. competitor.com"
                 }
                 value={competitorUrl}
@@ -219,9 +218,9 @@ export default function AgentRunner({
               />
               <p className="text-[11px] text-ink-faint mt-1">
                 {agentKey === "market-research"
-                  ? "Real crawl (technology, pages, CTAs, forms, trust signals, load time) for up to 4 sites, comma-separated. Leave blank to compare against category knowledge only."
+                  ? "Real crawl (technology, pages, CTAs, forms, trust signals, load time) for up to 4 sites — one per line or comma-separated. Leave blank to compare against category knowledge only."
                   : agentKey === "landing-page-health-score"
-                    ? "Real Lighthouse audit (Performance/Accessibility/Best Practices/SEO + Core Web Vitals) for up to 10 pages, comma-separated — each one, including an unlinked/paid landing page not in your sitemap. Each audit takes 15-40s, so a full batch can take several minutes."
+                    ? "Real Lighthouse audit — Performance/Accessibility/Best Practices/SEO + Core Web Vitals, for BOTH mobile and desktop — for up to 10 pages, one per line or comma-separated (multiple pages on the same domain are fine — each is audited separately). Each page runs 2 audits (mobile + desktop) in parallel, ~15-40s each, so a full batch can take several minutes."
                     : "Real tech-stack and page scan for this run only. Leave blank to reason from category knowledge instead."}
               </p>
             </div>
