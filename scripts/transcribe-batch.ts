@@ -1,13 +1,13 @@
 // Unattended, resumable batch runner for the Transcription tool — built for
-// a real need: 575 recordings against a free-tier Gemini quota (20-40
-// requests/day), where pasting 20 at a time into the browser every day for
-// weeks isn't practical. Run this from the terminal instead:
+// a real need: hundreds of recordings against a free-tier Gemini quota
+// (20-40 requests/day), where pasting 20 at a time into the browser every
+// day for weeks isn't practical. Run this from the terminal instead:
 //
 //   npx tsx scripts/transcribe-batch.ts leads.txt
 //
 // leads.txt: one lead per line, same format as the Transcription page —
 //   email, prospectId, recordingUrl        (email optional)
-//   prospectId, recordingUrl
+//   prospectId, recordingUrl               (the normal case in real use)
 //
 // Progress is written to transcribe-output.csv after every batch, and on
 // every run this script re-reads that file first and skips any prospectId
@@ -19,6 +19,13 @@
 // text-only model with no audio input — see lib/transcribe.ts), and prints
 // exactly what to do next.
 //
+// After every run, this also (re)writes a real two-sheet .xlsx report
+// (transcribe-output.xlsx, same base name) — Sheet1 per-call detail, Sheet2
+// the aggregate funnel breakdown — built from ALL completed leads so far
+// (this run's plus every prior run's), using the exact same
+// buildTranscriptionWorkbook() the browser's Transcription page uses, so
+// the two never drift into different formats.
+//
 // Requires the dev server running (npm run dev) — this calls the real
 // /api/transcribe route, the same one the browser page uses, so it's
 // bound by the exact same batch-size cap and quota behavior.
@@ -26,6 +33,8 @@
 import "dotenv/config";
 import fs from "fs";
 import path from "path";
+import * as XLSX from "xlsx";
+import { buildTranscriptionWorkbook, DEFAULT_CATEGORIES, type TranscriptionResult } from "../lib/transcribe";
 
 const BASE = process.env.TRANSCRIBE_BASE_URL || "http://localhost:3000";
 const EMAIL = process.env.TRANSCRIBE_LOGIN_EMAIL || "karthikkumarjks@gmail.com";
@@ -38,11 +47,7 @@ interface Lead {
   url: string;
 }
 
-interface Result extends Lead {
-  transcript: string | null;
-  comments: string | null;
-  error: string | null;
-}
+const CSV_HEADER = ["S.No", "Prospect ID", "Lead Email ID", "Recording URL", "Transcription", "Category", "Error"];
 
 function csvCell(value: string): string {
   if (/[,\n"]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -68,32 +73,33 @@ function parseLeadsFile(text: string): Lead[] {
   return leads;
 }
 
-// Reads whatever the output CSV already has, so a re-run skips completed
-// leads instead of re-transcribing (and re-billing/re-spending quota on)
-// work that's already done.
-function readCompletedProspectIds(outputPath: string): Set<string> {
-  if (!fs.existsSync(outputPath)) return new Set();
-  const lines = fs.readFileSync(outputPath, "utf-8").split("\n").slice(1); // skip header
-  const ids = new Set<string>();
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    // Second column = Prospect ID (S.No is first). A plain split is
-    // reliable for just this one column since prospectId never
-    // legitimately contains a comma in real use — unlike the later
-    // transcript/comments columns, which do need real CSV quoting on write.
-    const cols = line.split(",");
-    if (cols.length >= 2) {
-      const id = cols[1]?.replace(/^"|"$/g, "").trim();
-      if (id) ids.add(id);
-    }
-  }
-  return ids;
+// Real CSV parsing (via the same xlsx library used elsewhere in this
+// project) rather than a naive line-by-line split — a hand-rolled split on
+// "\n" would misparse the moment any transcript cell contains an embedded
+// newline (near-certain for a real multi-speaker transcript), silently
+// breaking both the resume/skip logic below and any later re-read of this
+// file. xlsx's CSV reader handles RFC 4180 quoting (embedded commas,
+// quotes, and newlines inside a quoted cell) correctly.
+function readCompletedResults(outputPath: string): TranscriptionResult[] {
+  if (!fs.existsSync(outputPath)) return [];
+  const wb = XLSX.read(fs.readFileSync(outputPath), { type: "buffer" });
+  const rows: string[][] = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+  return rows.slice(1) // skip header
+    .filter((r) => r[1]) // real prospectId present
+    .map((r) => ({
+      prospectId: String(r[1]),
+      email: r[2] ? String(r[2]) : null,
+      url: String(r[3] ?? ""),
+      transcript: r[4] ? String(r[4]) : null,
+      category: r[5] ? String(r[5]) : null,
+      error: r[6] ? String(r[6]) : null,
+    }));
 }
 
-function appendResults(outputPath: string, results: Result[], sNoStart: number) {
+function appendResults(outputPath: string, results: TranscriptionResult[], sNoStart: number) {
   const isNew = !fs.existsSync(outputPath);
   const lines: string[] = [];
-  if (isNew) lines.push(["S.No", "Prospect ID", "Lead Email ID", "Recording URL", "Transcription", "Comments", "Error"].join(","));
+  if (isNew) lines.push(CSV_HEADER.join(","));
   results.forEach((r, i) => {
     lines.push(
       [
@@ -102,7 +108,7 @@ function appendResults(outputPath: string, results: Result[], sNoStart: number) 
         r.email ?? "",
         r.url,
         r.transcript ?? "",
-        r.comments ?? "",
+        r.category ?? "",
         r.error ?? "",
       ]
         .map(csvCell)
@@ -140,6 +146,13 @@ async function login(): Promise<string> {
   return cookie;
 }
 
+function writeWorkbook(outputPath: string, results: TranscriptionResult[]) {
+  const xlsxPath = outputPath.replace(/\.csv$/i, "") + ".xlsx";
+  const wb = buildTranscriptionWorkbook(results, DEFAULT_CATEGORIES);
+  XLSX.writeFile(wb, xlsxPath);
+  return xlsxPath;
+}
+
 async function main() {
   const inputPath = process.argv[2];
   if (!inputPath) {
@@ -149,18 +162,21 @@ async function main() {
   const outputPath = process.argv[3] || path.join(path.dirname(inputPath), "transcribe-output.csv");
 
   const allLeads = parseLeadsFile(fs.readFileSync(inputPath, "utf-8"));
-  const completed = readCompletedProspectIds(outputPath);
-  const remaining = allLeads.filter((l) => !completed.has(l.prospectId));
+  const alreadyDone = readCompletedResults(outputPath);
+  const completedIds = new Set(alreadyDone.map((r) => r.prospectId));
+  const remaining = allLeads.filter((l) => !completedIds.has(l.prospectId));
 
-  console.log(`${allLeads.length} leads total, ${completed.size} already done, ${remaining.length} remaining.`);
+  console.log(`${allLeads.length} leads total, ${alreadyDone.length} already done, ${remaining.length} remaining.`);
   if (remaining.length === 0) {
     console.log("Nothing left to do — every lead is already in the output file.");
+    writeWorkbook(outputPath, alreadyDone);
     return;
   }
 
   const cookie = await login();
-  let sNo = completed.size + 1;
+  let sNo = alreadyDone.length + 1;
   let doneThisRun = 0;
+  const allResultsSoFar = [...alreadyDone];
 
   for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
     const batch = remaining.slice(i, i + BATCH_SIZE);
@@ -176,23 +192,26 @@ async function main() {
       console.error(`Batch request failed (HTTP ${res.status}): ${body.error ?? "unknown error"} — stopping here.`);
       break;
     }
-    const { results }: { results: Result[] } = await res.json();
+    const { results }: { results: TranscriptionResult[] } = await res.json();
 
     appendResults(outputPath, results, sNo);
     sNo += results.length;
     doneThisRun += results.length;
+    allResultsSoFar.push(...results);
 
     const quotaHit = results.find((r) => isQuotaError(r.error));
     if (quotaHit) {
+      const xlsxPath = writeWorkbook(outputPath, allResultsSoFar);
       console.log(`\nGemini's daily quota looks exhausted (real error: "${quotaHit.error}").`);
       console.log(`Stopping here rather than burning through the rest of the list against a guaranteed-exhausted quota.`);
-      console.log(`Progress so far this run: ${doneThisRun} lead(s) processed, saved to ${outputPath}.`);
+      console.log(`Progress so far this run: ${doneThisRun} lead(s) processed, saved to ${outputPath} and ${xlsxPath}.`);
       console.log(`Once quota resets, just run this exact same command again — already-completed leads are skipped automatically:\n  npx tsx scripts/transcribe-batch.ts ${inputPath} ${outputPath}`);
       return;
     }
   }
 
-  console.log(`\nDone — ${doneThisRun} lead(s) processed this run, all results saved to ${outputPath}.`);
+  const xlsxPath = writeWorkbook(outputPath, allResultsSoFar);
+  console.log(`\nDone — ${doneThisRun} lead(s) processed this run, all ${allResultsSoFar.length} results saved to ${outputPath} and ${xlsxPath}.`);
 }
 
 main().catch((err) => {
