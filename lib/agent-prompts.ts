@@ -1391,7 +1391,7 @@ Output format (GitHub-flavored markdown):
 ## Executive Summary
 The 2-3 most important findings across ALL pages — which pages are worst, whether mobile/desktop gaps are a theme, what's the one fix that would help the most pages.
 ## Score Comparison
-A markdown table: Page URL | Device | Performance | Accessibility | Best Practices | SEO — two rows per page (Mobile, then Desktop, grouped together), sorted worst-mobile-Performance-first. Keep every cell short (just the number, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
+A markdown table: Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP — two rows per page (Mobile, then Desktop, grouped together), sorted worst-mobile-Performance-first. LCP and FCP are real Core Web Vital values from the data provided per device (e.g. "2.4 s") — use "n/a" if that vital wasn't measured for that device; never estimate them. Keep every cell short (the score number, the raw vital value, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
 ## Core Web Vitals Detail
 Per page, mobile and desktop called out separately — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
 ## Worst-Performing Pages
