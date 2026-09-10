@@ -1391,7 +1391,7 @@ Output format (GitHub-flavored markdown):
 ## Executive Summary
 The 2-3 most important findings across ALL pages — which pages are worst, whether mobile/desktop gaps are a theme, what's the one fix that would help the most pages.
 ## Score Comparison
-Write ONLY this exact placeholder line and nothing else under this heading: "_(table inserted from the real audit data below)_". The system replaces it with the real, code-built comparison table (Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP) — do not try to build the table yourself, you would only waste output space. Put all interpretation in the sections after this one.
+Write ONLY this exact placeholder line and nothing else under this heading: "_(table inserted from the real audit data below)_". The system replaces it with the real, code-built comparison table (Page URL | Device | Performance | LCP | FCP | Accessibility | Best Practices | SEO) — do not try to build the table yourself, you would only waste output space. Put all interpretation in the sections after this one.
 ## Core Web Vitals Detail
 Per page, mobile and desktop called out separately — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
 ## Worst-Performing Pages
@@ -3040,31 +3040,39 @@ export const LIVE_LIGHTHOUSE_AGENTS = new Set(["landing-page-health-score"]);
 // straight into the agent's markdown after the run, replacing whatever
 // the model produced under "## Score Comparison".
 export function buildLighthouseComparisonTable(results: import("./lighthouse").LighthouseResult[]): string {
-  const vital = (audit: import("./lighthouse").DeviceAudit, key: string) =>
-    audit.coreWebVitals.find((v) => v.label.includes(key))?.displayValue ?? "n/a";
+  const vital = (audit: import("./lighthouse").DeviceAudit, key: string) => {
+    const v = audit.coreWebVitals.find((cwv) => cwv.label.includes(key));
+    if (!v || !v.displayValue) return "n/a";
+    return v.score != null ? `${v.displayValue} (score ${Math.round(v.score * 100)}/100)` : v.displayValue;
+  };
   const row = (url: string, device: string, audit: import("./lighthouse").DeviceAudit) => {
-    if (audit.error) return `| ${url} | ${device} | Failed | Failed | Failed | Failed | n/a | n/a |`;
+    if (audit.error) return `| ${url} | ${device} | Failed | Failed | Failed | Failed | Failed | Failed |`;
     const s = audit.scores;
     const cell = (v: number | null) => (v != null ? String(v) : "n/a");
-    return `| ${url} | ${device} | ${cell(s.performance)} | ${cell(s.accessibility)} | ${cell(s["best-practices"])} | ${cell(s.seo)} | ${vital(audit, "LCP")} | ${vital(audit, "FCP")} |`;
+    return `| ${url} | ${device} | ${cell(s.performance)} | ${vital(audit, "LCP")} | ${vital(audit, "FCP")} | ${cell(s.accessibility)} | ${cell(s["best-practices"])} | ${cell(s.seo)} |`;
   };
   const sorted = [...results].sort((a, b) => (a.mobile.scores.performance ?? -1) - (b.mobile.scores.performance ?? -1));
   return [
-    "| Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP |",
+    "| Page URL | Device | Performance | LCP | FCP | Accessibility | Best Practices | SEO |",
     "|---|---|---|---|---|---|---|---|",
     ...sorted.flatMap((r) => [row(r.url, "Mobile", r.mobile), row(r.url, "Desktop", r.desktop)]),
   ].join("\n");
 }
 
 // Splices the real, code-built comparison table into the agent's markdown,
-// replacing the model's own "## Score Comparison" section body (or adding
-// the section near the top if the model omitted it).
+// replacing the model's own Score Comparison section body (or adding the
+// section near the top if the model omitted it). Deliberately lenient
+// about the exact heading the model used — "## Score Comparison",
+// "### 2. Score Comparison", "**Score Comparison**" all match — because
+// the whole point is that the model isn't trusted to be consistent here.
 export function injectLighthouseComparisonTable(markdown: string, results: import("./lighthouse").LighthouseResult[]): string {
   if (results.length === 0) return markdown;
   const table = buildLighthouseComparisonTable(results);
-  const re = /(\n|^)##\s+Score Comparison[^\n]*\n[\s\S]*?(?=\n##\s|\n#\s|$)/;
+  // Heading line: optional #'s or ** , optional leading numbering, then
+  // "score comparison" (case-insensitive), then anything to end of line.
+  const re = /(\n|^)(#{1,4}\s*|\*\*)?\s*\d*[.)]?\s*score comparison\b.*(\n|$)[\s\S]*?(?=\n#{1,4}\s|\n\*\*[A-Z]|$)/i;
   if (re.test(markdown)) {
-    return markdown.replace(re, `$1## Score Comparison\n\n${table}\n`);
+    return markdown.replace(re, `$1## Score Comparison\n\n${table}\n\n`);
   }
   return `## Score Comparison\n\n${table}\n\n${markdown}`;
 }
