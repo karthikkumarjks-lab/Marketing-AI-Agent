@@ -62,6 +62,21 @@ describe("injectLighthouseComparisonTable", () => {
     expect(out).toContain("## Core Web Vitals Detail");
   });
 
+  it("replaces the one-line placeholder the prompt tells the model to emit", () => {
+    const md = [
+      "## Executive Summary",
+      "Mobile is dragging everything down.",
+      "## Score Comparison",
+      "_(table inserted from the real audit data below)_",
+      "## Core Web Vitals Detail",
+      "LCP is 5.9s on mobile.",
+    ].join("\n");
+    const out = injectLighthouseComparisonTable(md, results);
+    expect(out).toContain("| site.com/a | Mobile | 40 | 90 | 95 | 100 | 5.9 s | 1.2 s |");
+    expect(out).not.toContain("_(table inserted");
+    expect(out).toContain("## Core Web Vitals Detail\nLCP is 5.9s on mobile.");
+  });
+
   it("adds a Score Comparison section near the top if the model omitted it entirely", () => {
     const md = "## Executive Summary\nSome summary.\n## Core Web Vitals Detail\ndetails";
     const out = injectLighthouseComparisonTable(md, results);
