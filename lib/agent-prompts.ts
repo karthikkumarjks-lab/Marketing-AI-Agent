@@ -1391,7 +1391,7 @@ Output format (GitHub-flavored markdown):
 ## Executive Summary
 The 2-3 most important findings across ALL pages — which pages are worst, whether mobile/desktop gaps are a theme, what's the one fix that would help the most pages.
 ## Score Comparison
-A markdown table: Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP — two rows per page (Mobile, then Desktop, grouped together), sorted worst-mobile-Performance-first. LCP and FCP are real Core Web Vital values from the data provided per device (e.g. "2.4 s") — use "n/a" if that vital wasn't measured for that device; never estimate them. Keep every cell short (the score number, the raw vital value, or "Failed" for an audit error) — put any longer explanation in the sections below, never inside this table.
+Reproduce the "Pre-computed Score Comparison table" from the audit data below EXACTLY — same columns (Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP), same rows, same order. Do not drop the LCP/FCP columns, recompute any value, or re-sort. Put all interpretation in the sections below, never inside this table.
 ## Core Web Vitals Detail
 Per page, mobile and desktop called out separately — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
 ## Worst-Performing Pages
@@ -3060,9 +3060,33 @@ export function buildLighthouseContext(results: import("./lighthouse").Lighthous
 
   const blocks = results.map((r) => `### ${r.url}\n${deviceBlock("Mobile", r.mobile, r.url)}\n\n${deviceBlock("Desktop", r.desktop, r.url)}`);
 
+  // Pre-compute the Score Comparison table in code — the LLM was
+  // inconsistent about adding the LCP/FCP columns when only told to in
+  // the prompt, so hand it a finished table to reproduce verbatim.
+  const vital = (audit: import("./lighthouse").DeviceAudit, key: string) =>
+    audit.coreWebVitals.find((v) => v.label.includes(key))?.displayValue ?? "n/a";
+  const row = (url: string, device: string, audit: import("./lighthouse").DeviceAudit) => {
+    if (audit.error) return `| ${url} | ${device} | Failed | Failed | Failed | Failed | n/a | n/a |`;
+    const s = audit.scores;
+    const cell = (v: number | null) => (v != null ? String(v) : "n/a");
+    return `| ${url} | ${device} | ${cell(s.performance)} | ${cell(s.accessibility)} | ${cell(s["best-practices"])} | ${cell(s.seo)} | ${vital(audit, "LCP")} | ${vital(audit, "FCP")} |`;
+  };
+  const sorted = [...results].sort((a, b) => (a.mobile.scores.performance ?? -1) - (b.mobile.scores.performance ?? -1));
+  const comparisonTable = [
+    "| Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP |",
+    "|---|---|---|---|---|---|---|---|",
+    ...sorted.flatMap((r) => [row(r.url, "Mobile", r.mobile), row(r.url, "Desktop", r.desktop)]),
+  ].join("\n");
+
   return `
 
 # Live Lighthouse Audits (real, via Google PageSpeed Insights — ${results.length} page(s), mobile + desktop each)
+
+## Pre-computed Score Comparison table
+Reproduce this table EXACTLY as your "## Score Comparison" section — do not drop columns, recompute values, or reorder rows. It is already sorted worst-mobile-Performance-first.
+
+${comparisonTable}
+
 ${blocks.join("\n\n")}`;
 }
 
