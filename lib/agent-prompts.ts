@@ -1391,7 +1391,7 @@ Output format (GitHub-flavored markdown):
 ## Executive Summary
 The 2-3 most important findings across ALL pages — which pages are worst, whether mobile/desktop gaps are a theme, what's the one fix that would help the most pages.
 ## Score Comparison
-Reproduce the "Pre-computed Score Comparison table" from the audit data below EXACTLY — same columns (Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP), same rows, same order. Do not drop the LCP/FCP columns, recompute any value, or re-sort. Put all interpretation in the sections below, never inside this table.
+Write ONLY this exact placeholder line and nothing else under this heading: "_(table inserted from the real audit data below)_". The system replaces it with the real, code-built comparison table (Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP) — do not try to build the table yourself, you would only waste output space. Put all interpretation in the sections after this one.
 ## Core Web Vitals Detail
 Per page, mobile and desktop called out separately — the actual LCP/CLS/TBT/FCP/Speed Index values, and what a real bad vital here actually costs (bounce, conversion drop) in plain terms.
 ## Worst-Performing Pages
@@ -3034,6 +3034,41 @@ ${lines}`;
 // works identically on an orphan/unlinked paid landing page.
 export const LIVE_LIGHTHOUSE_AGENTS = new Set(["landing-page-health-score"]);
 
+// The Score Comparison table, built entirely in code. The LLM does not
+// render this reliably from a prompt instruction (it kept dropping the
+// LCP/FCP columns), so route.ts splices the output of this function
+// straight into the agent's markdown after the run, replacing whatever
+// the model produced under "## Score Comparison".
+export function buildLighthouseComparisonTable(results: import("./lighthouse").LighthouseResult[]): string {
+  const vital = (audit: import("./lighthouse").DeviceAudit, key: string) =>
+    audit.coreWebVitals.find((v) => v.label.includes(key))?.displayValue ?? "n/a";
+  const row = (url: string, device: string, audit: import("./lighthouse").DeviceAudit) => {
+    if (audit.error) return `| ${url} | ${device} | Failed | Failed | Failed | Failed | n/a | n/a |`;
+    const s = audit.scores;
+    const cell = (v: number | null) => (v != null ? String(v) : "n/a");
+    return `| ${url} | ${device} | ${cell(s.performance)} | ${cell(s.accessibility)} | ${cell(s["best-practices"])} | ${cell(s.seo)} | ${vital(audit, "LCP")} | ${vital(audit, "FCP")} |`;
+  };
+  const sorted = [...results].sort((a, b) => (a.mobile.scores.performance ?? -1) - (b.mobile.scores.performance ?? -1));
+  return [
+    "| Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP |",
+    "|---|---|---|---|---|---|---|---|",
+    ...sorted.flatMap((r) => [row(r.url, "Mobile", r.mobile), row(r.url, "Desktop", r.desktop)]),
+  ].join("\n");
+}
+
+// Splices the real, code-built comparison table into the agent's markdown,
+// replacing the model's own "## Score Comparison" section body (or adding
+// the section near the top if the model omitted it).
+export function injectLighthouseComparisonTable(markdown: string, results: import("./lighthouse").LighthouseResult[]): string {
+  if (results.length === 0) return markdown;
+  const table = buildLighthouseComparisonTable(results);
+  const re = /(\n|^)##\s+Score Comparison[^\n]*\n[\s\S]*?(?=\n##\s|\n#\s|$)/;
+  if (re.test(markdown)) {
+    return markdown.replace(re, `$1## Score Comparison\n\n${table}\n`);
+  }
+  return `## Score Comparison\n\n${table}\n\n${markdown}`;
+}
+
 export function buildLighthouseContext(results: import("./lighthouse").LighthouseResult[]): string {
   if (results.length === 0) {
     return `\n\n# Live Lighthouse Audits\nNo landing page URLs were entered for this run — nothing to audit. Ask the client for the specific landing page URLs rather than guessing.`;
@@ -3059,31 +3094,14 @@ export function buildLighthouseContext(results: import("./lighthouse").Lighthous
   };
 
   const blocks = results.map((r) => `### ${r.url}\n${deviceBlock("Mobile", r.mobile, r.url)}\n\n${deviceBlock("Desktop", r.desktop, r.url)}`);
-
-  // Pre-compute the Score Comparison table in code — the LLM was
-  // inconsistent about adding the LCP/FCP columns when only told to in
-  // the prompt, so hand it a finished table to reproduce verbatim.
-  const vital = (audit: import("./lighthouse").DeviceAudit, key: string) =>
-    audit.coreWebVitals.find((v) => v.label.includes(key))?.displayValue ?? "n/a";
-  const row = (url: string, device: string, audit: import("./lighthouse").DeviceAudit) => {
-    if (audit.error) return `| ${url} | ${device} | Failed | Failed | Failed | Failed | n/a | n/a |`;
-    const s = audit.scores;
-    const cell = (v: number | null) => (v != null ? String(v) : "n/a");
-    return `| ${url} | ${device} | ${cell(s.performance)} | ${cell(s.accessibility)} | ${cell(s["best-practices"])} | ${cell(s.seo)} | ${vital(audit, "LCP")} | ${vital(audit, "FCP")} |`;
-  };
-  const sorted = [...results].sort((a, b) => (a.mobile.scores.performance ?? -1) - (b.mobile.scores.performance ?? -1));
-  const comparisonTable = [
-    "| Page URL | Device | Performance | Accessibility | Best Practices | SEO | LCP | FCP |",
-    "|---|---|---|---|---|---|---|---|",
-    ...sorted.flatMap((r) => [row(r.url, "Mobile", r.mobile), row(r.url, "Desktop", r.desktop)]),
-  ].join("\n");
+  const comparisonTable = buildLighthouseComparisonTable(results);
 
   return `
 
 # Live Lighthouse Audits (real, via Google PageSpeed Insights — ${results.length} page(s), mobile + desktop each)
 
-## Pre-computed Score Comparison table
-Reproduce this table EXACTLY as your "## Score Comparison" section — do not drop columns, recompute values, or reorder rows. It is already sorted worst-mobile-Performance-first.
+## Score Comparison table (the system inserts this into your output automatically — do NOT reproduce it, just read it for your analysis below)
+Sorted worst-mobile-Performance-first.
 
 ${comparisonTable}
 

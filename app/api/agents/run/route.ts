@@ -34,6 +34,7 @@ import {
   SINGLE_RUN_AGENTS,
   LIVE_LIGHTHOUSE_AGENTS,
   buildLighthouseContext,
+  injectLighthouseComparisonTable,
 } from "@/lib/agent-prompts";
 import { computeCrmAuditSnapshot } from "@/lib/crm-audit";
 import { computeCampaignQaSnapshot } from "@/lib/campaign-qa";
@@ -200,6 +201,7 @@ export async function POST(req: NextRequest) {
   // lead's actual stored data so the agent reasons about this one real
   // person/company instead of generic workspace-level Company DNA.
   let extraContext: string | undefined;
+  let lighthouseResults: import("@/lib/lighthouse").LighthouseResult[] = [];
   if (leadId) {
     const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { stage: true } });
     if (lead && lead.workspaceId === workspaceId) {
@@ -378,8 +380,8 @@ export async function POST(req: NextRequest) {
   // so a client checking several landing pages at once is the normal case).
   if (LIVE_LIGHTHOUSE_AGENTS.has(agentKey)) {
     const urls = competitorUrlOverride ? parseMultipleUrls(competitorUrlOverride, 10, true) : [];
-    const results = await checkLighthouseBatch(urls);
-    extraContext = (extraContext ?? "") + buildLighthouseContext(results);
+    lighthouseResults = await checkLighthouseBatch(urls);
+    extraContext = (extraContext ?? "") + buildLighthouseContext(lighthouseResults);
   }
 
   // Real Meta Ads data: only when this workspace has a genuine OAuth
@@ -527,6 +529,13 @@ export async function POST(req: NextRequest) {
         .join("\n\n");
       result = { ...result, markdown: `${result.markdown}\n\n## Generated Carousel\n${slideBlocks}` };
     }
+  }
+
+  // Landing Page Health Score: replace the model's own Score Comparison
+  // table with the real one built from the audit data — the LLM kept
+  // dropping the LCP/FCP columns even when handed a finished table to copy.
+  if (LIVE_LIGHTHOUSE_AGENTS.has(agentKey) && lighthouseResults.length > 0) {
+    result = { ...result, markdown: injectLighthouseComparisonTable(result.markdown, lighthouseResults) };
   }
 
   // Append the FULL raw discovered-page list verbatim — deterministic, real
