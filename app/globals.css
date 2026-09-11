@@ -138,10 +138,20 @@ h1, h2, h3 {
 .prose-agent strong {
   color: var(--ink);
 }
+/* Wide tables (e.g. Landing Page Health Score's 8-column mobile/desktop
+   comparison) scroll horizontally inside their own box instead of being
+   squeezed to the page's width, which used to wrap the URL column into a
+   tall, unreadable sliver. The page itself never scrolls sideways. */
+.prose-agent .table-scroll {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
 .prose-agent table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
-  margin-bottom: 1rem;
   font-size: 0.875rem;
 }
 .prose-agent th {
@@ -152,11 +162,13 @@ h1, h2, h3 {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 .prose-agent td {
   padding: 6px 10px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+  white-space: nowrap;
 }
 .prose-agent blockquote {
   border-left: 3px solid var(--accent);

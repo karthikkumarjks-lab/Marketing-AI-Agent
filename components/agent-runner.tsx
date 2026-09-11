@@ -358,6 +358,18 @@ function RunCard({ run }: { run: RunLite }) {
                 </code>
               );
             },
+            // A wide table (e.g. Landing Page Health Score's 8-column
+            // mobile/desktop comparison) used to be squeezed to the page's
+            // width, wrapping the URL column into a tall unreadable sliver.
+            // Give every table its own horizontally-scrolling box instead —
+            // the page itself never scrolls sideways, just this one element.
+            table({ children }) {
+              return (
+                <div className="table-scroll">
+                  <table>{children}</table>
+                </div>
+              );
+            },
           }}
         >
           {run.outputMarkdown}
