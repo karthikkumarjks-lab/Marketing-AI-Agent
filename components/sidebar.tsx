@@ -72,6 +72,11 @@ export default function Sidebar({
               active={pathname.includes("/crm")}
             />
             <NavLink
+              href={`/workspaces/${toolsWorkspaceId}/lead-insights`}
+              label="Lead Insights"
+              active={pathname.endsWith("/lead-insights")}
+            />
+            <NavLink
               href={`/workspaces/${toolsWorkspaceId}/needs`}
               label="Needs Analyzer"
               active={pathname.endsWith("/needs")}
